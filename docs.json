@@ -1,11 +1,17 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "RoadShop",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#50a2ff",
+    "light": "#50a2ff",
+    "dark": "#50a2ff"
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "icons": {
+    "library": "lucide"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -14,41 +20,57 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Home",
             "pages": [
               "index",
-              "quickstart",
-              "development"
+              "license-system",
+              "common-issues",
+              "discord-customer-role",
+              "customer-dev"
             ]
           },
           {
-            "group": "Customization",
+            "group": "RoadPhone",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "roadphone/installation",
+              "roadphone/faq",
+              "roadphone/job-calls",
+              "roadphone/fivemanage",
+              "roadphone/fivemerr",
+              "roadphone/custom-apps"
+
             ]
           },
           {
-            "group": "Writing content",
+            "group": "RoadPad",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "roadpad/installation",
+              "roadpad/custom-apps",
+              "roadpad/faq"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "RoadCarPlay",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "roadcarplay/installation"
+            ]
+          },
+          {
+            "group": "RoadPods",
+            "pages": [
+              "roadpods/installation"
+            ]
+          },
+          {
+            "group": "RoadBackup",
+            "pages": [
+              "roadbackup/installation"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Developer",
         "groups": [
           {
             "group": "API documentation",
@@ -57,12 +79,22 @@
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "RoadPhone",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "roadphone/api/client",
+              "roadphone/api/server"
+            ]
+          },
+          {
+            "group": "RoadPad",
+            "pages": [
+              "roadpad/api/client"
+            ]
+          },
+          {
+            "group": "RoadCarPlay",
+            "pages": [
+              "roadcarplay/api/client"
             ]
           }
         ]
@@ -71,19 +103,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Website",
+          "href": "https://roadshop.org",
+          "icon": "external-link"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Shop",
+          "href": "https://fivem.roadshop.org",
+          "icon": "shopping-cart"
         }
       ]
     }
@@ -95,14 +122,18 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "Discord",
+        "href": "https://discord.gg/2nZrmmvM2q"
+      },
+      {
+        "label": "Website",
+        "href": "https://roadshop.org"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Shop",
+      "href": "https://fivem.roadshop.org"
     }
   },
   "contextual": {
@@ -119,9 +150,24 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+      "discord": "https://discord.gg/2nZrmmvM2q",
+      "youtube": "https://www.youtube.com/@roadshop."
+    },
+    "links": [
+      {
+        "header": "Links",
+        "items": [
+          {
+            "label": "Shop",
+            "href": "https://fivem.roadshop.org"
+          },
+            {
+                "label": "Website",
+                "href": "https://roadshop.org"
+            }
+        ]
+      }
+
+    ]
   }
 }

@@ -1,0 +1,121 @@
+---
+title: 'Installation'
+description: 'Complete setup guide for the roadpad script'
+icon: 'download'
+---
+
+# Installation
+
+<Danger>
+    **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
+</Danger>
+
+## 📋 Prerequisites
+
+Before you begin, make sure you have:
+
+<CardGroup cols={2}>
+    <Card title="Database Access" icon="database">
+        MySQL or MariaDB database with permissions to create tables
+    </Card>
+    <Card title="FTP Client" icon="server">
+        WinSCP or similar (not FileZilla)
+    </Card>
+    <Card title="Discord Webhooks" icon="discord">
+        Valid Discord webhook URLs for logging
+    </Card>
+    <Card title="Server Access" icon="key">
+        FTP/SFTP access to your game server
+    </Card>
+</CardGroup>
+
+## 🚀 Setup Instructions
+
+<Steps>
+    <Step title="Create Resource Folder">
+        Create a folder in your resource folder called `[pad]`
+
+        ```bash
+        resources/
+        └── [pad]/
+        ├── roadpad/
+        ├── xSound/
+        └── other_scripts/
+        ```
+    </Step>
+
+    <Step title="Extract Scripts">
+        Extract all scripts that are included in the download to the `[pad]` folder
+
+        <Note>
+            Make sure to maintain the folder structure as provided in the download package
+        </Note>
+    </Step>
+
+    <Step title="Import Database">
+        Read the SQL file **roadpad.sql** into your database
+
+        <Tip>
+            You can also use phpMyAdmin or HeidiSQL to import the SQL file
+        </Tip>
+    </Step>
+
+    <Step title="Configure API">
+        <Warning>
+            The script will not work without a valid key.
+        </Warning>
+
+        - Open <code>API.lua</code> and enter your **Fivemanage** or **Fivemerr** API key.
+
+        - **optional**: Add your **Discord webhooks** in <code>API.lua</code>.
+    </Step>
+    <Step title="Configure Config">
+        - configure <code>roadpad/config.lua</code>
+    </Step>
+
+    <Step title="Start Resources">
+        Add the resources to your server.cfg
+
+        ```cfg
+        ensure [pad]
+        ```
+    </Step>
+</Steps>
+
+## ✅ Verification
+
+After installation, verify everything is working:
+
+<Tabs>
+    <Tab title="In-Game Test">
+        1. Join your server
+        2. Check if the roadpad script loads without errors
+        3. Test basic functionality like opening the pad
+    </Tab>
+</Tabs>
+
+## 🔧 Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="Script not starting">
+        - Verify all dependencies are installed
+        - Check server console for error messages
+        - Ensure the resource folder structure is correct
+    </Accordion>
+
+    <Accordion title="Database errors">
+        - Confirm database credentials are correct
+        - Check if the SQL file was imported successfully
+    </Accordion>
+</AccordionGroup>
+
+## 📚 Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Configuration" icon="gear" href="/configuration">
+        Learn how to customize the script settings
+    </Card>
+    <Card title="Commands" icon="terminal" href="/commands">
+        View all available commands and permissions
+    </Card>
+</CardGroup>

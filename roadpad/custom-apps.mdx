@@ -1,0 +1,122 @@
+---
+title: Custom Apps
+description: Learn how to configure and create custom applications for the Roadpad
+icon: "pickaxe"
+---
+
+## Configuration
+
+To configure custom apps, navigate to the config file:
+`/public/static/config/config.json`
+
+Search for the AppStore section to add your custom applications.
+
+<Warning>
+  Never change the redirect property! This is essential for the pad to know where to forward requests.
+</Warning>
+
+## Configuration Properties
+
+<ParamField path="name" type="string" required>
+  Name of the custom app
+</ParamField>
+
+<ParamField path="icon" type="string" required>
+  Path to the icon for the custom app
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  Web page URL that the pad should display. Only websites with iFrame support work, including custom HTML files for self-developed apps.
+</ParamField>
+
+<ParamField path="custom_app_id" type="string" required>
+  Unique identifier for your app. Set this once and never change it. Ensure no duplicate IDs exist.
+</ParamField>
+
+<ParamField path="darkmode" type="boolean" default="false">
+  Changes the header and home button color scheme (black/white)
+</ParamField>
+
+<ParamField path="custom_event" type="object">
+  Event configuration object with the following properties:
+
+  <Expandable title="Properties">
+    <ParamField path="active" type="boolean" default="false">
+      Set to `true` to send a request to Lua code when opening the app
+    </ParamField>
+
+    <ParamField path="closeWhenOpenApp" type="boolean" default="false">
+      Set to `true` to close the pad when opening the app
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Website App Configuration
+
+```json
+{
+  "name": "CustomApp",
+  "icon": "/public/img/app/Apps/custom.jpg",
+  "default": true,
+  "category": "apps",
+  "custom_app_id": "SET_YOUR_OWN_ID_DONT_CHANGE_AFTERWARDS_NO_DOUBLE_ID",
+  "redirect": "custom_app",
+  "url": "https://www.test.com",
+  "darkmode": false,
+  "allowJobs": [],
+  "disallowJobs": [],
+  "custom_event": {
+    "active": false,
+    "closeWhenOpenApp": false
+  }
+}
+```
+
+### Self-Developed App Configuration
+
+```json
+{
+  "name": "Template App",
+  "icon": "/public/img/app/Apps/custom.jpg",
+  "default": true,
+  "category": "apps",
+  "custom_app_id": "TEMPLATE_APP_1",
+  "redirect": "custom_app",
+  "url": "https://cfx-nui-roadpad-app-template/html/static/index.html",
+  "darkmode": true,
+  "allowJobs": [],
+  "disallowJobs": [],
+  "custom_event": {
+    "active": false,
+    "closeWhenOpenApp": false
+  }
+}
+```
+
+<Card title="App Template" icon="github" href="https://github.com/roadtosixx/roadpad-app-template">
+  Get started quickly with our self-development app template on GitHub
+</Card>
+
+## Custom Events with Lua
+
+To connect your app with Lua code, edit the `client/clientAPI.lua` file.
+
+Replace `APPNAME` with your actual app name and add your custom code inside the if statement:
+
+```lua
+RegisterNUICallback('app_custom_event', function(data, cb)
+    local app = data.app
+
+    if app == "APPNAME" then
+        -- Your custom code here
+    end
+
+    cb('ok')
+end)
+```
+
+<Info>
+  Custom events allow you to trigger Lua functions when users interact with your custom app, enabling deeper integration with the game environment.
+</Info>

@@ -1,0 +1,35 @@
+---
+title: Client API
+description: Client-side exports for RoadCarplay integration
+icon: "code"
+---
+
+## Access Control Functions
+
+### isBlocked
+
+Check if CarPlay is currently blocked.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if CarPlay is blocked, `false` otherwise
+</ResponseField>
+
+```lua
+local blocked = exports['roadcarplay']:isBlocked() -- returns true / false
+```
+
+### blockCarPlay
+
+Prevent CarPlay from turning on.
+
+```lua
+exports['roadcarplay']:blockCarPlay()
+```
+
+### unblockCarPlay
+
+Remove blocked status from CarPlay, allowing users to turn it on again.
+
+```lua
+exports['roadcarplay']:unblockCarPlay()
+```

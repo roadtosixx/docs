@@ -1,0 +1,68 @@
+---
+title: Fivemanage Setup
+description: Connect your Fivemanage API key to RoadPhone and verify the integration
+icon: "cloud"
+---
+
+<Info>
+  RoadPhone requires a valid **Fivemanage** API key for media storage and management features.
+</Info>
+
+## Prerequisites
+
+Before setting up Fivemanage, ensure you have:
+- A Fivemanage account with or without an active subscription
+- Your Fivemanage API key / Media key (found in your dashboard)
+- Access to edit the RoadPhone resource files
+
+## Configuration Steps
+
+<Steps>
+  <Step title="Locate API Configuration">
+    Navigate to your RoadPhone resource folder and open `API.lua`.
+  </Step>
+
+  <Step title="Insert API Key">
+    Find the Fivemanage configuration section and paste your API key:
+
+      <Tip>
+          Please create a **Media key** in your Fivemanage dashboard if you don't have one yet.
+      </Tip>
+
+    ```lua
+    API.uploadMethodKey = "YOUR_FIVEMANAGE_API_KEY_HERE"
+    ```
+
+    <Warning>
+      Keep your API key secure. Never share it publicly or commit it to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Verify Integration">
+    Restart your server and take a picture ingame to see if the upload is successful.
+  </Step>
+</Steps>
+
+## Features Enabled
+
+With Fivemanage properly configured, you unlock:
+- 📸 **Gallery Storage** - Photos and videos saved to cloud
+- 📱 **Media Sharing** - Send images and videos through messages
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="API Key Invalid Error" icon="alert-triangle">
+    - Double-check your API key for typos
+    - Regenerate your Media API key from the Fivemanage dashboard if needed
+  </Accordion>
+
+  <Accordion title="Media Not Saving" icon="image">
+    - Check your Fivemanage storage quota
+    - Clear client cache and retry
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Fivemanage Dashboard" href="https://fivemanage.com/dashboard" icon="external-link">
+  Access your Fivemanage account to manage API keys and storage
+</Card>

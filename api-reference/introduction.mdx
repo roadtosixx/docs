@@ -1,33 +1,117 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: API Reference
+description: Developer documentation for RoadPhone and RoadPad script integration
+icon: "code"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+<Warning>
+  **For Experienced Developers Only**
 
-## Welcome
+  This documentation assumes advanced knowledge of Lua scripting and FiveM development. We do not provide coding tutorials or basic programming support.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+  If an export or event is not working as expected, please open a support ticket on our Discord server.
+</Warning>
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
+## Overview
+
+This section contains comprehensive API documentation for integrating with our scripts:
+
+- **RoadPhone** - Complete phone system with client and server exports
+- **RoadPad** - Tablet interface with specialized functions
+- **RoadCarplay** - Vehicle integration system
+
+## Documentation Structure
+
+Our API documentation is organized by script and side:
+
+<CardGroup cols={2}>
+  <Card title="Client Exports" icon="computer" href="/roadphone/api/client">
+    Client-side functions and events for player interactions
+  </Card>
+
+  <Card title="Server Exports" icon="server" href="/roadphone/api/server">
+    Server-side functions for data management and synchronization
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+### Basic Export Usage
+
+All exports follow a consistent pattern across our scripts:
+
+```lua
+-- Client-side export example
+exports['scriptname']:functionName(parameters)
+
+-- Server-side export example
+exports['scriptname']:functionName(parameters)
+```
+
+### Event Handling
+
+Events can be triggered and handled using standard FiveM patterns:
+
+```lua
+-- Trigger an event
+TriggerEvent('eventName', data)
+
+-- Handle an event
+AddEventHandler('eventName', function(data)
+    -- Your code here
+end)
+```
+
+## Framework Compatibility
+
+Our scripts support multiple frameworks:
+
+<Tabs>
+  <Tab title="ESX">
+    All exports are compatible with ESX Legacy and newer versions
+  </Tab>
+
+  <Tab title="QBCore">
+    Full support for QBCore with framework-specific callbacks
+  </Tab>
+
+  <Tab title="QBox">
+    Compatible with QBox framework
+  </Tab>
+</Tabs>
+
+## Return Types
+
+Most exports return data in standard Lua types:
+
+- **boolean** - State checks and confirmations
+- **string** - Text data like phone numbers
+- **table** - Complex data structures
+- **number** - Numeric values and IDs
+- **nil** - When no data is available
+
+## Error Handling
+
+<Info>
+  Always validate return values before using them. Many functions return `nil` or `false` on failure.
+</Info>
+
+```lua
+-- Example of proper error handling
+local phoneNumber = exports['roadphone']:getPhoneNumber()
+if phoneNumber then
+    print("Phone number: " .. phoneNumber)
+else
+    print("Failed to get phone number")
+end
+```
+
+## Support
+
+<Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
+  For technical issues with exports or events, open a ticket on our Discord server
 </Card>
 
-## Authentication
-
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
-
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
-```
+<Note>
+  Ensure you have the latest version of the script before reporting issues. Check the changelog for recent updates and fixes.
+</Note>

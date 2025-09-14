@@ -1,0 +1,376 @@
+---
+title: Client API
+description: Client-side exports and events for RoadPhone integration
+icon: "code"
+---
+
+## Notification System
+
+Send custom notifications to the phone interface.
+
+<ParamField path="apptitle" type="string" required>
+  App name to display
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Notification title
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Notification message content
+</ParamField>
+
+<ParamField path="img" type="string" required>
+  Path to app icon
+</ParamField>
+
+```lua
+local notifyData = {
+    apptitle = "APPTITLE",
+    title = "TITLE",
+    message = "MESSAGE",
+    img = "/public/img/Apps/light_mode/settings.webp"
+}
+
+exports["roadphone"]:sendNotification(notifyData)
+```
+
+
+
+## Dispatch System
+
+### Basic Dispatch
+
+Send a dispatch to a specific job.
+
+<ParamField path="message" type="string" required>
+  Dispatch message content
+</ParamField>
+
+<ParamField path="job" type="string" required>
+  Job name that should receive the dispatch (from SQL jobs table)
+</ParamField>
+
+<ParamField path="image" type="string">
+  Image URL or `nil`
+</ParamField>
+
+```lua
+local jobreceived = "JOBNAME"
+local message = "MESSAGE"
+local image = "IMAGE LINK"
+
+exports["roadphone"]:sendDispatch(message, job, image)
+```
+
+### Dispatch with Custom Coordinates
+
+Send a dispatch with specific coordinates instead of player position.
+
+<ParamField path="coords" type="table" default="GetEntityCoords(PlayerPedId())">
+  Custom coordinates for the dispatch
+</ParamField>
+
+<ParamField path="jobreceived" type="string" required>
+  Job name that should receive the dispatch
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Dispatch message content
+</ParamField>
+
+<ParamField path="image" type="string">
+  Image URL or `nil`
+</ParamField>
+
+```lua
+local coords = GetEntityCoords(PlayerPedId())
+local position = {x = coords.x, y = coords.y, z = coords.z - 1}
+local jobreceived = "JOBNAME"
+local message = "MESSAGE"
+local image = nil
+
+TriggerServerEvent('roadphone:sendDispatch', GetPlayerServerId(PlayerId()), message, jobreceived, position, false, image)
+```
+
+## Phone State Functions
+
+### isFlightmode
+
+Check if flight mode is enabled.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if flight mode is enabled, `false` otherwise
+</ResponseField>
+
+```lua
+flightmode = exports['roadphone']:isFlightmode()
+print(flightmode)
+```
+
+### isFlashlight
+
+Check if flashlight is enabled.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if flashlight is enabled, `false` otherwise
+</ResponseField>
+
+```lua
+flashlight = exports['roadphone']:isFlashlight()
+print(flashlight)
+```
+
+### togglePhone
+
+Toggle phone open/closed state.
+
+```lua
+exports['roadphone']:togglePhone()
+```
+
+### isPhoneOpen
+
+Check if phone is currently open.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if phone is open, `false` if closed
+</ResponseField>
+
+```lua
+isphonopen = exports['roadphone']:isPhoneOpen()
+print(isphonopen)
+```
+
+### isPlayerMuted
+
+Check if player is muted in call.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if muted, `false` otherwise
+</ResponseField>
+
+```lua
+muted = exports['roadphone']:isPlayerMuted()
+print(muted)
+```
+
+## Phone Data Functions
+
+### getPhoneNumber
+
+Get the player's phone number.
+
+<ResponseField name="return" type="string">
+  Returns the player's phone number
+</ResponseField>
+
+```lua
+number = exports['roadphone']:getPhoneNumber()
+print(number)
+```
+
+## Communication Functions
+
+### sendMessage
+
+Send a text message to another player.
+
+<ParamField path="phoneNumber" type="string" required>
+  Target phone number
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Message content to send
+</ParamField>
+
+```lua
+exports['roadphone']:sendMessage(phoneNumber, message)
+```
+
+### startCall
+
+Initiate a phone call.
+
+<ParamField path="number" type="string" required>
+  Number to call
+</ParamField>
+
+<ParamField path="anonym" type="boolean" required>
+  Whether to make an anonymous call
+</ParamField>
+
+```lua
+exports['roadphone']:startCall(number, anonym)
+```
+
+## Phone Access Control
+
+### isBlocked
+
+Check if phone is blocked.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if blocked, `false` otherwise
+</ResponseField>
+
+```lua
+local blocked = exports['roadphone']:isBlocked()
+```
+
+### blockPhone
+
+Prevent the phone from turning on.
+
+```lua
+exports['roadphone']:blockPhone()
+```
+
+### unblockPhone
+
+Remove blocked status from phone.
+
+```lua
+exports['roadphone']:unblockPhone()
+```
+
+### inputFocus
+
+Set NUI focus keep input for the phone.
+
+<ParamField path="boolean" type="boolean" required>
+  `true` to enable, `false` to disable
+</ParamField>
+
+```lua
+exports['roadphone']:inputFocus(boolean)
+```
+
+
+
+## Email System
+
+### sendMail
+
+Send an email to a player.
+
+#### Email with Button
+
+<ParamField path="sender" type="string" required>
+  Sender name
+</ParamField>
+
+<ParamField path="subject" type="string" required>
+  Email subject
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Email message content
+</ParamField>
+
+<ParamField path="button" type="object">
+  Optional button configuration
+
+  <Expandable title="Button Properties">
+    <ParamField path="buttonEvent" type="string" required>
+      Event to trigger when button is clicked
+    </ParamField>
+
+    <ParamField path="buttonData" type="any" required>
+      Data to pass with the event
+    </ParamField>
+
+    <ParamField path="buttonname" type="string" required>
+      Button display text
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```lua
+local data = {
+   sender = 'RoadShop',
+   subject = "RoadShop TEST",
+   message = "Test Message",
+   button = {
+         buttonEvent = "qb-drugs:client:setLocation",
+         buttonData = "test",
+         buttonname = "test"
+    }
+}
+
+exports['roadphone']:sendMail(data)
+```
+
+#### Email without Button
+
+```lua
+local data = {
+   sender = 'RoadShop',
+   subject = "RoadShop TEST",
+   message = "Test Message"
+}
+
+exports['roadphone']:sendMail(data)
+```
+
+### sendMailOffline
+
+Send an email to an offline player.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier
+</ParamField>
+
+<ParamField path="data" type="object" required>
+  Email data object (same structure as sendMail)
+</ParamField>
+
+```lua
+local data = {
+   sender = 'RoadShop',
+   subject = "RoadShop TEST",
+   message = "Test Message"
+}
+
+exports['roadphone']:sendMailOffline(identifier, data)
+```
+
+## Event Numbers
+
+Configure special event numbers that trigger custom actions when called.
+
+<Info>
+  Configure event numbers in `config.lua` first before using this event.
+</Info>
+
+```lua
+AddEventHandler("roadphone:client:call:eventnumber", function(number)
+    if tostring(number) == "77777" then  -- Check which number is called
+        -- Your code here
+    end
+end)
+```
+
+## Messages
+
+### getMessages
+
+Retrieve messages for a phone number.
+
+<Tabs>
+  <Tab title="ESX">
+    ```lua
+    ESX.TriggerServerCallback('roadphone:messages:getMessages', function(data)
+       print(data)
+    end, number)
+    ```
+  </Tab>
+
+  <Tab title="QBCore / QBox">
+    ```lua
+    QBCore.Functions.TriggerCallback('roadphone:messages:getMessages', function(data)
+       print(data)
+    end, number)
+    ```
+  </Tab>
+</Tabs>

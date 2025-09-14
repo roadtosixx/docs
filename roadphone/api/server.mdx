@@ -1,0 +1,309 @@
+---
+title: Server API
+description: Server-side exports and events for RoadPhone integration
+icon: "server"
+---
+
+## Media Functions
+
+### sendAirdrop
+
+Send an airdrop with media content to a player.
+
+<ParamField path="data" type="object" required>
+  Airdrop data object
+
+  <Expandable title="Properties">
+    <ParamField path="picturelink" type="string" required>
+      URL to the picture
+    </ParamField>
+
+    <ParamField path="playerId" type="number" required>
+      Source ID of the player
+    </ParamField>
+
+    <ParamField path="accountId" type="string" required>
+      Cloud account ID
+    </ParamField>
+
+    <ParamField path="roadpad" type="boolean" default="false">
+      Whether this is for roadpad
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```lua
+local data = {
+      picturelink = "YOUR PICTURE LINK",
+      playerId = "SOURCE FROM PLAYER",
+      accountId = "CLOUD Account ID",
+      roadpad = false
+}
+
+exports['roadphone']:sendAirdrop(data)
+```
+
+## Banking Functions
+
+### addBankTransaction
+
+Add a bank transaction record.
+
+<ParamField path="sender" type="string|number" required>
+  Phone number of sender (0 = System)
+</ParamField>
+
+<ParamField path="receiver" type="string|number" required>
+  Phone number of receiver (0 = System)
+</ParamField>
+
+<ParamField path="reason" type="string" required>
+  Transaction description
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Transaction amount
+</ParamField>
+
+```lua
+exports['roadphone']:addBankTransaction(sender, receiver, reason, amount)
+```
+
+## Player Data Functions
+
+### getPlayerFromPhone
+
+Get player data from phone number.
+
+<ParamField path="number" type="string" required>
+  Phone number
+</ParamField>
+
+<ResponseField name="player" type="object">
+  Player object containing source and other data
+</ResponseField>
+
+```lua
+local player = exports['roadphone']:getPlayerFromPhone(number)
+print(player.source) -- prints player source
+```
+
+### getNumberFromIdentifier
+
+Get phone number from player identifier.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier/citizenid
+</ParamField>
+
+<ResponseField name="number" type="string">
+  Player's phone number
+</ResponseField>
+
+```lua
+local number = exports['roadphone']:getNumberFromIdentifier(identifier)
+print(number) -- prints number
+```
+
+## Cryptocurrency Functions
+
+<Info>
+  Available Coin IDs: `Bitcoin`, `Monero`, `Ethereum`, `Cardano`, `Dogecoin`, `Litecoin`, `Tether`, `VeChain`, `BNB`, `Solana`, `XRP`, `Shibu Inu`, `Bitcoin Cash`, `Chainlink`
+</Info>
+
+### removecrypto
+
+Remove cryptocurrency from a player.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier
+</ParamField>
+
+<ParamField path="coinid" type="string" required>
+  Cryptocurrency ID (see list above)
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount to remove (minimum 0.1)
+</ParamField>
+
+```lua
+exports['roadphone']:removecrypto(identifier, coinid, amount)
+```
+
+### addcrypto
+
+Add cryptocurrency to a player.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier
+</ParamField>
+
+<ParamField path="coinid" type="string" required>
+  Cryptocurrency ID (see list above)
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount to add (minimum 0.1)
+</ParamField>
+
+```lua
+exports['roadphone']:addcrypto(identifier, coinid, amount)
+```
+
+### checkcryptoamount
+
+Check if player has enough cryptocurrency.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier
+</ParamField>
+
+<ParamField path="coinid" type="string" required>
+  Cryptocurrency ID (see list above)
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount to check (minimum 0.1)
+</ParamField>
+
+<ResponseField name="hasEnough" type="boolean">
+  Returns `true` if player has enough or more, `false` if less
+</ResponseField>
+
+```lua
+local hasEnough = exports['roadphone']:checkcryptoamount(identifier, coinid, amount)
+print(hasEnough) -- returns true or false
+```
+
+## Event Numbers
+
+Configure special event numbers that trigger custom server-side actions.
+
+<Warning>
+  Configure event numbers in `config.lua` first before using this event.
+</Warning>
+
+```lua
+RegisterServerEvent("roadphone:server:call:eventnumber")
+AddEventHandler("roadphone:server:call:eventnumber", function(number)
+    if tostring(number) == "77777" then -- Check which number is called
+        -- Your code here
+    end
+end)
+```
+
+## Email System
+
+### sendMailOffline
+
+Send an email to an offline player.
+
+<ParamField path="identifier" type="string" required>
+  Player identifier
+</ParamField>
+
+<ParamField path="data" type="object" required>
+  Email data object
+
+  <Expandable title="Properties">
+    <ParamField path="sender" type="string" required>
+      Sender name
+    </ParamField>
+
+    <ParamField path="subject" type="string" required>
+      Email subject
+    </ParamField>
+
+    <ParamField path="message" type="string" required>
+      Email content
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```lua
+local data = {
+   sender = 'RoadShop',
+   subject = "RoadShop TEST",
+   message = "Test Message"
+}
+
+exports['roadphone']:sendMailOffline(identifier, data)
+```
+
+## Dispatch System
+
+### sendDispatch
+
+Send a dispatch to a specific job with player information.
+
+<ParamField path="source" type="number" required>
+  Player source ID
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Dispatch message
+</ParamField>
+
+<ParamField path="job" type="string" required>
+  Target job name
+</ParamField>
+
+<ParamField path="coords" type="table|nil">
+  Coordinates (nil uses player's current position)
+</ParamField>
+
+<ParamField path="anonym" type="boolean" default="false">
+  Whether dispatch is anonymous
+</ParamField>
+
+<ParamField path="image" type="string|nil">
+  Optional image URL
+</ParamField>
+
+```lua
+local job = 'police'
+local message = 'Dispatch :)'
+local coords = {x = -1851.1, y = -1248.8, z = 8.6} -- or nil for player coords
+local image = nil
+
+exports['roadphone']:sendDispatch(source, message, job, coords, false, image)
+```
+
+### sendDispatchAnonym
+
+Send an anonymous dispatch without player information.
+
+<ParamField path="job" type="string" required>
+  Target job name
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Dispatch title (no spaces, use hyphens instead)
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Dispatch message
+</ParamField>
+
+<ParamField path="coords" type="table" required>
+  Location coordinates
+</ParamField>
+
+<ParamField path="image" type="string|nil">
+  Optional image URL
+</ParamField>
+
+<Warning>
+  Do not use spaces in the title. Use hyphens instead (e.g., `Robbery-1` instead of `Robbery #1`)
+</Warning>
+
+```lua
+local job = 'police'
+local title = 'Robbery' -- Use 'Robbery-1' instead of 'Robbery #1'
+local message = 'A robbery is in progress, go go go!'
+local coords = {x = -1851.1, y = -1248.8, z = 8.6}
+local image = nil
+
+exports['roadphone']:sendDispatchAnonym(job, title, message, coords, image)
+```

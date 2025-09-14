@@ -1,0 +1,82 @@
+---
+title: Client API
+description: Client-side exports and events for RoadPad integration
+icon: "code"
+---
+
+## Notification System
+
+### sendNotification
+
+Send a notification to the tablet interface.
+
+<ParamField path="apptitle" type="string" required>
+  App name or title
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Notification header
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  Notification message content
+</ParamField>
+
+<ParamField path="img" type="string" required>
+  Path to app icon
+</ParamField>
+
+```lua
+TriggerEvent("roadpad:sendNotification", {
+    apptitle = "APPNAME",
+    title = "TITLE",
+    message = "MESSAGE",
+    img = "/public/img/app/Apps/light_mode/settings.webp"
+})
+```
+
+## Tablet State Functions
+
+### isTabletOpen
+
+Check if the tablet is currently open.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if tablet is open, `false` if closed
+</ResponseField>
+
+```lua
+istabletopen = exports['roadpad']:isTabletOpen()
+print(istabletopen) -- returns true or false
+```
+
+### isFlashlight
+
+Check if flashlight is enabled.
+
+<ResponseField name="return" type="boolean">
+  Returns `true` if flashlight is enabled, `false` otherwise
+</ResponseField>
+
+```lua
+flashlight = exports['roadpad']:isFlashlight()
+print(flashlight)
+```
+
+## Tablet Control Functions
+
+### toggleTablet
+
+Toggle the tablet open/closed state.
+
+```lua
+exports['roadpad']:toggleTablet()
+```
+
+### closeTablet
+
+Close the tablet.
+
+```lua
+exports['roadpad']:closeTablet()
+```

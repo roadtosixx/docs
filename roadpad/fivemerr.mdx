@@ -1,0 +1,79 @@
+---
+title: Fivemerr Setup
+description: Connect your Fivemerr API key to RoadPad as an alternative media backend
+icon: "cloud"
+---
+
+<Info>
+  RoadPad supports **Fivemerr** as an alternative to Fivemanage for media storage and management.
+</Info>
+
+## Prerequisites
+
+Before setting up Fivemerr, ensure you have:
+- A Fivemerr account with or without an active subscription
+- Your Fivemerr Media API key (available in your account dashboard)
+- Access to edit the RoadPad resource files
+
+## Configuration Steps
+
+<Steps>
+  <Step title="Locate API Configuration">
+    Navigate to your RoadPad resource folder and open `API.lua`.
+  </Step>
+
+  <Step title="Insert API Key">
+    Find the Fivemerr configuration section and paste your API key:
+
+    ```lua
+    -- Fivemerr API Configuration
+    Config.FivemerrKey = "YOUR_FIVEMERR_API_KEY_HERE"
+    ```
+
+    <Warning>
+      Keep your API key secure. Never share it publicly or commit it to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Select Media Provider">
+    Ensure Fivemerr is selected as your media provider in the configuration:
+
+    ```lua
+      Config.uploadMethod = "fivemerr" -- Options: "fivemanage" or "fivemerr"
+    ```
+  </Step>
+
+  <Step title="Verify Integration">
+      Restart your server and take a picture ingame to see if the upload is successful.
+  </Step>
+</Steps>
+
+## Features Enabled
+
+With Fivemerr properly configured, you unlock:
+- 📸 **Gallery Storage** - Photos and videos saved to cloud
+- 📱 **Media Sharing** - Send images and videos through messages
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Failed">
+    - Verify your API key is correctly formatted
+    - Check if Fivemerr services are operational
+    - Ensure your server can reach Fivemerr endpoints
+  </Accordion>
+
+  <Accordion title="Upload Errors">
+    - Check your storage quota on Fivemerr
+  </Accordion>
+
+  <Accordion title="Switching from Fivemanage">
+    - Change `Config.uploadMethod` to "fivemerr"
+    - Add your Fivemerr API key
+    - Restart the server
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Fivemerr Dashboard" href="https://fivemerr.com/dashboard" icon="external-link">
+  Manage your Fivemerr account, API keys, and storage settings
+</Card>

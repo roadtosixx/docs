@@ -1,0 +1,128 @@
+---
+title: FAQ
+description: All important questions about RoadPad — setup, troubleshooting, and tips
+icon: "badge-info"
+---
+
+<Info>
+  Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
+</Info>
+
+<AccordionGroup>
+
+<Accordion title="I found a bug — what should I do?" icon="bug">
+  Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
+</Accordion>
+
+<Accordion title="I don't hear music in the Music app" icon="music">
+  <Tip>Make sure you're using our **xSound** version and start **xSound before RoadPad**.</Tip>
+
+  **Checklist**
+  - Clear your client cache.
+  - Check that **GTA music** is turned on.
+  - Verify your **Windows volume mixer** isn't at 0% (this is independent of FiveM).
+
+  <Warning>If your loading screen uses **YouTube** and you muted it there, the sound is muted everywhere. Unmute the loading screen.</Warning>
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Frq0XT7Qriph5lp24JQgJ%2FRod_rtHandy.PNG?alt=media&token=d98cc53a-d68c-4b05-abb3-3834efdd751a" alt="Music troubleshooting screenshot" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="How can I disable apps?" icon="circle-minus">
+  Open **/public/static/config/config.json**, search for **AppStore**, and remove the block for the app(s) you want to disable.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FAG0x1YGxObUp0ujtISkD%2Fimage.png?alt=media&token=97c44cae-3598-4dcd-a6de-c90c572273ae" alt="Remove apps from AppStore config" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Images / Videos are not saved in the Gallery" icon="image">
+  Make sure that you have entered your Discord webhooks correctly in the `API.lua`.
+</Accordion>
+
+<Accordion title="On start it shows ESX nil" icon="circle-alert">
+  Follow the instructions in `config.lua` (ESX init).
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FVZtM4eiwALSIHoJx86ih%2FScreenshot_487.png?alt=media&token=c541f3ea-f5fb-4f59-9f24-62445e1946f7" alt="ESX nil fix" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Add my own notifications" icon="bell">
+  In **ClientAPI.lua**, find `sendNotification(text)` and replace `ESX.ShowNotification(text)` with your notification trigger.
+</Accordion>
+
+<Accordion title="Mouse stuck in the center when opening the pad" icon="mouse">
+  Go to **Settings → Keyboard/Mouse → Mouse Input Method → Raw Input**.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FzhKjqTJBJpXkICtRXiAE%2FScreenshot_150.png?alt=media&token=8758eec8-2882-4599-97f6-3b954ab158aa" alt="Raw input setting" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Pad doesn't open after reviving" icon="tablet">
+  Choose your ESX Version in `config.lua`.
+
+  If you use an old ESX Ambulancejob or a custom one, change the ESX Version to 1.1 and try again.
+</Accordion>
+
+<Accordion title="Disable cryptocurrency" icon="coins">
+  Go to `config.lua` and search for `Config.Crypto`, then set the value for the cryptocurrency you want to disable to `false`.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FrGD6VpeH9lomtOnoRc2S%2Fimage322.png?alt=media&token=f9c4e5fc-cc41-4e6d-a901-bfda40d5239b" alt="Cryptocurrency config" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Change the pad language" icon="earth">
+  <Note>App names are excluded from translation. To localize app names, change them in `config.json`.</Note>
+
+  <Tabs>
+    <Tab title="ESX">
+      In `config.lua`, set the `locale` to your preferred language.
+    </Tab>
+    <Tab title="QBCore">
+      In `fxmanifest.lua`, find the `locales/` path and change it to your preferred language.
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Accordion title="Car is locked after delivery" icon="key">
+  Edit the **GiveCarKeys** function in `clientAPI.lua`.
+
+  <Tabs>
+    <Tab title="ESX">
+      ```lua GiveCarKeys (ESX)
+      function GiveCarKeys(plate)
+        TriggerEvent("vehiclekeys:client:SetOwner", plate)
+      end
+      ```
+    </Tab>
+    <Tab title="QBCore">
+      ```lua GiveCarKeys (QBCore)
+      function GiveCarKeys(plate)
+        TriggerEvent("qb-vehiclekeys:client:AddKeys", plate)
+      end
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Accordion title="GetExtendedPlayers error (es_extended 1.1/1.2)" icon="code">
+  Add this to `es_extended/server/functions.lua`:
+
+  ```lua GetExtendedPlayers helper
+  ESX.GetExtendedPlayers = function(key, val)
+      local xPlayers = {}
+      for _, v in pairs(ESX.Players) do
+          if key then
+              if (key == 'job' and v.job.name == val) or v[key] == val or v.variables[key] == val then
+                  xPlayers[#xPlayers+1] = v
+              end
+          else
+              xPlayers[#xPlayers+1] = v
+          end
+      end
+      return xPlayers
+  end
+  ```
+</Accordion>
+
+<Accordion title="I forgot my pad PIN" icon="shield-off">
+  Clear your cache once — this will remove the PIN lock.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FvcFDhPma8ySAazsJjRlB%2Fcache.png?alt=media&token=3dbd995d-a615-4e70-9462-7b34231ff009" alt="Clear cache to reset PIN" className="rounded-lg" />
+</Accordion>
+
+</AccordionGroup>

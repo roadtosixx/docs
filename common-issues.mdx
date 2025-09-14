@@ -1,0 +1,125 @@
+---
+title: Common Issues
+description: Quick fixes for common errors with RoadShop scripts
+---
+
+Use this page to quickly resolve typical RoadPhone/FiveM issues. Links below take you to the official resources for downloads and guides.
+
+<AccordionGroup>
+
+<Accordion title="Error parsing script / Failed to load script" icon="code">
+  Your server build is probably out of date. Update to build **17000 or higher**.
+
+  <Card title="FiveM Server Artifacts" icon="download" href="https://runtime.fivem.net/artifacts/fivem/build_server_windows/master/">
+    Download the latest Windows server builds
+  </Card>
+</Accordion>
+
+<Accordion title="Failed to verify protected resource" icon="shield">
+  Uploading via some tools can corrupt or skip hidden files.
+
+  <Steps>
+    <Step title="Re-upload Files">
+      Use a reliable SFTP client like [WinSCP](https://winscp.net)
+    </Step>
+
+    <Step title="Include Hidden Files">
+      Ensure hidden files are included during upload
+    </Step>
+
+    <Step title="Verify Upload">
+      Check that a file named `.fxap` exists on your server after upload
+    </Step>
+  </Steps>
+</Accordion>
+
+<Accordion title="You lack the required entitlement to use roadphone" icon="lock">
+  Try the following solutions:
+
+  <Steps>
+    <Step title="Restart Server">
+      **Restart** your server completely
+    </Step>
+
+    <Step title="Verify License Key">
+      Make sure your **server license key** is valid and correct
+    </Step>
+
+    <Step title="Check Account">
+      If you purchased the resource on the wrong account, **transfer it** to the correct Keymaster account
+    </Step>
+
+    <Step title="ZAP-Hosting Users">
+      Follow the [ZAP FiveM License Key Guide](https://zap-hosting.com/guides/de/docs/fivem-licensekey/)
+    </Step>
+  </Steps>
+</Accordion>
+
+<Accordion title="xSound error" icon="volume-2">
+  <Warning>
+    Ensure you have **only one** xSound resource running
+  </Warning>
+
+  - Use the **xSound version** that comes with your RoadPhone download
+  - Remove any other xSound versions from your server
+
+  <Frame>
+    <img
+      src="https://docs.roadshop.org/~gitbook/image?dpr=4&quality=100&sign=703cbc9&sv=2&url=https%3A%2F%2F284060423-files.gitbook.io%2F~%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252F9nk3u2fvDPBGM8TrCd0N%252Fuploads%252Fb7doS2U2JHhwfCBhqL8E%252Funknoewfwn.png%3Falt%3Dmedia%26token%3Dd93312dd-8486-4442-a41c-c6c9d425fd06&width=768"
+      alt="xSound error log example"
+      className="rounded-lg"
+    />
+  </Frame>
+</Accordion>
+
+<Accordion title="Blackscreen (FaceTime / LiveStream)" icon="video">
+  If you get a black screen in **FaceTime** or **LiveStream**, try:
+
+  <Steps>
+    <Step title="Try Again">
+      Sometimes it fails on first attempt - try again
+    </Step>
+
+    <Step title="Clear Cache">
+      **Clear your FiveM cache**
+    </Step>
+
+    <Step title="Allow Permissions">
+      When prompted in-game, allow **microphone** and **screen capture**
+    </Step>
+
+    <Step title="Check Firewall">
+      Temporarily **disable Windows Firewall** to test
+    </Step>
+  </Steps>
+
+  <Info>
+    Also check for **network/firewall** restrictions that could block peer connections. WebRTC depends on specific ports and protocols; some setups may block them.
+  </Info>
+</Accordion>
+
+<Accordion title="server needs to be 13227 or higher" icon="server">
+  <Steps>
+    <Step title="Check TxAdmin Version">
+      In **TxAdmin**, check the version shown on the main page (bottom-left). If correct, continue.
+    </Step>
+
+    <Step title="Open Manifest File">
+      Open `roadphone/fxmanifest.lua`
+    </Step>
+
+    <Step title="Find Version Line">
+      Press <kbd>Ctrl</kbd> + <kbd>F</kbd> and search for `/server:13227`
+    </Step>
+
+    <Step title="Remove Line">
+      Delete or comment out that line
+    </Step>
+
+    <Step title="Restart">
+      Save the file and **restart your server**
+    </Step>
+  </Steps>
+</Accordion>
+
+</AccordionGroup>

@@ -1,0 +1,146 @@
+---
+title: Custom Apps
+description: Add custom apps to the phone via config.json or build a self-hosted app with NUI messaging
+icon: "pickaxe"
+---
+
+## Configuration
+
+Navigate to `/public/static/config/config.json` and locate the **AppStore** section.
+
+<Warning>
+  Do not change the `redirect` value — it tells the phone where to route requests.
+</Warning>
+
+## Configuration Properties
+
+<ParamField path="name" type="string" required>
+  Display name of the app
+</ParamField>
+
+<ParamField path="icon" type="string" required>
+  Path to the app icon
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  Website URL to display (must support iFrame) or a self-hosted HTML file
+</ParamField>
+
+<ParamField path="custom_app_id" type="string" required>
+  Unique identifier for your app. Set once and never change it.
+</ParamField>
+
+<ParamField path="darkmode" type="boolean" default="false">
+  Changes header and home button theme
+</ParamField>
+
+<ParamField path="allowJobs" type="array">
+  List of jobs that can access this app
+</ParamField>
+
+<ParamField path="disallowJobs" type="array">
+  List of jobs that cannot access this app
+</ParamField>
+
+<ParamField path="custom_event" type="object">
+  Event configuration with the following properties:
+
+  <Expandable title="Properties">
+    <ParamField path="active" type="boolean" default="false">
+      Send a message to Lua when the app is opened
+    </ParamField>
+
+    <ParamField path="closeWhenOpenApp" type="boolean" default="false">
+      Close the phone when the app is opened
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Examples
+
+### Website App
+
+```json
+{
+  "name": "CustomApp",
+  "icon": "/public/img/Apps/custom.jpg",
+  "default": true,
+  "category": "apps",
+  "custom_app_id": "SET_YOUR_OWN_ID_DONT_CHANGE_AFTERWARDS_NO_DOUBLE_ID",
+  "redirect": "custom_app",
+  "url": "https://www.test.com",
+  "darkmode": false,
+  "allowJobs": [],
+  "disallowJobs": [],
+  "custom_event": {
+    "active": false,
+    "closeWhenOpenApp": false
+  }
+}
+```
+
+### Self-Developed App
+
+```json
+{
+  "name": "Template App",
+  "icon": "/public/img/Apps/custom.jpg",
+  "default": true,
+  "category": "apps",
+  "custom_app_id": "TEMPLATE_APP_1",
+  "redirect": "custom_app",
+  "url": "https://cfx-nui-roadphone-app-template/html/static/index.html",
+  "darkmode": true,
+  "allowJobs": [],
+  "disallowJobs": [],
+  "custom_event": {
+    "active": false,
+    "closeWhenOpenApp": false
+  }
+}
+```
+
+## NUI Messaging
+
+<CodeGroup>
+
+```lua Lua Export
+-- Send a custom event to your app
+exports['roadphone']:SendMessageNUI({
+  customevent = "yourEvent",
+  data = "yourData"
+})
+```
+
+```javascript JavaScript Handler
+// Handle events in ./public/custom_apps/app.js
+class CustomApp {
+  constructor() {
+    window.addEventListener('message', (event) => {
+      if (!event.data) return
+      const e = event.data
+      if (e.customevent === 'yourEvent') {
+        console.log(e.data)
+      }
+    })
+  }
+}
+
+const customApp = new CustomApp()
+```
+
+</CodeGroup>
+
+## Exports
+
+### Input Focus Control
+
+Control the NUI focus behavior for the phone:
+
+```lua
+exports['roadphone']:inputFocus(boolean) -- true or false
+```
+
+<Info>
+  Use `true` to enable input focus (keyboard/mouse control) and `false` to disable it.
+</Info>

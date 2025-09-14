@@ -1,0 +1,45 @@
+---
+title: Installation
+description: Step-by-step guide to install RoadCarplay on your server
+icon: "download"
+---
+
+<Error>
+  **Important: File Upload Method**
+
+  Never upload your files via FileZilla! FileZilla will damage your files.
+
+  We strongly recommend using **WinSCP** for file transfers.
+</Error>
+
+<Error>
+  **xSound Compatibility**
+
+  If you already have an xSound version on your server, delete it and use our version provided with the download.
+</Error>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Create Resource Folder">
+    Create a folder in your resource folder called `[carplay]`.
+
+    Extract all scripts included in the download to this folder.
+  </Step>
+
+  <Step title="Import Database">
+    Import the SQL file `roadcarplay.sql` into your database.
+  </Step>
+
+  <Step title="Add Inventory Item (QBCore Only)">
+    <Warning>
+      This step is **only required for QBCore** servers.
+    </Warning>
+
+    Add the item `carplay` to your inventory system.
+  </Step>
+</Steps>
+
+<Check>
+  Installation complete! Your RoadCarplay system is now ready to use.
+</Check>

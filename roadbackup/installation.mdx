@@ -1,0 +1,113 @@
+---
+title: Installation
+description: Step-by-step guide to install RoadBackup Discord bot
+icon: "download"
+---
+
+## Prerequisites
+
+Before installing RoadBackup, ensure you have:
+
+<CardGroup cols={2}>
+  <Card title="Discord Bot" icon="discord">
+    Discord application with bot permissions
+  </Card>
+  <Card title="Node.js 22+" icon="server">
+    Node.js runtime environment
+  </Card>
+</CardGroup>
+
+<Card title="Download Node.js" icon="external-link" href="https://nodejs.org/en/download/">
+  Get the latest Node.js version from the official website
+</Card>
+
+## Discord Bot Setup
+
+<Steps>
+  <Step title="Create Discord Application">
+    Go to [Discord Developer Portal](https://discord.com/developers/applications) and create a new application.
+
+    <Frame>
+      <img
+        src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FWtj9Nf7kkQKCaMajUdFz%2Frmt65PUD.png?alt=media&token=d2634f70-a6d1-4fbc-a934-740498d0a5a4"
+        alt="Discord application creation"
+        className="rounded-lg"
+      />
+    </Frame>
+  </Step>
+
+  <Step title="Configure Bot Settings">
+    Click on your application and select **Bot** on the sidebar.
+
+    Enable these bot permissions:
+
+    <Frame>
+      <img
+        src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Faaic2PDy3C8THfQTFXxa%2F3234243434343.png?alt=media&token=918ca37d-4c96-4af7-96e2-0019fdc95ac3"
+        alt="Discord bot permissions"
+        className="rounded-lg"
+      />
+    </Frame>
+  </Step>
+
+  <Step title="Get Bot Token">
+    Copy your bot token and enter it into `config.json`.
+  </Step>
+</Steps>
+
+## Configuration
+
+<Steps>
+  <Step title="Configure Bot Settings">
+    Edit the `config.json` file with your bot configuration.
+  </Step>
+
+  <Step title="Configure Database">
+    Edit `dbconfig.json` and enter your database connection information.
+  </Step>
+
+  <Step title="Invite Bot to Server">
+    Invite your bot to your Discord server with the required permissions:
+
+    <Frame>
+      <img
+        src="https://r2.fivemanage.com/72cdX4S6uW7YY845UQgsA/dwweewf0b7adad6cab849cf027b9166cd9026c7-w1280.webp"
+        alt="Bot invite permissions"
+        className="rounded-lg"
+      />
+    </Frame>
+  </Step>
+</Steps>
+
+## Installation
+
+<Steps>
+  <Step title="Install Dependencies">
+    Navigate to your downloaded folder and run in terminal:
+
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Start the Bot">
+    Start the bot with:
+
+    ```bash
+    node index.js
+    ```
+  </Step>
+</Steps>
+
+## Usage
+
+<Check>
+  **Installation Complete!**
+
+  You can now create a database backup with `/backup` command.
+</Check>
+
+<Note>
+  - You need **Administrator** permissions to use the `/backup` command
+  - The bot includes an automatic timer (default: 1 hour) for scheduled backups
+</Note>
