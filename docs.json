@@ -45,8 +45,8 @@
             "group": "RoadPad",
             "pages": [
               "roadpad/installation",
-              "roadpad/custom-apps",
-              "roadpad/faq"
+              "roadpad/faq",
+              "roadpad/custom-apps"
             ]
           },
           {
