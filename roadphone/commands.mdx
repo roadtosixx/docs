@@ -1,0 +1,168 @@
+---
+title: Commands
+description: Available commands for RoadPhone
+icon: terminal
+---
+
+## Overview
+
+RoadPhone provides various commands to manage verification badges and control phone functionality. All commands are executed through the chat interface.
+
+## Verification Commands
+
+Manage verification badges for social platform accounts.
+
+### Connect Verification
+
+Grant or revoke verification badges for Connect accounts.
+
+<CodeGroup>
+    ```bash
+    /connectverify true/false USERNAME
+    ```
+</CodeGroup>
+
+<ParamField path="action" type="boolean" required>
+    Action to perform on the verification badge
+    - `true` - Grant verification badge
+    - `false` - Revoke verification badge
+</ParamField>
+
+<ParamField path="USERNAME" type="string" required>
+    The username of the Connect account to verify/unverify
+</ParamField>
+
+<Note>
+    Verification badges are permanent until manually revoked. Ensure you have the correct username before executing this command.
+</Note>
+
+#### Examples
+
+<CodeGroup>
+    ```bash Grant Verification
+    /connectverify true johndoe
+    ```
+
+    ```bash Revoke Verification
+    /connectverify false johndoe
+    ```
+</CodeGroup>
+
+---
+
+### Wave Verification
+
+Grant or revoke verification badges for TweetWave accounts.
+
+<CodeGroup>
+    ```bash
+    /waveverify true/false USERNAME
+    ```
+</CodeGroup>
+
+<ParamField path="action" type="boolean" required>
+    Action to perform on the verification badge
+    - `true` - Grant verification badge
+    - `false` - Revoke verification badge
+</ParamField>
+
+<ParamField path="USERNAME" type="string" required>
+    The username of the TweetWave account to verify/unverify
+</ParamField>
+
+<Warning>
+    Only administrators can execute verification commands. Unauthorized attempts will be logged.
+</Warning>
+
+#### Examples
+
+<CodeGroup>
+    ```bash Grant Verification
+    /waveverify true janedoe
+    ```
+
+    ```bash Revoke Verification
+    /waveverify false janedoe
+    ```
+</CodeGroup>
+
+---
+
+## Phone Controls
+
+Control the RoadPhone interface and its features.
+
+### Toggle Phone
+
+Quick command to open or close the phone interface.
+
+<CodeGroup>
+    ```bash
+    /TogglePhone
+    ```
+</CodeGroup>
+
+**Behavior:**
+- If phone is **closed** → Opens the phone interface
+- If phone is **open** → Closes the phone interface
+
+<Tip>
+    You can also use keyboard shortcuts:
+    - **PC:** default: `F1`
+</Tip>
+
+---
+
+## Command Guidelines
+
+<Card title="Best Practices" icon="lightbulb">
+    - Always double-check usernames before verification
+    - Use lowercase for usernames to avoid case-sensitivity issues
+    - Commands are not case-sensitive
+    - Ensure proper spacing between parameters
+</Card>
+
+<Card title="Permissions" icon="shield-check">
+    - Verification commands require admin privileges
+    - Phone controls are available to all users
+    - All command usage is logged for security
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="Command not recognized">
+        Ensure you're using the correct syntax with the forward slash (/) at the beginning.
+    </Accordion>
+
+    <Accordion title="Verification not working">
+        - Check if you have admin permissions
+        - Verify the username exists on the platform
+        - Ensure there are no extra spaces in the command
+    </Accordion>
+
+    <Accordion title="Phone won't toggle">
+        - Check if RoadPhone is properly initialized
+        - Try reloading the interface
+        - Ensure no other UI elements are blocking the phone
+    </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card
+        title="Installation"
+        icon="download"
+        href="/api-reference"
+    >
+        Step-by-step guide to install and configure RoadPhone
+    </Card>
+    <Card
+        title="FAQ"
+        icon="book"
+        href="/roadphone/faq"
+    >
+        Common questions and troubleshooting tips
+    </Card>
+</CardGroup>
