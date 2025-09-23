@@ -122,4 +122,32 @@ Use this page to quickly resolve typical RoadPhone/FiveM issues. Links below tak
   </Steps>
 </Accordion>
 
+<Accordion title="Yaca Voice Plugin - SaltyChat Error" icon="mic">
+  <Warning>
+    Getting a SaltyChat error while using the Yaca Voice Plugin?
+  </Warning>
+
+  <Steps>
+    <Step title="Open Configuration File">
+      Navigate to `config/shared.json5` in Yaca Voice Plugin folder
+    </Step>
+
+    <Step title="Search for Setting">
+      Press <kbd>Ctrl</kbd> + <kbd>F</kbd> and search for `"saltyChatBridge"`
+    </Step>
+
+    <Step title="Enable Bridge">
+      Change the value from `false` to `true`
+    </Step>
+
+      <Step title="Save and Restart">
+        Save the file and **restart your server**
+      </Step>
+  </Steps>
+
+    <Info>
+        This enables the SaltyChat bridge in Yaca, resolving the error.
+    </Info>
+</Accordion>
+
 </AccordionGroup>
