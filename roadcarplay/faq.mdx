@@ -1,0 +1,53 @@
+---
+title: FAQ
+description: All important questions about RoadCarPlay — setup, troubleshooting, and tips
+icon: "badge-info"
+---
+
+<Info>
+    Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
+</Info>
+
+
+<AccordionGroup>
+
+    <Accordion title="I found a bug — what should I do?" icon="bug">
+        Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
+    </Accordion>
+
+    <Accordion title="My Music app says the Music Server is offline" icon="music">
+        <Warning>The Music Server requires a valid **Tebex Transaction ID** to authenticate your purchase.</Warning>
+
+        **Solution:**
+        1. Open `API.lua` in your RoadCarPlay resource
+        2. Enter your **TebexTransactionID** in the designated field
+        3. Restart the resource
+
+        **Where to find your Transaction ID:**
+        - Check your purchase confirmation email from Tebex
+        - Or log in to view your payment history:
+
+        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
+            View and retrieve your transaction ID from past purchases
+        </Card>
+    </Accordion>
+
+    <Accordion title="I don't hear music in the Music app" icon="music">
+        <Tip>Make sure you're using our **xSound** version and start **xSound before RoadPad**.</Tip>
+
+        **Checklist**
+        - Clear your client cache.
+        - Check that **GTA music** is turned on.
+        - Verify your **Windows volume mixer** isn't at 0% (this is independent of FiveM).
+
+        <Warning>If your loading screen uses **YouTube** and you muted it there, the sound is muted everywhere. Unmute the loading screen.</Warning>
+
+        <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Frq0XT7Qriph5lp24JQgJ%2FRod_rtHandy.PNG?alt=media&token=d98cc53a-d68c-4b05-abb3-3834efdd751a" alt="Music troubleshooting screenshot" className="rounded-lg" />
+    </Accordion>
+
+    <Accordion title="How can I disable apps?" icon="circle-minus">
+        Open **/public/static/config/config.json**, search for **AppStore**, and remove the block for the app(s) you want to disable.
+
+        <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FAG0x1YGxObUp0ujtISkD%2Fimage.png?alt=media&token=97c44cae-3598-4dcd-a6de-c90c572273ae" alt="Remove apps from AppStore config" className="rounded-lg" />
+    </Accordion>
+</AccordionGroup>

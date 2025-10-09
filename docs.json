@@ -54,7 +54,8 @@
           {
             "group": "RoadCarPlay",
             "pages": [
-              "roadcarplay/installation"
+              "roadcarplay/installation",
+              "roadcarplay/faq"
             ]
           },
           {

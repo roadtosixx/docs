@@ -4,13 +4,12 @@ description: Step-by-step setup for RoadPhone including upload, database, keys, 
 icon: "download"
 ---
 
-<Error>
-  **Important: File Upload Method**
-
-  Never use FileZilla! It can corrupt or skip hidden files during upload.
-
-  We strongly recommend using **WinSCP** for file transfers.
-</Error>
+<Danger>
+    **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
+</Danger>
+<Warning>
+    Enter your TebexTransactionID in `API.lua`. The music app will not work without a valid key.
+</Warning>
 
 ## 📋 Prerequisites
 
@@ -48,13 +47,23 @@ Before you begin, make sure you have:
     </Warning>
   </Step>
 
-  <Step title="Configure API Keys">
-    Open `API.lua` and enter your **Fivemanage** or **Fivemerr** API key.
+    <Step title="Configure API">
+        <Warning>
+            The script will not work without a valid key.
+        </Warning>
 
-    <Error>
-      The script will not work without a valid API key.
-    </Error>
-  </Step>
+        - Open <code>API.lua</code> and enter your **TebexTransactionID** and your **Fivemanage** or **Fivemerr** API key.
+
+        **Where to find your Transaction ID:**
+        - Check your purchase confirmation email from Tebex
+        - Or log in to view your payment history:
+
+        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
+            View and retrieve your transaction ID from past purchases
+        </Card>
+
+        - **optional**: Add your **Discord webhooks** in <code>API.lua</code>.
+    </Step>
 
   <Step title="Configure Voice Chat">
     Edit `roadphone/config.lua` to set up your voice chat system.

@@ -55,6 +55,23 @@ Use this page to quickly resolve typical RoadPhone/FiveM issues. Links below tak
   </Steps>
 </Accordion>
 
+    <Accordion title="My Music app says the Music Server is offline" icon="music">
+        <Warning>The Music Server requires a valid **Tebex Transaction ID** to authenticate your purchase.</Warning>
+
+        **Solution:**
+        1. Open `API.lua` in your resource
+        2. Enter your **TebexTransactionID** in the designated field
+        3. Restart the resource
+
+        **Where to find your Transaction ID:**
+        - Check your purchase confirmation email from Tebex
+        - Or log in to view your payment history:
+
+        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
+            View and retrieve your transaction ID from past purchases
+        </Card>
+    </Accordion>
+
 <Accordion title="xSound error" icon="volume-2">
   <Warning>
     Ensure you have **only one** xSound resource running

@@ -4,19 +4,13 @@ description: Step-by-step guide to install RoadCarplay on your server
 icon: "download"
 ---
 
-<Error>
-  **Important: File Upload Method**
+<Danger>
+    **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
+</Danger>
 
-  Never upload your files via FileZilla! FileZilla will damage your files.
-
-  We strongly recommend using **WinSCP** for file transfers.
-</Error>
-
-<Error>
-  **xSound Compatibility**
-
-  If you already have an xSound version on your server, delete it and use our version provided with the download.
-</Error>
+<Warning>
+    Enter your TebexTransactionID in `API.lua`. The music app will not work without a valid key.
+</Warning>
 
 ## Installation Steps
 
@@ -30,6 +24,19 @@ icon: "download"
   <Step title="Import Database">
     Import the SQL file `roadcarplay.sql` into your database.
   </Step>
+
+    <Step title="Configure API">
+
+        - Open <code>API.lua</code> and enter your **TebexTransactionID**.
+
+        **Where to find your Transaction ID:**
+        - Check your purchase confirmation email from Tebex
+        - Or log in to view your payment history:
+
+        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
+            View and retrieve your transaction ID from past purchases
+        </Card>
+    </Step>
 
   <Step title="Add Inventory Item (QBCore Only)">
     <Warning>
