@@ -38,8 +38,7 @@
               "roadphone/commands",
               "roadphone/fivemanage",
               "roadphone/fivemerr",
-              "roadphone/custom-apps",
-              "roadphone/saltychat"
+              "roadphone/custom-apps"
 
             ]
           },
