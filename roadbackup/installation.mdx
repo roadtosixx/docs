@@ -1,113 +1,80 @@
 ---
 title: Installation
-description: Step-by-step guide to install RoadBackup Discord bot
+description: Installation guide for RoadBackup Discord Bot
 icon: "download"
 ---
 
-## Prerequisites
+## Requirements
 
-Before installing RoadBackup, ensure you have:
+- **Node.js v22+** - [Download here](https://nodejs.org/)
+- Discord Bot Token
+- Server with sufficient permissions
 
-<CardGroup cols={2}>
-  <Card title="Discord Bot" icon="discord">
-    Discord application with bot permissions
-  </Card>
-  <Card title="Node.js 22+" icon="server">
-    Node.js runtime environment
-  </Card>
-</CardGroup>
+## Installation Guide
 
-<Card title="Download Node.js" icon="external-link" href="https://nodejs.org/en/download/">
-  Get the latest Node.js version from the official website
-</Card>
+The controller is only accessible via localhost.
 
-## Discord Bot Setup
+### Windows Installation
 
-<Steps>
-  <Step title="Create Discord Application">
-    Go to [Discord Developer Portal](https://discord.com/developers/applications) and create a new application.
+Start the bot with `node index.js`. For 24/7 operation:
 
-    <Frame>
-      <img
-        src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FWtj9Nf7kkQKCaMajUdFz%2Frmt65PUD.png?alt=media&token=d2634f70-a6d1-4fbc-a934-740498d0a5a4"
-        alt="Discord application creation"
-        className="rounded-lg"
-      />
-    </Frame>
-  </Step>
+```bash
+npm install -g pm2
+pm2 start index.js --name "roadbackup"
+pm2 startup
+pm2 save
+```
 
-  <Step title="Configure Bot Settings">
-    Click on your application and select **Bot** on the sidebar.
+### Linux Installation
 
-    Enable these bot permissions:
+Create SSH tunnel for localhost access (optional for controller, can also use slash commands):
 
-    <Frame>
-      <img
-        src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Faaic2PDy3C8THfQTFXxa%2F3234243434343.png?alt=media&token=918ca37d-4c96-4af7-96e2-0019fdc95ac3"
-        alt="Discord bot permissions"
-        className="rounded-lg"
-      />
-    </Frame>
-  </Step>
+```bash
+ssh -L 3030:localhost:3030 youruser@yourip
+```
 
-  <Step title="Get Bot Token">
-    Copy your bot token and enter it into `config.json`.
-  </Step>
-</Steps>
+Execute in the same folder as the bot. For 24/7 operation:
 
-## Configuration
+```bash
+sudo npm install -g pm2
+pm2 start index.js --name "roadbackup"
+pm2 startup systemd
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp $HOME
+pm2 save
+sudo systemctl enable pm2-$USER
+sudo systemctl start pm2-$USER
+```
 
-<Steps>
-  <Step title="Configure Bot Settings">
-    Edit the `config.json` file with your bot configuration.
-  </Step>
+#### Alternative: Systemd Service
 
-  <Step title="Configure Database">
-    Edit `dbconfig.json` and enter your database connection information.
-  </Step>
+Create service file:
 
-  <Step title="Invite Bot to Server">
-    Invite your bot to your Discord server with the required permissions:
+```bash
+sudo nano /etc/systemd/system/roadbackup.service
+```
 
-    <Frame>
-      <img
-        src="https://r2.fivemanage.com/72cdX4S6uW7YY845UQgsA/dwweewf0b7adad6cab849cf027b9166cd9026c7-w1280.webp"
-        alt="Bot invite permissions"
-        className="rounded-lg"
-      />
-    </Frame>
-  </Step>
-</Steps>
+Add configuration:
 
-## Installation
+```ini
+[Unit]
+Description=RoadBackup
+After=network.target
 
-<Steps>
-  <Step title="Install Dependencies">
-    Navigate to your downloaded folder and run in terminal:
+[Service]
+ExecStart=/usr/bin/node /yourpath/mysqlbackuperv2
+WorkingDirectory=/yourpath/mysqlbackuperv2
+Restart=always
+User=yourusername
+Environment=NODE_ENV=production
 
-    ```bash
-    npm install
-    ```
-  </Step>
+[Install]
+WantedBy=multi-user.target
+```
 
-  <Step title="Start the Bot">
-    Start the bot with:
+Enable and start service:
 
-    ```bash
-    node index.js
-    ```
-  </Step>
-</Steps>
-
-## Usage
-
-<Check>
-  **Installation Complete!**
-
-  You can now create a database backup with `/backup` command.
-</Check>
-
-<Note>
-  - You need **Administrator** permissions to use the `/backup` command
-  - The bot includes an automatic timer (default: 1 hour) for scheduled backups
-</Note>
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable roadbackup
+sudo systemctl start roadbackup
+```
