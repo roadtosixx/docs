@@ -1,0 +1,414 @@
+---
+title: 'Client Exports'
+description: 'Client-side exports for external resource integration'
+icon: "code"
+---
+
+# Client Exports
+
+RoadPhone Pro provides several client-side exports that allow other resources to interact with the phone system.
+
+## Phone State
+
+### isPhoneOpen
+
+Check if the phone UI is currently open.
+
+```lua
+local isOpen = exports['roadphone']:isPhoneOpen()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if the phone is currently open, `false` otherwise.
+</ResponseField>
+
+---
+
+### isBlocked
+
+Check if the phone is currently blocked (e.g., during certain activities).
+
+```lua
+local blocked = exports['roadphone']:isBlocked()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if the phone is blocked, `false` otherwise.
+</ResponseField>
+
+---
+
+### blockPhone
+
+Block the phone from being used. Useful for situations where phone usage should be disabled.
+
+```lua
+exports['roadphone']:blockPhone()
+```
+
+<ResponseField name="returns" type="boolean">
+  Always returns `true`.
+</ResponseField>
+
+---
+
+### unblockPhone
+
+Unblock the phone to allow normal usage again.
+
+```lua
+exports['roadphone']:unblockPhone()
+```
+
+<ResponseField name="returns" type="boolean">
+  Always returns `false`.
+</ResponseField>
+
+---
+
+### togglePhone
+
+Open or close the phone programmatically.
+
+```lua
+exports['roadphone']:togglePhone()
+```
+
+<Note>
+  This toggles the phone state - if open it will close, if closed it will open.
+</Note>
+
+---
+
+## Phone Information
+
+### getPhoneNumber
+
+Get the phone number of the current player.
+
+```lua
+local phoneNumber = exports['roadphone']:getPhoneNumber()
+```
+
+<ResponseField name="returns" type="string | nil">
+  The player's phone number, or `nil` if not available.
+</ResponseField>
+
+---
+
+### isFlightmode
+
+Check if flight mode is enabled on the phone.
+
+```lua
+local flightMode = exports['roadphone']:isFlightmode()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if flight mode is enabled, `false` otherwise.
+</ResponseField>
+
+---
+
+### isFlashlight
+
+Check if the phone flashlight is currently active.
+
+```lua
+local flashlightOn = exports['roadphone']:isFlashlight()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if the flashlight is on, `false` otherwise.
+</ResponseField>
+
+---
+
+### isPlayerMuted
+
+Check if the player is currently muted (e.g., in a call).
+
+```lua
+local muted = exports['roadphone']:isPlayerMuted()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if the player is muted, `false` otherwise.
+</ResponseField>
+
+---
+
+## Communication
+
+### sendMessage
+
+Send an SMS message to a phone number.
+
+```lua
+exports['roadphone']:sendMessage(phoneNumber, message)
+```
+
+<ParamField path="phoneNumber" type="string" required>
+  The recipient's phone number.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The message content to send.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Send a message to a specific number
+exports['roadphone']:sendMessage("1234567", "Hello from my script!")
+```
+</CodeGroup>
+
+---
+
+### startCall
+
+Initiate a phone call to a specific number.
+
+```lua
+exports['roadphone']:startCall(number, anonym)
+```
+
+<ParamField path="number" type="string" required>
+  The phone number to call.
+</ParamField>
+
+<ParamField path="anonym" type="boolean">
+  Whether to make an anonymous call (optional).
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Start a normal call
+exports['roadphone']:startCall("1234567")
+
+-- Start an anonymous call
+exports['roadphone']:startCall("1234567", true)
+```
+</CodeGroup>
+
+<Note>
+  This export will automatically open the phone if it's not already open.
+</Note>
+
+---
+
+### sendMail
+
+Send an email to the current player.
+
+```lua
+exports['roadphone']:sendMail(mailData)
+```
+
+<ParamField path="mailData" type="table" required>
+  The email data object.
+</ParamField>
+
+<Expandable title="mailData structure">
+  <ParamField path="senderMail" type="string" required>
+    The sender's email address.
+  </ParamField>
+  <ParamField path="subject" type="string" required>
+    The email subject line.
+  </ParamField>
+  <ParamField path="message" type="string" required>
+    The email body content.
+  </ParamField>
+  <ParamField path="button" type="table">
+    Optional action button.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendMail({
+    senderMail = "admin@server.com",
+    subject = "Welcome!",
+    message = "Welcome to our server. Enjoy your stay!"
+})
+
+-- With action button
+exports['roadphone']:sendMail({
+    senderMail = "mechanic@server.com",
+    subject = "Vehicle Ready",
+    message = "Your vehicle repairs are complete.",
+    button = {
+        text = "Claim Vehicle",
+        event = "mechanic:claimVehicle",
+        data = { vehicleId = 123 }
+    }
+})
+```
+</CodeGroup>
+
+---
+
+### sendMailOffline
+
+Send an email to a player by their identifier (works even if offline).
+
+```lua
+exports['roadphone']:sendMailOffline(identifier, mailData)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier (e.g., license or citizenid).
+</ParamField>
+
+<ParamField path="mailData" type="table" required>
+  The email data object (same structure as `sendMail`).
+</ParamField>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "admin@server.com",
+    subject = "Important Notice",
+    message = "This message will be delivered when you log in."
+})
+```
+</CodeGroup>
+
+---
+
+## Notifications & Dispatches
+
+### sendNotification
+
+Send a notification to the player's phone.
+
+```lua
+exports['roadphone']:sendNotification(notifydata)
+```
+
+<ParamField path="notifydata" type="table" required>
+  The notification data object.
+</ParamField>
+
+<Expandable title="notifydata structure">
+  <ParamField path="apptitle" type="string" required>
+    The app name shown in the notification header.
+  </ParamField>
+  <ParamField path="title" type="string" required>
+    The notification title.
+  </ParamField>
+  <ParamField path="message" type="string" required>
+    The notification message content.
+  </ParamField>
+  <ParamField path="img" type="string">
+    Optional image URL for the notification icon.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendNotification({
+    apptitle = "My Script",
+    title = "Success!",
+    message = "Your action was completed successfully.",
+    img = "/public/img/Apps/light_mode/settings.webp"
+})
+```
+</CodeGroup>
+
+---
+
+### sendDispatch
+
+Send a dispatch notification to job members.
+
+```lua
+exports['roadphone']:sendDispatch(message, job, image)
+```
+
+<ParamField path="message" type="string" required>
+  The dispatch message content.
+</ParamField>
+
+<ParamField path="job" type="string" required>
+  The job name to send the dispatch to (e.g., "police", "ambulance").
+</ParamField>
+
+<ParamField path="image" type="string">
+  Optional image URL for the dispatch.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Send a police dispatch
+exports['roadphone']:sendDispatch("10-71 Shots Fired at Legion Square", "police")
+
+-- With image
+exports['roadphone']:sendDispatch("Medical emergency", "ambulance", "https://example.com/image.jpg")
+```
+</CodeGroup>
+
+---
+
+## UI Control
+
+### setHeaderBlack
+
+Set the phone header (status bar) to black or white mode.
+
+```lua
+exports['roadphone']:setHeaderBlack(boolean)
+```
+
+<ParamField path="boolean" type="boolean" required>
+  `true` for black header, `false` for white header.
+</ParamField>
+
+<Note>
+  Useful for apps with light backgrounds that need a dark header for visibility.
+</Note>
+
+---
+
+### inputFocus
+
+Control whether keyboard input is captured by NUI or passed to the game.
+
+```lua
+exports['roadphone']:inputFocus(boolean)
+```
+
+<ParamField path="boolean" type="boolean" required>
+  `true` to capture input in NUI, `false` to allow game input.
+</ParamField>
+
+<Warning>
+  Use this carefully - setting to `true` will prevent the player from using game controls.
+</Warning>
+
+---
+
+### SendMessageNUI
+
+Send a raw message directly to the phone NUI.
+
+```lua
+exports['roadphone']:SendMessageNUI(data)
+```
+
+<ParamField path="data" type="table" required>
+  The data object to send to NUI. Must include an `event` key.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:SendMessageNUI({
+    event = "customEvent",
+    someData = "value"
+})
+```
+</CodeGroup>
+
+<Warning>
+  This is an advanced export. Only use if you understand the phone's NUI event system.
+</Warning>

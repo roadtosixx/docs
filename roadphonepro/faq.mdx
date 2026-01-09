@@ -1,0 +1,346 @@
+---
+title: FAQ
+description: All important questions about RoadPhone — setup, troubleshooting, and tips
+icon: "badge-info"
+---
+
+<Info>
+  Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
+</Info>
+
+<AccordionGroup>
+
+<Accordion title="I found a bug — what should I do?" icon="bug">
+  Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
+</Accordion>
+
+<Accordion title="My Music app says the Music Server is offline" icon="music">
+  <Warning>The Music Server requires a valid **Tebex Transaction ID** to authenticate your purchase.</Warning>
+
+  **Solution:**
+  1. Open `API.lua` in your RoadPhone resource
+  2. Enter your **TebexTransactionID** in the designated field
+  3. Restart the resource
+
+  **Where to find your Transaction ID:**
+  - Check your purchase confirmation email from Tebex
+  - Or log in to view your payment history:
+
+  <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
+    View and retrieve your transaction ID from past purchases
+  </Card>
+</Accordion>
+
+<Accordion title="I don’t hear music in the Music app" icon="music">
+  <Tip>Make sure you’re using our **xSound** version and start **xSound before RoadPhone**.</Tip>
+
+  **Checklist**  
+  - Clear your client cache.  
+  - Check that **GTA music** is turned on.  
+  - Verify your **Windows volume mixer** isn’t at 0% (this is independent of FiveM).  
+
+  <Warning>If your loading screen uses **YouTube** and you muted it there, the sound is muted everywhere. Unmute the loading screen.</Warning>
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Frq0XT7Qriph5lp24JQgJ%2FRod_rtHandy.PNG?alt=media&token=d98cc53a-d68c-4b05-abb3-3834efdd751a" alt="Music troubleshooting screenshot" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="How can I remove apps?" icon="circle-minus">
+  Open **/public/static/config/config.json**, search for **AppStore**, and remove the block for the app(s) you want to disable.
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FAG0x1YGxObUp0ujtISkD%2Fimage.png?alt=media&token=97c44cae-3598-4dcd-a6de-c90c572273ae" alt="Remove apps from AppStore config" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Images / Videos are not saved in the Gallery" icon="cloud">
+  Make sure you entered your **Fivemanage MEDIA KEY** correctly in `API.lua`.
+
+  <Card title="Fivemanage Setup" href="/roadphone/fivemanage" icon="cloud">
+    See the complete setup guide for Fivemanage configuration
+  </Card>
+</Accordion>
+
+<Accordion title="Add jobs to the Service App / Add dispatches" icon="briefcase">
+  Open **/public/static/config/config.json**, search for **Service**, then **copy an example job** and change: `number`, `name`, `img`, `jobname`, and the `coords`.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FUFRsoqtkAtLzOL054PL8%2Fimage.png?alt=media&token=ae90ea43-c298-431a-9843-e294db4f9866" alt="Service app jobs config" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="On start it shows ESX nil" icon="circle-alert">
+  Follow the instructions in `config.lua` (ESX init).  
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FVZtM4eiwALSIHoJx86ih%2FScreenshot_487.png?alt=media&token=c541f3ea-f5fb-4f59-9f24-62445e1946f7" alt="ESX nil fix" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Add my own notifications" icon="bell">
+  In **ClientAPI.lua**, find `sendNotification(text)` and replace `ESX.ShowNotification(text)` with your notification trigger.
+</Accordion>
+
+<Accordion title="Talk on the radio and voice at the same time" icon="radio">
+  If you use **SaltyChat**, set `EnableHardCoreMode` to **false** in your SaltyChat config.
+</Accordion>
+
+<Accordion title="Mouse stuck in the center when opening the phone" icon="mouse">
+  Go to **Settings → Keyboard/Mouse → Mouse Input Method → Raw Input**.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FzhKjqTJBJpXkICtRXiAE%2FScreenshot_150.png?alt=media&token=8758eec8-2882-4599-97f6-3b954ab158aa" alt="Raw input setting" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Notify EMS when someone is down" icon="ambulance">
+  <Tabs>
+    <Tab title="ESX">
+      <Warning>This example refers to <strong>esx-ambulancejob</strong>. If you use a different script, adapt accordingly.</Warning>
+      In <code>esx_ambulancejob/client/main.lua</code>, find <code>SendDistressSignal()</code> and replace:
+      
+      ```lua SendDistressSignal()
+      function SendDistressSignal()
+          exports['roadphone']:sendDispatch("Injured person", "ambulance", nil)
+      end
+      ```
+    </Tab>
+    <Tab title="QBCore">
+      <Warning>This example refers to <strong>qb-ambulancejob</strong>. If you use a different script, adapt accordingly.</Warning>
+      In <code>qb-ambulancejob/client/dead.lua</code>, search for <code>"hospital:server:ambulanceAlert"</code> and replace with:
+      
+      ```lua qb-ambulancejob
+      exports['roadphone']:sendDispatch("Injured person", "ambulance", nil)
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Accordion title="Phone doesn't open after reviving" icon="phone">
+  If you’re using an old ESX Ambulancejob or a custom one, change <code>Config.ESXplayerSpawnEvent</code> to <code>playerSpawned</code>.
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FMTrexF5bq6ZnMkSzLsPo%2Fimgrewgregreage.png?alt=media&token=c7b619c3-f25e-4c96-afbb-934b1c980934" alt="Spawn event setting" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Disable cryptocurrency" icon="coins">
+  In `config.lua`, set <code>Config.Crypto = false</code>.
+</Accordion>
+
+<Accordion title="Lock radio channels" icon="lock">
+  In `config.lua`, configure <code>Config.lockedRadioChannels</code> with the channel list.
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Fx6crXbcanBwEAJGCXZvv%2FKqbL9ELb.png?alt=media&token=5f94e3b7-7567-4bf4-b6e5-1e6be9d62941" alt="Locked radio channels config" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Change the phone language" icon="earth">
+  <Note>App names are excluded from translation. To localize app names, change them in <code>config.json</code>.</Note>
+  <Tabs>
+    <Tab title="ESX">
+      In <code>config.lua</code>, set the <code>locale</code> to your preferred language.
+    </Tab>
+    <Tab title="QBCore">
+      In <code>fxmanifest.lua</code>, find the <code>locales/</code> path and change it to your preferred language.
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Accordion title="SaltyChat: Radio doesn’t work" icon="waves">
+  If you have **SaltyRadio** on the server, remove it.  
+  If not, try our **SaltyChat** version.
+</Accordion>
+
+<Accordion title="Car is locked after delivery" icon="key">
+  Edit the **GiveCarKeys** function in <code>clientAPI.lua</code>.
+
+  <Tabs>
+    <Tab title="ESX">
+      ```lua GiveCarKeys (ESX) lines
+      function GiveCarKeys(plate, model)
+        TriggerEvent("vehiclekeys:client:SetOwner", plate)
+      end
+      ```
+    </Tab>
+    <Tab title="QBCore">
+      ```lua GiveCarKeys (QBCore) lines
+      function GiveCarKeys(plate, model)
+        TriggerEvent("qb-vehiclekeys:client:AddKeys", plate)
+      end
+      ```
+    </Tab>
+  </Tabs>
+</Accordion>
+
+<Accordion title="GetExtendedPlayers error (es_extended 1.1/1.2)" icon="code">
+  Add this to <code>es_extended/server/functions.lua</code>:
+
+  ```lua GetExtendedPlayers helper lines
+  ESX.GetExtendedPlayers = function(key, val)
+      local xPlayers = {}
+      for _, v in pairs(ESX.Players) do
+          if key then
+              if (key == 'job' and v.job.name == val) or v[key] == val or v.variables[key] == val then
+                  xPlayers[#xPlayers+1] = v
+              end
+          else
+              xPlayers[#xPlayers+1] = v
+          end
+      end
+      return xPlayers
+  end
+  ```
+</Accordion>
+
+<Accordion title="Problems with VideoCall" icon="video">
+  - Clear your client cache.  
+  - On the first video call after clearing the cache, accept the F8 prompt to allow recording.  
+  - Accept the Windows Defender warning when it appears.
+</Accordion>
+
+<Accordion title="Use a fixed prefix for phone numbers" icon="hash">
+  Edit <code>server/serverAPI.lua</code> function <code>getPhoneRandomNumber</code>. If you change the prefix to more than two digits, also update the <code>string.format</code>.
+
+  ```lua Phone number prefix lines
+  function getPhoneRandomNumber()
+    local prefix = 49
+    local numBase = math.random(1000000, 9999999) -- 7 digits
+    local num = string.format("%02d%07d", prefix, numBase)
+    return num
+  end
+
+  -- Output example: 497649867
+  ```
+</Accordion>
+
+<Accordion title="I forgot my phone PIN" icon="shield-off">
+  Clear your cache once — this will remove the PIN lock.
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FvcFDhPma8ySAazsJjRlB%2Fcache.png?alt=media&token=3dbd995d-a615-4e70-9462-7b34231ff009" alt="Clear cache to reset PIN" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="Add jobs to the Jobs App" icon="user-cog">
+  Open **/public/static/config/config.json**, search for **JobsApp**, then **copy an example** and change the **name**, **coords**, and **icon**.
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FOD1csNW87w0Dr8Ix2rci%2Fimager32f4w34f3e.png?alt=media&token=7fa6331f-33d0-4c5f-8712-178d085d5ffe" alt="Jobs App config example" className="rounded-lg" />
+
+  <Tip>
+    **Finding Icons**
+
+    Visit [Iconify](https://icon-sets.iconify.design/), search for an icon, choose **Vue + Components**, and copy the icon name from the shown code.
+  </Tip>
+
+  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FW9pF5RDbCDN79BfallNi%2F453435t43.png?alt=media&token=238a7cbc-3172-483c-a344-03f05e4a4cac" alt="Iconify example" className="rounded-lg" />
+</Accordion>
+
+<Accordion title="OxInventory snippets" icon="database">
+  The following example items block will block/unblock the phone based on inventory.
+
+  ```lua OxInventory items expandable wrap
+  ['phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+
+  ['purple_phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+
+  ['green_phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+
+  ['red_phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+
+  ['blue_phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+
+  ['black_phone'] = {
+      label = 'Handy',
+      weight = 190,
+      stack = false,
+      consume = 0,
+      client = {
+          add = function(total)
+              if total > 0 then
+                  exports['roadphone']:unblockPhone()
+              end
+          end,
+
+          remove = function(total)
+              if total < 1 then
+                  exports['roadphone']:blockPhone()
+              end
+          end
+      }
+  },
+  ```
+</Accordion>
+
+</AccordionGroup>

@@ -30,6 +30,15 @@
             ]
           },
           {
+            "group": "RoadPhone-Pro",
+            "pages": [
+              "roadphonepro/commands/migrate",
+              "roadphonepro/commands/migrate",
+              "roadphonepro/commands/migrate",
+              "roadphonepro/custom-apps"
+            ]
+          },
+          {
             "group": "RoadPhone",
             "pages": [
               "roadphone/installation",
@@ -37,9 +46,7 @@
               "roadphone/job-calls",
               "roadphone/commands",
               "roadphone/fivemanage",
-              "roadphone/fivemerr",
-              "roadphone/custom-apps"
-
+              "roadphone/fivemerr"
             ]
           },
           {
@@ -78,6 +85,14 @@
             "group": "API documentation",
             "pages": [
               "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "RoadPhone-Pro",
+            "pages": [
+              "roadphonepro/api/client",
+              "roadphonepro/api/server",
+              "roadphonepro/api/metadata"
             ]
           },
           {

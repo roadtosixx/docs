@@ -1,0 +1,570 @@
+---
+title: 'Server Exports'
+description: 'Server-side exports for external resource integration'
+icon: 'server'
+---
+
+# Server Exports
+
+RoadPhone Pro provides several server-side exports that allow other resources to interact with the phone system.
+
+## Player Information
+
+### getPlayerFromPhone
+
+Get a player's server ID from their phone number.
+
+```lua
+local playerId = exports['roadphone']:getPlayerFromPhone(number)
+```
+
+<ParamField path="number" type="string" required>
+  The phone number to look up.
+</ParamField>
+
+<ResponseField name="returns" type="number | nil">
+  The player's server ID (source), or `nil` if not found or offline.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local source = exports['roadphone']:getPlayerFromPhone("1234567")
+if source then
+    print("Player found with source: " .. source)
+else
+    print("Player not found or offline")
+end
+```
+</CodeGroup>
+
+---
+
+### getNumberFromIdentifier
+
+Get a player's phone number from their identifier.
+
+```lua
+local phoneNumber = exports['roadphone']:getNumberFromIdentifier(identifier)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier (license, citizenid, etc.).
+</ParamField>
+
+<ResponseField name="returns" type="string | nil">
+  The player's phone number, or `nil` if not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local phoneNumber = exports['roadphone']:getNumberFromIdentifier("license:abc123")
+if phoneNumber then
+    print("Phone number: " .. phoneNumber)
+end
+```
+</CodeGroup>
+
+---
+
+## Banking & IBAN
+
+### getPlayerIBAN
+
+Get or create an IBAN for a player.
+
+```lua
+local iban = exports['roadphone']:getPlayerIBAN(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  The player's IBAN. If the player doesn't have one, a new unique IBAN will be generated.
+</ResponseField>
+
+<Note>
+  IBAN format is configurable via `Cfg.BankIBANPrefix` (default: "DE") + 6 random digits.
+</Note>
+
+<CodeGroup>
+```lua Example
+local iban = exports['roadphone']:getPlayerIBAN(source)
+print("Player IBAN: " .. iban) -- e.g., "DE123456"
+```
+</CodeGroup>
+
+---
+
+### getPlayerFromIBAN
+
+Find a player by their IBAN.
+
+```lua
+local player = exports['roadphone']:getPlayerFromIBAN(iban)
+```
+
+<ParamField path="iban" type="string" required>
+  The IBAN to search for.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  The player object (via Bridge.Player.GetPlayerByIdentifier), or `nil` if not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local player = exports['roadphone']:getPlayerFromIBAN("DE123456")
+if player then
+    -- Player found - use based on your framework
+end
+```
+</CodeGroup>
+
+---
+
+### addBankTransaction
+
+Add a bank transaction record to the transaction history.
+
+```lua
+exports['roadphone']:addBankTransaction(sender, receiver, reason, amount)
+```
+
+<ParamField path="sender" type="string" required>
+  The sender's IBAN.
+</ParamField>
+
+<ParamField path="receiver" type="string" required>
+  The receiver's IBAN.
+</ParamField>
+
+<ParamField path="reason" type="string" required>
+  The transaction reason/description.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The transaction amount.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+local senderIban = exports['roadphone']:getPlayerIBAN(senderSource)
+local receiverIban = exports['roadphone']:getPlayerIBAN(receiverSource)
+
+exports['roadphone']:addBankTransaction(
+    senderIban,
+    receiverIban,
+    "Vehicle Purchase",
+    50000
+)
+```
+</CodeGroup>
+
+<Note>
+  This only adds a transaction record - it does not transfer actual money. Handle money transfers with your framework's banking system.
+</Note>
+
+---
+
+## Cryptocurrency
+
+### addcrypto
+
+Add cryptocurrency to a player's wallet.
+
+```lua
+exports['roadphone']:addcrypto(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID (1 = Bitcoin, 2 = Ethereum, etc.).
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to add.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Add 0.5 Bitcoin to player
+exports['roadphone']:addcrypto("license:abc123", 1, 0.5)
+```
+</CodeGroup>
+
+---
+
+### removecrypto
+
+Remove cryptocurrency from a player's wallet.
+
+```lua
+exports['roadphone']:removecrypto(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to remove.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Remove 0.25 Bitcoin from player
+exports['roadphone']:removecrypto("license:abc123", 1, 0.25)
+```
+</CodeGroup>
+
+---
+
+### checkcryptoamount
+
+Check if a player has at least a certain amount of cryptocurrency.
+
+```lua
+local hasAmount = exports['roadphone']:checkcryptoamount(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to check for.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the player has at least the specified amount, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+if exports['roadphone']:checkcryptoamount("license:abc123", 1, 1.0) then
+    print("Player has at least 1 Bitcoin")
+else
+    print("Insufficient Bitcoin balance")
+end
+```
+</CodeGroup>
+
+---
+
+### getcryptoamount
+
+Get the current cryptocurrency balance for a player.
+
+```lua
+local amount = exports['roadphone']:getcryptoamount(identifier, coinid)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The player's balance for the specified cryptocurrency.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local btcBalance = exports['roadphone']:getcryptoamount("license:abc123", 1)
+print("Bitcoin balance: " .. btcBalance)
+```
+</CodeGroup>
+
+---
+
+## Communication
+
+### sendMailOffline
+
+Send an email to a player by their identifier (works even if offline).
+
+```lua
+exports['roadphone']:sendMailOffline(identifier, mailData)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="mailData" type="table" required>
+  The email data object.
+</ParamField>
+
+<Expandable title="mailData structure">
+  <ParamField path="senderMail" type="string" required>
+    The sender's email address.
+  </ParamField>
+  <ParamField path="subject" type="string" required>
+    The email subject line.
+  </ParamField>
+  <ParamField path="message" type="string" required>
+    The email body content.
+  </ParamField>
+  <ParamField path="button" type="table">
+    Optional action button configuration.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "admin@server.com",
+    subject = "Account Verification",
+    message = "Your account has been verified. Welcome to the server!"
+})
+
+-- With action button
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "bank@server.com",
+    subject = "Loan Approved",
+    message = "Your loan of $50,000 has been approved.",
+    button = {
+        text = "Claim Funds",
+        event = "bank:claimLoan",
+        data = { amount = 50000 }
+    }
+})
+```
+</CodeGroup>
+
+---
+
+## Dispatches
+
+### sendDispatch
+
+Send a dispatch notification to all members of a specific job.
+
+```lua
+exports['roadphone']:sendDispatch(source, message, job, coords, image)
+```
+
+<ParamField path="source" type="number" required>
+  The source player ID sending the dispatch.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The dispatch message content.
+</ParamField>
+
+<ParamField path="job" type="string" required>
+  The target job name (e.g., "police", "ambulance").
+</ParamField>
+
+<ParamField path="coords" type="vector3 | table">
+  Optional coordinates for the dispatch location.
+</ParamField>
+
+<ParamField path="image" type="string">
+  Optional image URL for the dispatch.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Basic dispatch
+exports['roadphone']:sendDispatch(source, "10-71 Shots Fired", "police")
+
+-- With coordinates
+local playerCoords = GetEntityCoords(GetPlayerPed(source))
+exports['roadphone']:sendDispatch(source, "Medical Emergency", "ambulance", playerCoords)
+
+-- With image
+exports['roadphone']:sendDispatch(source, "Robbery in Progress", "police", coords, "https://example.com/robbery.jpg")
+```
+</CodeGroup>
+
+---
+
+### sendDispatchAnonym
+
+Send an anonymous dispatch notification (no sender information).
+
+```lua
+exports['roadphone']:sendDispatchAnonym(job, title, message, coords, image)
+```
+
+<ParamField path="job" type="string" required>
+  The target job name.
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  The dispatch title/sender name shown in the notification.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The dispatch message content.
+</ParamField>
+
+<ParamField path="coords" type="vector3 | table" required>
+  The dispatch location coordinates.
+</ParamField>
+
+<ParamField path="image" type="string">
+  Optional image URL for the dispatch.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Anonymous 911 call
+exports['roadphone']:sendDispatchAnonym(
+    "police",
+    "Anonymous Caller",
+    "There's suspicious activity at the bank",
+    vector3(150.0, -1040.0, 29.0)
+)
+
+-- Store robbery alert (automated system)
+exports['roadphone']:sendDispatchAnonym(
+    "police",
+    "Silent Alarm",
+    "Store robbery triggered at 24/7 Strawberry",
+    storeCoords,
+    "https://example.com/alarm.jpg"
+)
+```
+</CodeGroup>
+
+<Note>
+  Use this for automated systems (store alarms, speed cameras, etc.) where there's no actual player caller.
+</Note>
+
+---
+
+## RoadDrop (AirDrop)
+
+### sendRoadDrop
+
+Send a RoadDrop notification to nearby players.
+
+```lua
+exports['roadphone']:sendRoadDrop(data)
+```
+
+<ParamField path="data" type="table" required>
+  The RoadDrop data object.
+</ParamField>
+
+<Expandable title="data structure">
+  <ParamField path="sender" type="string" required>
+    The sender's name/identifier shown in the notification.
+  </ParamField>
+  <ParamField path="message" type="string">
+    Optional message content.
+  </ParamField>
+  <ParamField path="image" type="string">
+    Optional image URL to send.
+  </ParamField>
+  <ParamField path="targetPlayers" type="table">
+    Array of player server IDs to send to. If not provided, sends to nearby players.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+-- Send to nearby players
+exports['roadphone']:sendRoadDrop({
+    sender = "John Doe",
+    message = "Check this out!",
+    image = "https://example.com/image.jpg"
+})
+
+-- Send to specific players
+exports['roadphone']:sendRoadDrop({
+    sender = "Admin",^
+    message = "Important announcement",
+    targetPlayers = {1, 2, 3}
+})
+```
+</CodeGroup>
+
+<Note>
+  **Deprecated Alias:** `sendAirdrop` - Use `sendRoadDrop` for new implementations.
+</Note>
+
+---
+
+## Advanced Usage Examples
+
+### Complete Dispatch System Integration
+
+```lua
+-- Store robbery script integration
+RegisterServerEvent('store:robbery:started')
+AddEventHandler('store:robbery:started', function(storeId, storeCoords)
+    local src = source
+
+    -- Send silent alarm to police
+    exports['roadphone']:sendDispatchAnonym(
+        "police",
+        "Silent Alarm",
+        "Store robbery in progress - 24/7 #" .. storeId,
+        storeCoords,
+        "https://cdn.example.com/robbery-alert.png"
+    )
+end)
+```
+
+### Banking Integration
+
+```lua
+-- Custom shop purchase with transaction history
+function ProcessPurchase(source, itemPrice, itemName)
+    local playerIban = exports['roadphone']:getPlayerIBAN(source)
+    local shopIban = "DE000001" -- Shop's IBAN
+
+    -- Handle money transfer with your framework
+    -- ...
+
+    -- Add transaction record
+    exports['roadphone']:addBankTransaction(
+        playerIban,
+        shopIban,
+        "Purchase: " .. itemName,
+        itemPrice
+    )
+end
+```
+
+### Crypto Payment System
+
+```lua
+-- Accept cryptocurrency payments
+function AcceptCryptoPayment(identifier, coinId, amount)
+    -- Check if player has enough
+    if exports['roadphone']:checkcryptoamount(identifier, coinId, amount) then
+        -- Remove crypto from player
+        exports['roadphone']:removecrypto(identifier, coinId, amount)
+
+        -- Send confirmation email
+        exports['roadphone']:sendMailOffline(identifier, {
+            senderMail = "crypto@exchange.com",
+            subject = "Payment Confirmed",
+            message = string.format("Your payment of %.4f has been processed.", amount)
+        })
+
+        return true
+    end
+    return false
+end
+```

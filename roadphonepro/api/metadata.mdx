@@ -1,0 +1,896 @@
+---
+title: 'Metadata Exports'
+description: 'Server-side exports for phone item metadata manipulation'
+icon: 'database'
+---
+
+# Metadata Exports
+
+RoadPhone Pro's metadata system stores phone data directly on inventory items, enabling features like phone stealing and trading. These exports allow external resources to interact with phone metadata.
+
+<Warning>
+  These exports only work when `Config.UseMetadata = true` in the phone configuration. They will return `nil` or `false` when metadata mode is disabled.
+</Warning>
+
+## Helper Functions
+
+### GetPhoneMetadataOnly
+
+Get the complete metadata object for a player's active phone.
+
+```lua
+local metadata = exports['roadphone']:GetPhoneMetadataOnly(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  The complete phone metadata table, or `nil` if not found.
+</ResponseField>
+
+<Note>
+  This is a lightweight function that uses the active phone slot. Use this when you only need to read metadata without modifying it.
+</Note>
+
+---
+
+### UpdatePhoneMetadataField
+
+Update a single top-level field in phone metadata.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneMetadataField(source, fieldName, value)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="fieldName" type="string" required>
+  The metadata field name to update (e.g., `'phone_background'`).
+</ParamField>
+
+<ParamField path="value" type="any" required>
+  The new value for the field. Use `nil` to remove the field.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if successful, `false` otherwise.
+</ResponseField>
+
+---
+
+### UpdatePhoneMetadataNested
+
+Update a nested field within phone metadata.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneMetadataNested(source, parentField, childField, value)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="parentField" type="string" required>
+  The parent field name (e.g., `'phone_settings'`).
+</ParamField>
+
+<ParamField path="childField" type="string" required>
+  The child field name (e.g., `'brightness'`).
+</ParamField>
+
+<ParamField path="value" type="any" required>
+  The new value for the nested field.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Update brightness setting
+exports['roadphone']:UpdatePhoneMetadataNested(source, 'phone_settings', 'brightness', 75)
+```
+</CodeGroup>
+
+---
+
+### UpdatePhoneMetadataArray
+
+Perform array operations (add/update/delete) on metadata arrays.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneMetadataArray(source, arrayField, operation, data, idField, limit)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="arrayField" type="string" required>
+  The array field name (e.g., `'phone_contacts'`).
+</ParamField>
+
+<ParamField path="operation" type="string" required>
+  The operation type: `'add'`, `'update'`, or `'delete'`.
+</ParamField>
+
+<ParamField path="data" type="any" required>
+  For `'add'`/`'update'`: the item object. For `'delete'`: the ID value.
+</ParamField>
+
+<ParamField path="idField" type="string" required>
+  The field name used as identifier (e.g., `'id'`).
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Optional maximum array size (only for `'add'` operations).
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Add a contact
+exports['roadphone']:UpdatePhoneMetadataArray(source, 'phone_contacts', 'add', {
+    id = 123,
+    name = "John Doe",
+    number = "1234567"
+}, 'id', 200)
+
+-- Update a contact
+exports['roadphone']:UpdatePhoneMetadataArray(source, 'phone_contacts', 'update', {
+    id = 123,
+    name = "John Smith",
+    number = "1234567"
+}, 'id')
+
+-- Delete a contact
+exports['roadphone']:UpdatePhoneMetadataArray(source, 'phone_contacts', 'delete', 123, 'id')
+```
+</CodeGroup>
+
+---
+
+## Phone Number & Setup
+
+### GetPhoneNumberFromItem
+
+Get the phone number from a player's phone item.
+
+```lua
+local phoneNumber, itemName, slot, metadata = exports['roadphone']:GetPhoneNumberFromItem(source, specificSlot)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="specificSlot" type="number">
+  Optional specific inventory slot to check.
+</ParamField>
+
+<ResponseField name="returns" type="string, string, number, table">
+  Returns phone number, item name, slot number, and full metadata.
+</ResponseField>
+
+---
+
+### AssignPhoneNumberToItem
+
+Assign a new phone number to a phone item.
+
+```lua
+local success, phoneNumber = exports['roadphone']:AssignPhoneNumberToItem(source, itemName, slot)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="itemName" type="string" required>
+  The phone item name.
+</ParamField>
+
+<ParamField path="slot" type="number" required>
+  The inventory slot number.
+</ParamField>
+
+<ResponseField name="returns" type="boolean, string">
+  Success status and the assigned phone number.
+</ResponseField>
+
+---
+
+### GetOrCreatePhoneNumber
+
+Get the phone number for a player, creating one if necessary.
+
+```lua
+local phoneNumber, wasCreated = exports['roadphone']:GetOrCreatePhoneNumber(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="string, boolean">
+  The phone number and whether it was newly created.
+</ResponseField>
+
+---
+
+### GetPhoneSetupFromItem
+
+Check if the phone has completed initial setup.
+
+```lua
+local setupStatus = exports['roadphone']:GetPhoneSetupFromItem(source)
+```
+
+<ResponseField name="returns" type="number">
+  `1` if setup is complete, `0` if setup is needed.
+</ResponseField>
+
+---
+
+### UpdatePhoneSetup
+
+Update the phone setup status.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneSetup(source, setupStatus)
+```
+
+<ParamField path="setupStatus" type="number" required>
+  `1` for complete, `0` for needs setup.
+</ParamField>
+
+---
+
+## Background & Settings
+
+### GetPhoneBackground
+
+Get the phone's wallpaper background.
+
+```lua
+local background = exports['roadphone']:GetPhoneBackground(source)
+```
+
+<ResponseField name="returns" type="string | nil">
+  The background URL/path, or `nil` if using default.
+</ResponseField>
+
+---
+
+### UpdatePhoneBackground
+
+Set the phone's wallpaper background.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneBackground(source, background)
+```
+
+<ParamField path="background" type="string | nil" required>
+  The background URL/path, or `nil` to reset to default.
+</ParamField>
+
+---
+
+### GetPhoneSettingsFromMetadata
+
+Get all phone settings.
+
+```lua
+local settings = exports['roadphone']:GetPhoneSettingsFromMetadata(source)
+```
+
+<ResponseField name="returns" type="table | nil">
+  Settings object with: `brightness`, `flightmode`, `large_app_icons`, `iconcolor`, `darkmode`, `timeCustomization`.
+</ResponseField>
+
+---
+
+### UpdatePhoneSettings
+
+Update phone settings.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneSettings(source, settings)
+```
+
+<ParamField path="settings" type="table" required>
+  Table with settings to update. Only provided keys will be changed.
+</ParamField>
+
+<Expandable title="Valid settings keys">
+  - `brightness` (number): 10-100
+  - `flightmode` (number): 0 or 1
+  - `large_app_icons` (number): 0 or 1
+  - `iconcolor` (string): "light" or "dark"
+  - `darkmode` (number): 0 or 1
+  - `timeCustomization` (table | nil): Custom time display settings
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:UpdatePhoneSettings(source, {
+    brightness = 80,
+    darkmode = 1
+})
+```
+</CodeGroup>
+
+---
+
+## PIN/Passcode
+
+### GetPhonePin
+
+Get the phone's PIN configuration.
+
+```lua
+local pinData = exports['roadphone']:GetPhonePin(source)
+```
+
+<ResponseField name="returns" type="table | nil">
+  Table with `pin` (string, 6 digits) and `pin_needed` (0 or 1).
+</ResponseField>
+
+---
+
+### UpdatePhonePin
+
+Update the phone's PIN.
+
+```lua
+local success = exports['roadphone']:UpdatePhonePin(source, pin, pinNeeded)
+```
+
+<ParamField path="pin" type="string" required>
+  The 6-digit PIN code, or `nil` to remove.
+</ParamField>
+
+<ParamField path="pinNeeded" type="number" required>
+  `1` to require PIN on unlock, `0` to disable.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Set a PIN
+exports['roadphone']:UpdatePhonePin(source, "123456", 1)
+
+-- Remove PIN requirement but keep PIN stored
+exports['roadphone']:UpdatePhonePin(source, "123456", 0)
+
+-- Clear PIN completely
+exports['roadphone']:UpdatePhonePin(source, nil, 0)
+```
+</CodeGroup>
+
+---
+
+## Contacts
+
+### GetPhoneContacts
+
+Get all contacts from the phone.
+
+```lua
+local contacts = exports['roadphone']:GetPhoneContacts(source)
+```
+
+<ResponseField name="returns" type="table">
+  Array of contact objects.
+</ResponseField>
+
+---
+
+### AddContactToMetadata
+
+Add a new contact.
+
+```lua
+local success = exports['roadphone']:AddContactToMetadata(source, contact)
+```
+
+<ParamField path="contact" type="table" required>
+  Contact object with `id`, `name`, `number`, and optional `avatar`.
+</ParamField>
+
+---
+
+### UpdateContactInMetadata
+
+Update an existing contact.
+
+```lua
+local success = exports['roadphone']:UpdateContactInMetadata(source, contactId, updatedContact)
+```
+
+---
+
+### DeleteContactFromMetadata
+
+Delete a contact.
+
+```lua
+local success = exports['roadphone']:DeleteContactFromMetadata(source, contactId)
+```
+
+---
+
+## Notes
+
+### GetPhoneNotes
+
+Get all notes from the phone.
+
+```lua
+local notes = exports['roadphone']:GetPhoneNotes(source)
+```
+
+---
+
+### AddNoteToMetadata
+
+Add a new note.
+
+```lua
+local success = exports['roadphone']:AddNoteToMetadata(source, note)
+```
+
+<ParamField path="note" type="table" required>
+  Note object with `id`, `title`, `content`, `created_at`.
+</ParamField>
+
+---
+
+### UpdateNoteInMetadata
+
+Update an existing note.
+
+```lua
+local success = exports['roadphone']:UpdateNoteInMetadata(source, noteId, updatedNote)
+```
+
+---
+
+### DeleteNoteFromMetadata
+
+Delete a note.
+
+```lua
+local success = exports['roadphone']:DeleteNoteFromMetadata(source, noteId)
+```
+
+---
+
+## Photos
+
+### GetPhonePhotos
+
+Get all photos from the phone.
+
+```lua
+local photos = exports['roadphone']:GetPhonePhotos(source)
+```
+
+---
+
+### AddPhotoToMetadata
+
+Add a new photo.
+
+```lua
+local success = exports['roadphone']:AddPhotoToMetadata(source, photo)
+```
+
+<ParamField path="photo" type="table" required>
+  Photo object with `id`, `url`, `created_at`, and optional `favorite`.
+</ParamField>
+
+---
+
+### UpdatePhotoInMetadata
+
+Update photo properties (e.g., favorite status).
+
+```lua
+local success = exports['roadphone']:UpdatePhotoInMetadata(source, photoId, updates)
+```
+
+---
+
+### DeletePhotoFromMetadata
+
+Delete a photo.
+
+```lua
+local success = exports['roadphone']:DeletePhotoFromMetadata(source, photoId)
+```
+
+---
+
+## Alarms
+
+### GetPhoneAlarms
+
+Get all alarms from the phone.
+
+```lua
+local alarms = exports['roadphone']:GetPhoneAlarms(source)
+```
+
+---
+
+### AddAlarmToMetadata
+
+Add a new alarm.
+
+```lua
+local success = exports['roadphone']:AddAlarmToMetadata(source, alarm)
+```
+
+---
+
+### UpdateAlarmInMetadata
+
+Update an existing alarm.
+
+```lua
+local success = exports['roadphone']:UpdateAlarmInMetadata(source, alarmId, updatedAlarm)
+```
+
+---
+
+### DeleteAlarmFromMetadata
+
+Delete an alarm.
+
+```lua
+local success = exports['roadphone']:DeleteAlarmFromMetadata(source, alarmId)
+```
+
+---
+
+## Messages
+
+### GetPhoneMessages
+
+Get all messages from the phone.
+
+```lua
+local messages = exports['roadphone']:GetPhoneMessages(source)
+```
+
+---
+
+### AddMessageToMetadata
+
+Add a new message to the phone.
+
+```lua
+local success = exports['roadphone']:AddMessageToMetadata(source, message)
+```
+
+---
+
+### MarkMessagesReadInMetadata
+
+Mark messages from a specific number as read.
+
+```lua
+local success = exports['roadphone']:MarkMessagesReadInMetadata(source, phoneNumber)
+```
+
+---
+
+## Radio Channels
+
+### GetRadioChannelsFromMetadata
+
+Get saved radio channels.
+
+```lua
+local channels = exports['roadphone']:GetRadioChannelsFromMetadata(source)
+```
+
+---
+
+### AddRadioChannelToMetadata
+
+Add a saved radio channel.
+
+```lua
+local success = exports['roadphone']:AddRadioChannelToMetadata(source, channel)
+```
+
+---
+
+### UpdateRadioChannelInMetadata
+
+Update a saved radio channel.
+
+```lua
+local success = exports['roadphone']:UpdateRadioChannelInMetadata(source, channelId, updatedChannel)
+```
+
+---
+
+### DeleteRadioChannelFromMetadata
+
+Delete a saved radio channel.
+
+```lua
+local success = exports['roadphone']:DeleteRadioChannelFromMetadata(source, channelId)
+```
+
+---
+
+### GetRadioRecentFromMetadata
+
+Get recent radio frequencies.
+
+```lua
+local recent = exports['roadphone']:GetRadioRecentFromMetadata(source)
+```
+
+---
+
+### AddRadioRecentToMetadata
+
+Add a frequency to recent list.
+
+```lua
+local success = exports['roadphone']:AddRadioRecentToMetadata(source, frequency)
+```
+
+---
+
+### ClearRadioRecentFromMetadata
+
+Clear all recent frequencies.
+
+```lua
+local success = exports['roadphone']:ClearRadioRecentFromMetadata(source)
+```
+
+---
+
+## Social Media Accounts
+
+### TweetWave
+
+```lua
+-- Get account
+local account = exports['roadphone']:GetTweetWaveAccountFromMetadata(source)
+
+-- Set account (on login)
+exports['roadphone']:SetTweetWaveAccountInMetadata(source, {
+    id = 1,
+    username = "johndoe",
+    avatar_url = "/img/user.png",
+    bio = "Hello world",
+    verify = 0
+})
+
+-- Update account fields
+exports['roadphone']:UpdateTweetWaveAccountInMetadata(source, {
+    avatar_url = "/img/newavatar.png",
+    bio = "Updated bio"
+})
+
+-- Clear account (on logout)
+exports['roadphone']:ClearTweetWaveAccountFromMetadata(source)
+```
+
+<Note>
+  **Backwards Compatibility:** The old `*TwitterAccount*` export names still work but are deprecated.
+</Note>
+
+---
+
+### Connect
+
+```lua
+-- Get account
+local account = exports['roadphone']:GetConnectAccountFromMetadata(source)
+
+-- Set account (on login)
+exports['roadphone']:SetConnectAccountInMetadata(source, {
+    id = 1,
+    username = "johndoe",
+    firstname = "John",
+    lastname = "Doe",
+    avatar_url = "/img/user.png",
+    verify = 0
+})
+
+-- Update account fields
+exports['roadphone']:UpdateConnectAccountInMetadata(source, {
+    avatar_url = "/img/newavatar.png"
+})
+
+-- Clear account (on logout)
+exports['roadphone']:ClearConnectAccountFromMetadata(source)
+```
+
+---
+
+### RoadID Account
+
+```lua
+-- Get account
+local account = exports['roadphone']:GetPhoneAccountFromMetadata(source)
+
+-- Set account
+exports['roadphone']:SetPhoneAccountInMetadata(source, {
+    firstname = "John",
+    lastname = "Doe",
+    mail = "john@example.com",
+    birth = "01.01.1990",
+    profile = "/img/user.png"
+})
+
+-- Update profile picture
+exports['roadphone']:UpdatePhoneAccountInMetadata(source, {
+    profile = "/img/newprofile.png"
+})
+
+-- Clear account (on logout)
+exports['roadphone']:ClearPhoneAccountFromMetadata(source)
+```
+
+---
+
+## App Layout
+
+### GetPhoneAppsFromMetadata
+
+Get installed apps and homescreen layout.
+
+```lua
+local apps = exports['roadphone']:GetPhoneAppsFromMetadata(source)
+```
+
+<ResponseField name="returns" type="table | nil">
+  Object with `installed` (array of app IDs) and `homescreen` (layout data).
+</ResponseField>
+
+---
+
+### UpdateInstalledApps
+
+Update the list of installed apps.
+
+```lua
+local success = exports['roadphone']:UpdateInstalledApps(source, installedApps)
+```
+
+---
+
+### UpdateHomescreenLayout
+
+Update the homescreen layout (pages and dock).
+
+```lua
+local success = exports['roadphone']:UpdateHomescreenLayout(source, homescreenData)
+```
+
+---
+
+## Backup System
+
+<Note>
+  Backup functions require `Config.BackupEnabled = true` in the configuration.
+</Note>
+
+### CreatePhoneBackup
+
+Create a backup of all phone data.
+
+```lua
+local success, result = exports['roadphone']:CreatePhoneBackup(source, backupName, backupType)
+```
+
+<ParamField path="backupName" type="string">
+  Optional custom name for the backup. Defaults to timestamp.
+</ParamField>
+
+<ParamField path="backupType" type="string">
+  `'manual'` or `'auto'`. Defaults to `'manual'`.
+</ParamField>
+
+---
+
+### GetPhoneBackups
+
+Get all backups for the player.
+
+```lua
+local backups = exports['roadphone']:GetPhoneBackups(source)
+```
+
+<ResponseField name="returns" type="table">
+  Array of backup objects with `backup_id`, `backup_name`, `created_at`, `backup_type`.
+</ResponseField>
+
+---
+
+### RestorePhoneBackup
+
+Restore phone data from a backup.
+
+```lua
+local success, message = exports['roadphone']:RestorePhoneBackup(source, backupId)
+```
+
+<ParamField path="backupId" type="string" required>
+  The UUID of the backup to restore.
+</ParamField>
+
+---
+
+### DeletePhoneBackup
+
+Delete a backup.
+
+```lua
+local success, message = exports['roadphone']:DeletePhoneBackup(source, backupId)
+```
+
+---
+
+## Metadata Limits
+
+Phone metadata has built-in limits to prevent inventory bloat:
+
+| Data Type | Limit |
+|-----------|-------|
+| Messages | 300 |
+| Contacts | 200 |
+| Notes | 150 |
+| Photos | 150 |
+| Alarms | 30 |
+| Radio Channels | 30 |
+
+When limits are exceeded, the oldest items are automatically removed.
+
+---
+
+## Complete Example
+
+```lua
+-- External script: Give player a phone with pre-configured data
+RegisterCommand('givephone', function(source, args)
+    local targetId = tonumber(args[1])
+    if not targetId then return end
+
+    -- Add phone item to player inventory (use your inventory system)
+    -- exports['ox_inventory']:AddItem(targetId, 'phone', 1)
+
+    -- Wait for inventory update
+    Citizen.Wait(100)
+
+    -- Assign phone number
+    local success, phoneNumber = exports['roadphone']:AssignPhoneNumberToItem(targetId, 'phone', 1)
+
+    if success then
+        -- Pre-configure the phone
+        exports['roadphone']:UpdatePhoneSetup(targetId, 1)
+        exports['roadphone']:UpdatePhoneSettings(targetId, {
+            brightness = 100,
+            darkmode = 0
+        })
+
+        -- Add emergency contact
+        exports['roadphone']:AddContactToMetadata(targetId, {
+            id = os.time(),
+            name = "Emergency Services",
+            number = "911"
+        })
+
+        print("Phone given with number: " .. phoneNumber)
+    end
+end, true)
+```

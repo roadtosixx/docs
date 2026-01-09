@@ -1,0 +1,171 @@
+---
+title: 'Migrate'
+description: 'Server console command to migrate player data to the metadata backup system'
+icon: 'database'
+---
+
+# phonemigrate Command
+
+The `phonemigrate` command migrates all existing player phone data from the legacy database tables to the metadata backup system. This is essential when transitioning from database-stored phone data to the item-based metadata system.
+
+## Usage
+
+```bash
+phonemigrate
+```
+
+<Warning>
+  This command can **only** be executed from the server console. It cannot be run by players, even admins.
+</Warning>
+
+## When to Use
+
+Use this command when:
+
+1. **Switching to Metadata Mode**: You're enabling `Config.UseMetadata = true` for the first time and want to preserve existing player data
+2. **Data Preservation**: Before wiping legacy database tables, to ensure all player data is backed up
+3. **Server Migration**: When moving to a new server and want to provide players with their historical data
+
+## What Gets Migrated
+
+The command creates a backup for each player containing:
+
+| Data Type | Source Table | Limit |
+|-----------|--------------|-------|
+| Contacts | `roadshop_contacts` | All |
+| Messages | `roadshop_messages` | Last 500 |
+| Notes | `roadshop_notes` | All |
+| Photos | `roadshop_camera` | Last 300 (non-deleted) |
+| Call History | `roadshop_calls` | Last 200 |
+
+## How It Works
+
+<Steps>
+  <Step title="Discovery">
+    The command scans all RoadPhone database tables to find unique player identifiers.
+  </Step>
+  <Step title="Backup Creation">
+    For each player with data, a "migration" type backup is created in the `roadshop_backups` table.
+  </Step>
+  <Step title="Skip Duplicates">
+    Players who already have a migration backup are automatically skipped (safe to run multiple times).
+  </Step>
+  <Step title="Progress Reporting">
+    Progress is displayed every 10 players with ETA and statistics.
+  </Step>
+</Steps>
+
+## Console Output
+
+```
+[RoadPhone Migration] ========================================
+[RoadPhone Migration] Starting migration process...
+[RoadPhone Migration] ========================================
+[RoadPhone Migration] Found 1523 players with data
+[RoadPhone Migration] Progress: 10/1523 (0.7%) - Created: 8 - Skipped: 0 - NoData: 2 - Errors: 0 - ETA: ~76s
+[RoadPhone Migration] Progress: 20/1523 (1.3%) - Created: 17 - Skipped: 0 - NoData: 3 - Errors: 0 - ETA: ~74s
+...
+[RoadPhone Migration] ========================================
+[RoadPhone Migration] MIGRATION COMPLETE!
+[RoadPhone Migration] ----------------------------------------
+[RoadPhone Migration] Total players:     1523
+[RoadPhone Migration] Backups created:   1412
+[RoadPhone Migration] Already migrated:  0
+[RoadPhone Migration] No data to backup: 111
+[RoadPhone Migration] Errors:            0
+[RoadPhone Migration] Total time:        78 seconds
+[RoadPhone Migration] ========================================
+```
+
+## Statistics Explained
+
+| Statistic | Description |
+|-----------|-------------|
+| **Total players** | Number of unique identifiers found across all data tables |
+| **Backups created** | Players who had data and received a new migration backup |
+| **Already migrated** | Players skipped because they already have a migration backup |
+| **No data to backup** | Players found in tables but with no actual data (empty records) |
+| **Errors** | Failed backup attempts (check console for specific errors) |
+
+## Restoring Migration Backups
+
+After migration, players can restore their data through the phone's **Settings → Backup** feature. Migration backups appear alongside regular backups with the name "Migration Backup".
+
+<Note>
+  Migration backups are stored per **player identifier**, not per phone number. This means players can restore their data to any new phone they acquire.
+</Note>
+
+## Technical Details
+
+### Database Table Used
+
+```sql
+-- Backups are stored in roadshop_backups with backup_type = 'migration'
+SELECT * FROM roadshop_backups WHERE backup_type = 'migration';
+```
+
+### Backup Data Structure
+
+```lua
+{
+    identifier = "license:abc123...",
+    phone_number = "1234567",
+    created_at = 1702345678,
+    migration = true,
+    contacts = { ... },
+    messages = { ... },
+    notes = { ... },
+    photos = { ... },
+    calls = { ... }
+}
+```
+
+### Performance Considerations
+
+- The command runs in a **background thread** to avoid blocking the server
+- A **50ms delay** is added between each player to prevent database overload
+- Estimated time: ~50ms per player (1000 players ≈ 50 seconds)
+
+## Requirements
+
+<Check>
+  `Config.BackupEnabled = true` is **not required** for migration. The command works independently.
+</Check>
+
+<Check>
+  The `roadshop_backups` table must exist. Run the SQL migrations if you haven't already.
+</Check>
+
+## Safe to Run Multiple Times
+
+The command is idempotent - running it multiple times will not create duplicate backups. Players who already have a migration backup are automatically skipped.
+
+```bash
+# First run
+phonemigrate
+# Output: Backups created: 1412
+
+# Second run
+phonemigrate
+# Output: Already migrated: 1412, Backups created: 0
+```
+
+## Troubleshooting
+
+### "No player data found"
+
+This means no records were found in the RoadPhone database tables. Either:
+- The tables are empty (fresh server)
+- The tables don't exist (run SQL migrations)
+- Wrong database connection
+
+### Errors during migration
+
+Check the server console for specific error messages. Common issues:
+- Database connection problems
+- Table structure mismatches
+- Disk space issues (JSON data can be large)
+
+### Command not working
+
+Ensure you're running it from the **server console** (txAdmin console or direct server terminal), not from in-game chat.
