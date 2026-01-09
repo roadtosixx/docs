@@ -33,8 +33,6 @@
             "group": "RoadPhone-Pro",
             "pages": [
               "roadphonepro/commands/migrate",
-              "roadphonepro/commands/migrate",
-              "roadphonepro/commands/migrate",
               "roadphonepro/custom-apps"
             ]
           },
