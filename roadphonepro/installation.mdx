@@ -1,0 +1,431 @@
+---
+title: 'Installation'
+description: 'Complete installation guide for RoadPhone Pro'
+icon: 'download'
+---
+
+# Installation
+
+This guide will walk you through the complete installation process for RoadPhone Pro on your FiveM server.
+
+## Requirements
+
+<CardGroup cols={2}>
+    <Card title="Framework" icon="box">
+        - ESX (es_extended)
+        - QBCore (qb-core)
+        - Qbox (qbx_core)
+        - Standalone
+    </Card>
+    <Card title="Database" icon="database">
+        - mysql-async
+        - or oxmysql
+    </Card>
+    <Card title="Dependencies" icon="link">
+        - xsound
+        - OneSync enabled
+    </Card>
+    <Card title="Optional" icon="plus">
+        - ox_inventory / jaksam_inventory (for metadata)
+        - Voice system (pma-voice, mumble-voip, etc.)
+    </Card>
+</CardGroup>
+
+---
+
+## Step 1: Download & Extract
+
+<Steps>
+    <Step title="Download RoadPhone Pro">
+        Download the latest version from your purchase location (Tebex/CFX).
+    </Step>
+
+    <Step title="Extract the resource">
+        Extract the `roadphone` folder to your server's `resources` directory.
+
+        ```
+        resources/
+        └── [phone]/
+        └── roadphone/
+           ├── bridge/
+           ├── client/
+           ├── server/
+           ├── public/
+           ├── API.lua
+           ├── config.lua
+           └── fxmanifest.lua
+        ```
+    </Step>
+
+    <Step title="Ensure the resource">
+        Add the following to your `server.cfg`:
+
+        ```cfg server.cfg
+        ensure roadphone
+        ```
+
+        <Warning>
+            Make sure `roadphone` starts **after** your framework (ESX/QBCore/Qbox), database, and inventory resources.
+        </Warning>
+    </Step>
+</Steps>
+
+---
+
+## Step 2: Database Setup
+
+Import the SQL file to create the required database tables.
+
+<CodeGroup>
+    ```sql Main Tables
+    -- Run the SQL file provided in the resource
+    -- Located at the downloaded folder.
+    -- Run for ESX: roadphone-esx.sql and for QB & QBOX: roadphone-qb.sql
+    ```
+</CodeGroup>
+
+The SQL file creates tables for:
+- Player data and phone numbers
+- Contacts, messages, notes
+- TweetWave posts and accounts
+- Connect posts and accounts
+- Banking transactions
+- And more...
+
+---
+
+## Step 3: Basic Configuration
+
+Open `config.lua` and configure the essential settings:
+
+### Framework Detection
+
+RoadPhone automatically detects your framework. No manual configuration needed.
+
+### Phone Item Requirement
+
+```lua config.lua
+-- Set to true if players need a phone item to use the phone
+Config.NeedItem = true
+
+-- Phone items (ignored if using jaksam_inventory)
+Config.Items = {
+    "phone",
+    "purple_phone",
+    "green_phone",
+    "red_phone",
+    "blue_phone",
+    "black_phone"
+}
+```
+
+<Note>
+    If `Config.NeedItem = false`, all players can open the phone without needing an item.
+</Note>
+
+### Phone Keybind
+
+```lua config.lua
+-- Command name for keybind
+Config.PhoneCommand = "TogglePhone"
+
+-- Enable custom keybind registration
+Config.RegisterKeyMapping = true
+
+-- Default key (players can rebind in FiveM settings)
+Config.OpenKey = 'f1'
+```
+
+### Language
+
+```lua config.lua
+-- Available: 'en', 'de', 'fr', 'es', 'pt', 'nl', 'pl', 'it', 'tr'
+Config.Locale = 'en'
+
+-- Temperature unit
+Config.Fahrenheit = false
+```
+
+---
+
+## Step 4: Image Upload Setup
+
+RoadPhone requires an image upload service for camera, profile pictures, and media sharing.
+
+Open `API.lua` and configure your upload service:
+
+<Tabs>
+    <Tab title="FiveManage (Recommended)">
+        ```lua API.lua
+        -- In config.lua
+        Config.uploadMethod = 'fivemanage'
+
+        -- In API.lua
+        API_KEY = "your-fivemanage-api-key"
+        ```
+
+        Get your API key from [fivemanage.com](https://fivemanage.com)
+    </Tab>
+
+    <Tab title="Fivemerr">
+        ```lua API.lua
+        -- In config.lua
+        Config.uploadMethod = 'fivemerr'
+
+        -- In API.lua
+        Cfg.API_KEY = "your-fivemerr-api-key"
+        ```
+
+        Get your API key from [fivemerr.com](https://fivemerr.com)
+    </Tab>
+</Tabs>
+
+<Warning>
+    Without a valid API key, camera and image upload features will not work.
+</Warning>
+
+---
+
+## Step 5: Voice Integration
+
+Configure voice chat integration for phone calls:
+
+```lua config.lua
+-- Enable ONE of these based on your voice system
+Config.UsePmaVoice = true      -- pma-voice
+Config.UseMumbleVoip = false   -- mumble-voip
+Config.UseSaltyChat = false    -- saltychat
+Config.UseYacaVoice = false    -- yaca
+```
+
+<Warning>
+    If no voice system is enabled, phone calls will not work.
+</Warning>
+
+---
+
+## Step 6: Music Setup
+
+Set your TebexID to enable the Music App.
+
+```lua API.lua
+-- In API.lua
+Cfg.TebexTransactionID = "your-tebex-id"
+```
+
+<Warning>
+    If no tebexid is entered. Music will not work.
+</Warning>
+
+---
+
+## Step 7: Inventory Item Setup
+
+If `Config.NeedItem = true`, you need to add phone items to your inventory system.
+
+<Tabs>
+    <Tab title="ox_inventory">
+        Add to `ox_inventory/data/items.lua`:
+
+        ```lua
+        ['phone'] = {
+        label = 'Phone',
+        weight = 150,
+        stack = false,
+        close = true,
+        description = 'A smartphone'
+    },
+        ```
+    </Tab>
+
+    <Tab title="QBCore">
+        Add to `qb-core/shared/items.lua`:
+
+        ```lua
+        ['phone'] = {
+        name = 'phone',
+        label = 'Phone',
+        weight = 150,
+        type = 'item',
+        image = 'phone.png',
+        unique = true,
+        useable = true,
+        shouldClose = true,
+        description = 'A smartphone'
+    },
+        ```
+    </Tab>
+
+    <Tab title="ESX">
+        Insert into your database:
+
+        ```sql
+        INSERT INTO `items` (`name`, `label`, `weight`, `rare`, `can_remove`)
+        VALUES ('phone', 'Phone', 1, 0, 1);
+        ```
+    </Tab>
+
+    <Tab title="jaksam_inventory">
+        Phone items are automatically registered. No additional setup needed.
+    </Tab>
+</Tabs>
+
+---
+
+## Step 8: Optional Features
+
+### Metadata System (Phone Stealing/Trading)
+
+Enable item-based phone data for advanced features:
+
+```lua config.lua
+Config.UseMetadata = true
+Config.InventorySystem = 'ox_inventory' -- or 'jaksam'
+```
+
+<Card title="Metadata System Guide" icon="card-sim" href="/roadphonepro/metadata">
+    Learn how to set up and use the metadata system for phone stealing, trading, and multiple phones.
+</Card>
+
+### Target System
+
+Enable target interaction for phone-related features:
+
+```lua config.lua
+Config.UseTarget = true
+Config.TargetSystem = "ox_target" -- or "qb-target"
+```
+
+### Billing Integration
+
+Connect with your billing system:
+
+```lua config.lua
+-- Enable ONE of these
+Config.myBilling = false
+Config.okokBilling = false
+Config.JaksamBilling = false
+Config.codemBilling = false
+Config.codemBilling2 = false
+```
+
+### Banking Integration
+
+```lua config.lua
+Config.okokBanking = false
+Config.rxBanking = false
+```
+
+---
+
+## Step 9: Service & Emergency Numbers
+
+Configure emergency services and dispatch:
+
+```lua config.lua
+-- Job to phone number mapping for dispatch
+Config.Leitstelle = {
+    ['police'] = 911,
+    ['ambulance'] = 112,
+}
+
+-- Jobs that can post news
+Config.NewsAppAccess = {
+    'police',
+    'ambulance',
+}
+```
+
+---
+
+## Step 10: Final Steps
+
+<Steps>
+    <Step title="Restart your server">
+        Restart your FiveM server to apply all changes.
+    </Step>
+
+    <Step title="Test the phone">
+        Join your server and test the phone:
+        - Press the configured key (default: F1) or use the phone item
+        - Check that all apps load correctly
+        - Test camera functionality
+        - Make a test call
+    </Step>
+
+    <Step title="Give players phones">
+        If `Config.NeedItem = true`, give players phone items:
+
+        ```lua
+        -- ESX
+        xPlayer.addInventoryItem('phone', 1)
+
+        -- QBCore
+        Player.Functions.AddItem('phone', 1)
+
+        -- ox_inventory
+        exports.ox_inventory:AddItem(source, 'phone', 1)
+        ```
+    </Step>
+</Steps>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="Phone doesn't open">
+        **Check:**
+        - Resource is started (`ensure roadphone` in server.cfg)
+        - Framework is loaded before roadphone
+        - If `NeedItem = true`, player has a phone item
+        - Keybind is correctly configured
+    </Accordion>
+
+    <Accordion title="Camera doesn't work">
+        **Check:**
+        - API key is set in `API.lua`
+        - `Config.uploadMethod` matches your service
+        - No firewall blocking outgoing requests
+    </Accordion>
+
+    <Accordion title="Calls don't work">
+        **Check:**
+        - Voice system is correctly configured
+        - Both players have phone numbers assigned
+        - xsound resource is running
+    </Accordion>
+
+    <Accordion title="Database errors">
+        **Check:**
+        - SQL file has been imported
+        - mysql-async or oxmysql is running
+        - Database credentials are correct in server.cfg
+    </Accordion>
+
+    <Accordion title="Framework not detected">
+        **Check:**
+        - Framework resource starts before roadphone
+        - Framework is properly installed
+        - Check server console for Bridge initialization messages
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+    <Card title="Metadata System" icon="card-sim" href="/roadphonepro/metadata">
+        Enable phone stealing, trading, and multiple phones
+    </Card>
+    <Card title="Server Exports" icon="server" href="/roadphonepro/api/server">
+        Integrate RoadPhone with your other resources
+    </Card>
+    <Card title="Client Exports" icon="code" href="/roadphonepro/api/client">
+        Client-side integration options
+    </Card>
+    <Card title="Commands" icon="terminal" href="/roadphonepro/commands/migrate">
+        Available admin commands
+    </Card>
+</CardGroup>

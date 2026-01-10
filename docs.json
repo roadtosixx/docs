@@ -32,7 +32,9 @@
           {
             "group": "RoadPhone-Pro",
             "pages": [
+              "roadphonepro/installation",
               "roadphonepro/commands/migrate",
+              "roadphonepro/metadata",
               "roadphonepro/custom-apps"
             ]
           },

@@ -198,7 +198,7 @@ icon: "badge-info"
   ```
 </Accordion>
 
-<Accordion title="I forgot my phone PIN" icon="shield-off">
+<Accordion title="I forgot my phone PIN ( only without metadata )" icon="shield-off">
   Clear your cache once — this will remove the PIN lock.
   <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FvcFDhPma8ySAazsJjRlB%2Fcache.png?alt=media&token=3dbd995d-a615-4e70-9462-7b34231ff009" alt="Clear cache to reset PIN" className="rounded-lg" />
 </Accordion>
@@ -217,48 +217,75 @@ icon: "badge-info"
   <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FW9pF5RDbCDN79BfallNi%2F453435t43.png?alt=media&token=238a7cbc-3172-483c-a344-03f05e4a4cac" alt="Iconify example" className="rounded-lg" />
 </Accordion>
 
+<Accordion title="OxInventory snippets ( metadata )" icon="database">
+
+  Use these snippets if you use metadata with OxInventory to block/unblock the phone based on inventory.
+
+  ```lua OxInventory items expandable wrap
+	['phone'] = {
+		label = 'Phone',
+		weight = 190,
+		stack = false,
+		consume = 0,
+		client = {
+			add = function(total)
+				if total > 0 then
+					pcall(function() return exports['roadphone']:unblockPhone() end)
+				end
+			end,
+
+			remove = function(total)
+				if total < 1 then
+					pcall(function() return exports['roadphone']:blockPhone() end)
+				end
+			end
+		}
+	}
+  ```
+</Accordion>
+
 <Accordion title="OxInventory snippets" icon="database">
   The following example items block will block/unblock the phone based on inventory.
 
   ```lua OxInventory items expandable wrap
-  ['phone'] = {
-      label = 'Handy',
-      weight = 190,
-      stack = false,
-      consume = 0,
-      client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+	['phone'] = {
+		label = 'Phone',
+		weight = 190,
+		stack = false,
+		consume = 0,
+		client = {
+			add = function(total)
+				if total > 0 then
+					pcall(function() return exports['roadphone']:unblockPhone() end)
+				end
+			end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
-      }
-  },
+			remove = function(total)
+				if total < 1 then
+					pcall(function() return exports['roadphone']:blockPhone() end)
+				end
+			end
+		}
+	},
 
   ['purple_phone'] = {
       label = 'Handy',
       weight = 190,
       stack = false,
       consume = 0,
-      client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+		  client = {
+			add = function(total)
+				if total > 0 then
+					pcall(function() return exports['roadphone']:unblockPhone() end)
+				end
+			end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
-      }
+			remove = function(total)
+				if total < 1 then
+					pcall(function() return exports['roadphone']:blockPhone() end)
+				end
+			end
+		}
   },
 
   ['green_phone'] = {
@@ -266,19 +293,19 @@ icon: "badge-info"
       weight = 190,
       stack = false,
       consume = 0,
-      client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+		  client = {
+			  add = function(total)
+				  if total > 0 then
+					  pcall(function() return exports['roadphone']:unblockPhone() end)
+				  end
+			  end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
-      }
+			  remove = function(total)
+				  if total < 1 then
+					  pcall(function() return exports['roadphone']:blockPhone() end)
+				  end
+			  end
+		   }
   },
 
   ['red_phone'] = {
@@ -286,19 +313,20 @@ icon: "badge-info"
       weight = 190,
       stack = false,
       consume = 0,
-      client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+		  client = {
+			   add = function(total)
+				  if total > 0 then
+					  pcall(function() return exports['roadphone']:unblockPhone() end)
+				  end
+			   end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
-      }
+			   remove = function(total)
+				  if total < 1 then
+				  	pcall(function() return exports['roadphone']:blockPhone() end)
+				  end
+			  end
+      
+  }
   },
 
   ['blue_phone'] = {
@@ -307,17 +335,17 @@ icon: "badge-info"
       stack = false,
       consume = 0,
       client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+			  add = function(total)
+				  if total > 0 then
+					  pcall(function() return exports['roadphone']:unblockPhone() end)
+				  end
+			  end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
+			  remove = function(total)
+				  if total < 1 then
+					  pcall(function() return exports['roadphone']:blockPhone() end)
+				  end
+			  end
       }
   },
 
@@ -327,17 +355,17 @@ icon: "badge-info"
       stack = false,
       consume = 0,
       client = {
-          add = function(total)
-              if total > 0 then
-                  exports['roadphone']:unblockPhone()
-              end
-          end,
+			  add = function(total)
+				  if total > 0 then
+					  pcall(function() return exports['roadphone']:unblockPhone() end)
+				  end
+			  end,
 
-          remove = function(total)
-              if total < 1 then
-                  exports['roadphone']:blockPhone()
-              end
-          end
+			  remove = function(total)
+				  if total < 1 then
+					  pcall(function() return exports['roadphone']:blockPhone() end)
+				  end
+			  end
       }
   },
   ```
