@@ -58,18 +58,13 @@ icon: "badge-info"
 </Accordion>
 
 <Accordion title="Add jobs to the Service App / Add dispatches" icon="briefcase">
-  Open **/public/static/config/config.json**, search for **Service**, then **copy an example job** and change: `number`, `name`, `img`, `jobname`, and the `coords`.
+  Open **/public/static/config/config.json**, search for **Business**, then **copy an example job** and change: `job`, `name`, `shortName`, `icon`, `number`, `openingHours`, `minGradeToManage` and the `coords`.
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FUFRsoqtkAtLzOL054PL8%2Fimage.png?alt=media&token=ae90ea43-c298-431a-9843-e294db4f9866" alt="Service app jobs config" className="rounded-lg" />
-</Accordion>
-
-<Accordion title="On start it shows ESX nil" icon="circle-alert">
-  Follow the instructions in `config.lua` (ESX init).  
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FVZtM4eiwALSIHoJx86ih%2FScreenshot_487.png?alt=media&token=c541f3ea-f5fb-4f59-9f24-62445e1946f7" alt="ESX nil fix" className="rounded-lg" />
+  <img src="https://r2.fivemanage.com/dsWPzkvn2AwNhVrA6MJWw/imjztzjtjztage.png" alt="Service app jobs config" className="rounded-lg" />
 </Accordion>
 
 <Accordion title="Add my own notifications" icon="bell">
-  In **ClientAPI.lua**, find `sendNotification(text)` and replace `ESX.ShowNotification(text)` with your notification trigger.
+  In **ClientAPI.lua**, find `sendNotification(text)` and replace `Bridge.Notification.Show(text)` with your notification trigger.
 </Accordion>
 
 <Accordion title="Talk on the radio and voice at the same time" icon="radio">
@@ -94,7 +89,7 @@ icon: "badge-info"
       end
       ```
     </Tab>
-    <Tab title="QBCore">
+    <Tab title="QBCore / Qbox">
       <Warning>This example refers to <strong>qb-ambulancejob</strong>. If you use a different script, adapt accordingly.</Warning>
       In <code>qb-ambulancejob/client/dead.lua</code>, search for <code>"hospital:server:ambulanceAlert"</code> and replace with:
       
@@ -106,8 +101,8 @@ icon: "badge-info"
 </Accordion>
 
 <Accordion title="Phone doesn't open after reviving" icon="phone">
-  If you’re using an old ESX Ambulancejob or a custom one, change <code>Config.ESXplayerSpawnEvent</code> to <code>playerSpawned</code>.
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FMTrexF5bq6ZnMkSzLsPo%2Fimgrewgregreage.png?alt=media&token=c7b619c3-f25e-4c96-afbb-934b1c980934" alt="Spawn event setting" className="rounded-lg" />
+  If you’re using an old Ambulancejob or a custom one, go to `bridge/modules/events/shared.lua` and change the PlayerSpawn events from your framework you using to the custom event.
+  <img src="https://r2.fivemanage.com/dsWPzkvn2AwNhVrA6MJWw/imahhtgrzge.png" alt="Spawn event setting" className="rounded-lg" />
 </Accordion>
 
 <Accordion title="Disable cryptocurrency" icon="coins">
@@ -121,14 +116,8 @@ icon: "badge-info"
 
 <Accordion title="Change the phone language" icon="earth">
   <Note>App names are excluded from translation. To localize app names, change them in <code>config.json</code>.</Note>
-  <Tabs>
-    <Tab title="ESX">
-      In <code>config.lua</code>, set the <code>locale</code> to your preferred language.
-    </Tab>
-    <Tab title="QBCore">
-      In <code>fxmanifest.lua</code>, find the <code>locales/</code> path and change it to your preferred language.
-    </Tab>
-  </Tabs>
+  
+  In <code>config.lua</code>, set the <code>locale</code> to your preferred language.
 </Accordion>
 
 <Accordion title="SaltyChat: Radio doesn’t work" icon="waves">
@@ -219,32 +208,14 @@ icon: "badge-info"
 
 <Accordion title="OxInventory snippets ( metadata )" icon="database">
 
-  Use these snippets if you use metadata with OxInventory to block/unblock the phone based on inventory.
-
-  ```lua OxInventory items expandable wrap
-	['phone'] = {
-		label = 'Phone',
-		weight = 190,
-		stack = false,
-		consume = 0,
-		client = {
-			add = function(total)
-				if total > 0 then
-					pcall(function() return exports['roadphone']:unblockPhone() end)
-				end
-			end,
-
-			remove = function(total)
-				if total < 1 then
-					pcall(function() return exports['roadphone']:blockPhone() end)
-				end
-			end
-		}
-	}
-  ```
+    Go to the metadata description.
+    
 </Accordion>
 
 <Accordion title="OxInventory snippets" icon="database">
+
+  If you don't use metadata with OxInventory, use these snippets to block/unblock the phone based on inventory.
+  
   The following example items block will block/unblock the phone based on inventory.
 
   ```lua OxInventory items expandable wrap

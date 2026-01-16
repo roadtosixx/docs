@@ -33,6 +33,7 @@
             "group": "RoadPhone-Pro",
             "pages": [
               "roadphonepro/installation",
+              "roadphonepro/faq",
               "roadphonepro/commands/migrate",
               "roadphonepro/metadata",
               "roadphonepro/custom-apps"
