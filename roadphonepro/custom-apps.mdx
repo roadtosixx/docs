@@ -148,3 +148,582 @@ exports['roadphone']:inputFocus(boolean) -- true or false
 <Info>
   Use `true` to enable input focus (keyboard/mouse control) and `false` to disable it.
 </Info>
+
+## Overview
+
+RoadPhone exposes a global `window.roadphone` API that allows developers to build custom applications with full access to phone data, settings, and events.
+
+<Info>
+    The API is available globally via `window.roadphone` and can be accessed from any iframe-based custom app.
+</Info>
+
+## Quick Start
+
+```javascript
+// Check if API is available
+if (window.roadphone) {
+  const isDark = window.roadphone.isDarkMode()
+  const playerName = window.roadphone.getPlayerName()
+
+  console.log(`Hello ${playerName}, dark mode is ${isDark ? 'on' : 'off'}`)
+}
+```
+
+## Getter Functions
+
+### isDarkMode()
+
+Returns whether dark mode is currently enabled.
+
+<ResponseField name="returns" type="boolean">
+    `true` if dark mode is enabled, `false` otherwise
+</ResponseField>
+
+```javascript
+const isDark = window.roadphone.isDarkMode()
+// true or false
+```
+
+### getPhoneNumber()
+
+Returns the current phone number.
+
+<ResponseField name="returns" type="string">
+    The player's phone number (e.g., `"1234567"`)
+</ResponseField>
+
+```javascript
+const phoneNumber = window.roadphone.getPhoneNumber()
+// "1234567"
+```
+
+### getPlayerName()
+
+Returns the player's character name.
+
+<ResponseField name="returns" type="string">
+    The player's name (e.g., `"John Doe"`)
+</ResponseField>
+
+```javascript
+const name = window.roadphone.getPlayerName()
+// "John Doe"
+```
+
+### getJob()
+
+Returns the player's current job.
+
+<ResponseField name="returns" type="string">
+    The job identifier (e.g., `"police"`, `"ambulance"`, `"unemployed"`)
+</ResponseField>
+
+```javascript
+const job = window.roadphone.getJob()
+// "police"
+```
+
+### getIdentifier()
+
+Returns the player's unique identifier.
+
+<ResponseField name="returns" type="string">
+    The player identifier (format depends on framework)
+</ResponseField>
+
+```javascript
+const identifier = window.roadphone.getIdentifier()
+// ESX: "license:xxxxx"
+// QBCore: "citizenid"
+```
+
+### getBrightness()
+
+Returns the current screen brightness level.
+
+<ResponseField name="returns" type="number">
+    Brightness value between `10` and `100`
+</ResponseField>
+
+```javascript
+const brightness = window.roadphone.getBrightness()
+// 75
+```
+
+### isFlightMode()
+
+Returns whether flight mode is enabled.
+
+<ResponseField name="returns" type="boolean">
+    `true` if flight mode is on, `false` otherwise
+</ResponseField>
+
+```javascript
+const flightMode = window.roadphone.isFlightMode()
+// false
+```
+
+### getConfig()
+
+Returns the full phone configuration object.
+
+<ResponseField name="returns" type="object">
+    The complete config.json configuration
+</ResponseField>
+
+```javascript
+const config = window.roadphone.getConfig()
+// { lockscreen: true, ... }
+```
+
+## Utility Functions
+
+### copyToClipboard(text)
+
+Copies text to the clipboard.
+
+<ParamField path="text" type="string" required>
+    The text to copy
+</ParamField>
+
+```javascript
+window.roadphone.copyToClipboard('Hello World')
+```
+
+### post(event, data)
+
+Sends data to the Lua backend. Use this to communicate with your server-side scripts.
+
+<ParamField path="event" type="string" required>
+    The event name to trigger
+</ParamField>
+
+<ParamField path="data" type="object">
+    Optional data to send with the event
+</ParamField>
+
+```javascript
+// Send custom event to Lua
+window.roadphone.post('myCustomEvent', {
+  action: 'doSomething',
+  value: 123
+})
+```
+
+<Tip>
+    Make sure to register the corresponding NUI callback in your Lua code to handle the event.
+</Tip>
+
+### showNotification(options)
+
+Displays a phone notification.
+
+<ParamField path="options" type="object" required>
+    Notification configuration object
+</ParamField>
+
+<Expandable title="options properties">
+    <ParamField path="appTitle" type="string">
+        The app name shown in the notification (default: `"Custom App"`)
+    </ParamField>
+    <ParamField path="title" type="string">
+        The notification title
+    </ParamField>
+    <ParamField path="message" type="string">
+        The notification message
+    </ParamField>
+    <ParamField path="icon" type="string">
+        Path to the notification icon
+    </ParamField>
+</Expandable>
+
+```javascript
+window.roadphone.showNotification({
+  appTitle: 'My App',
+  title: 'New Message',
+  message: 'You have received a new message!',
+  icon: '/public/img/Apps/light_mode/custom.webp'
+})
+```
+
+## Event System
+
+The API includes a powerful event system that allows your custom app to react to phone state changes in real-time.
+
+### on(event, callback)
+
+Subscribe to an event.
+
+<ParamField path="event" type="string" required>
+    The event name to listen for
+</ParamField>
+
+<ParamField path="callback" type="function" required>
+    Function to call when the event fires
+</ParamField>
+
+```javascript
+window.roadphone.on('darkModeChanged', (isDark) => {
+  document.body.classList.toggle('dark-mode', isDark)
+})
+```
+
+### off(event, callback)
+
+Unsubscribe from an event.
+
+<ParamField path="event" type="string" required>
+    The event name to unsubscribe from
+</ParamField>
+
+<ParamField path="callback" type="function" required>
+    The same function reference used when subscribing
+</ParamField>
+
+```javascript
+const handler = (isDark) => console.log(isDark)
+
+// Subscribe
+window.roadphone.on('darkModeChanged', handler)
+
+// Unsubscribe
+window.roadphone.off('darkModeChanged', handler)
+```
+
+## Available Events
+
+<AccordionGroup>
+    <Accordion title="phoneOpened" icon="mobile">
+        Fired when the phone is opened.
+
+        ```javascript
+        window.roadphone.on('phoneOpened', () => {
+        console.log('Phone opened!')
+        // Initialize your app, fetch data, etc.
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="phoneClosed" icon="mobile">
+        Fired when the phone is closed.
+
+        ```javascript
+        window.roadphone.on('phoneClosed', () => {
+        console.log('Phone closed!')
+        // Save state, cleanup, etc.
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="darkModeChanged" icon="moon">
+        Fired when dark mode is toggled.
+
+        **Payload:** `boolean` - `true` if dark mode is now enabled
+
+        ```javascript
+        window.roadphone.on('darkModeChanged', (isDark) => {
+        if (isDark) {
+        document.body.style.background = '#1c1c1e'
+        document.body.style.color = '#ffffff'
+    } else {
+        document.body.style.background = '#ffffff'
+        document.body.style.color = '#000000'
+    }
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="brightnessChanged" icon="sun">
+        Fired when screen brightness changes.
+
+        **Payload:** `number` - Brightness value (10-100)
+
+        ```javascript
+        window.roadphone.on('brightnessChanged', (brightness) => {
+        console.log(`Brightness: ${brightness}%`)
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="flightModeChanged" icon="plane">
+        Fired when flight mode is toggled.
+
+        **Payload:** `boolean` - `true` if flight mode is now enabled
+
+        ```javascript
+        window.roadphone.on('flightModeChanged', (isEnabled) => {
+        if (isEnabled) {
+        showOfflineMessage()
+    } else {
+        fetchLatestData()
+    }
+    })
+        ```
+    </Accordion>
+</AccordionGroup>
+
+## Setup
+
+Custom Apps are loaded as external URLs inside an iframe within the phone. To set up your custom app:
+
+<Steps>
+    <Step title="Create your app">
+        Build your custom app as a standalone HTML page and host it on a web server or locally.
+    </Step>
+    <Step title="Configure the URL">
+        Open `public/static/config/config.json` and find the `AppStore` section. Set your CustomApp URL:
+
+        ```json
+        {
+            "AppStore": {
+            "CustomApp": {
+            "url": "https://your-server.com/my-custom-app.html",
+            "darkmode": true
+        }
+        }
+        }
+        ```
+    </Step>
+    <Step title="Access the API">
+        Your app runs inside an iframe and can access `window.parent.roadphone` to use the API.
+    </Step>
+</Steps>
+
+<Warning>
+    Since your custom app runs inside an iframe, you must access the API via `window.parent.roadphone` instead of `window.roadphone`.
+</Warning>
+
+## Complete Example
+
+Here's a complete example of a custom app that displays player information. This app is designed to fit perfectly within the phone's iframe and uses `vh` units for proper scaling.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>My Custom App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body.dark {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    body.light {
+      background-color: #f2f2f7;
+      color: #1d1d1f;
+    }
+
+    .app-container {
+      width: 100%;
+      height: 100%;
+      padding: 1.5vh;
+      padding-top: 5vh; /* Space for phone status bar */
+      overflow-y: auto;
+    }
+
+    .header {
+      text-align: center;
+      padding: 2vh 0 3vh;
+    }
+
+    .header-title {
+      font-size: 2vh;
+      font-weight: 700;
+    }
+
+    .card {
+      border-radius: 1.2vh;
+      padding: 1.5vh;
+      margin-bottom: 1vh;
+    }
+
+    body.light .card {
+      background: #ffffff;
+    }
+
+    body.dark .card {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .label {
+      font-size: 0.9vh;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.05vh;
+      margin-bottom: 0.5vh;
+    }
+
+    .value {
+      font-size: 1.4vh;
+      font-weight: 600;
+    }
+
+    .button {
+      width: 100%;
+      padding: 1.2vh;
+      border: none;
+      border-radius: 1vh;
+      font-size: 1.1vh;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 2vh;
+      background: #007aff;
+      color: #ffffff;
+    }
+
+    body.dark .button {
+      background: #0a84ff;
+    }
+  </style>
+</head>
+<body class="light">
+  <div class="app-container">
+    <div class="header">
+      <div class="header-title">My Custom App</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Player Name</div>
+      <div class="value" id="playerName">Loading...</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Phone Number</div>
+      <div class="value" id="phoneNumber">Loading...</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Job</div>
+      <div class="value" id="job">Loading...</div>
+    </div>
+
+    <button class="button" onclick="showNotification()">
+      Send Test Notification
+    </button>
+  </div>
+
+  <script>
+    // Access the API from parent window (since we're in an iframe)
+    const roadphone = window.parent.roadphone
+
+    function init() {
+      // Check if API is available
+      if (!roadphone) {
+        console.error('RoadPhone API not available')
+        document.getElementById('playerName').textContent = 'API not available'
+        return
+      }
+
+      // Load initial data
+      document.getElementById('playerName').textContent = roadphone.getPlayerName() || 'Unknown'
+      document.getElementById('phoneNumber').textContent = roadphone.getPhoneNumber() || 'Unknown'
+      document.getElementById('job').textContent = roadphone.getJob() || 'Unemployed'
+
+      // Apply initial theme
+      applyTheme(roadphone.isDarkMode())
+
+      // Listen for dark mode changes
+      roadphone.on('darkModeChanged', applyTheme)
+    }
+
+    function applyTheme(isDark) {
+      document.body.classList.remove('dark', 'light')
+      document.body.classList.add(isDark ? 'dark' : 'light')
+    }
+
+    function showNotification() {
+      if (!roadphone) return
+
+      roadphone.showNotification({
+        appTitle: 'My Custom App',
+        title: 'Hello!',
+        message: 'This is a test notification from your custom app.'
+      })
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init)
+    } else {
+      init()
+    }
+  </script>
+</body>
+</html>
+```
+
+<Tip>
+    Use `vh` units for sizing (like the rest of RoadPhone) to ensure your app scales correctly on different screen sizes.
+</Tip>
+
+## Lua Backend Integration
+
+To handle custom events from your app, register NUI callbacks in your Lua code:
+
+```lua
+-- server/custom_app.lua
+RegisterNUICallback('myCustomEvent', function(data, cb)
+    local src = source
+
+    print('Received custom event:', json.encode(data))
+
+    -- Do something with the data
+    if data.action == 'doSomething' then
+        -- Your logic here
+    end
+
+    cb('ok')
+end)
+```
+
+## API Reference
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `isDarkMode()` | `boolean` | Check if dark mode is enabled |
+| `getPhoneNumber()` | `string` | Get the phone number |
+| `getPlayerName()` | `string` | Get the player's name |
+| `getJob()` | `string` | Get the player's job |
+| `getIdentifier()` | `string` | Get the player's identifier |
+| `getBrightness()` | `number` | Get brightness (10-100) |
+| `isFlightMode()` | `boolean` | Check if flight mode is on |
+| `getConfig()` | `object` | Get the full config |
+| `copyToClipboard(text)` | `void` | Copy text to clipboard |
+| `post(event, data)` | `Promise` | Send data to Lua backend |
+| `showNotification(opts)` | `void` | Show a notification |
+| `on(event, callback)` | `void` | Subscribe to an event |
+| `off(event, callback)` | `void` | Unsubscribe from an event |
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `phoneOpened` | none | Phone was opened |
+| `phoneClosed` | none | Phone was closed |
+| `darkModeChanged` | `boolean` | Dark mode toggled |
+| `brightnessChanged` | `number` | Brightness changed |
+| `flightModeChanged` | `boolean` | Flight mode toggled |
+
+<Card title="Version" icon="tag">
+    Current API Version: **1.0.0**
+
+    Access via: `window.roadphone.version`
+</Card>
