@@ -1,0 +1,251 @@
+---
+title: 'Custom Upload'
+description: 'Set up your own file upload endpoint with presigned URLs for full control over media storage'
+icon: 'cloud-upload'
+---
+
+# Custom Upload
+
+RoadPhone supports two upload methods: **FiveManage** (a managed third-party service) and **Custom Upload** (your own endpoint). This guide explains how to set up and use the Custom Upload method.
+
+## Why Presigned URLs?
+
+<Warning>
+  RoadPhone **only** supports presigned URL-based uploads for the custom upload method. Direct API key uploads (where the client sends the API key in the request) are **not supported**.
+</Warning>
+
+Presigned URLs are the industry-standard approach for secure file uploads. Here's why RoadPhone enforces this pattern:
+
+<CardGroup cols={2}>
+  <Card title="API Key Security" icon="shield-check">
+    Your API key **never leaves the server**. It is only used server-side to request a presigned URL from your storage provider. The NUI frontend (browser) never sees or transmits your credentials.
+  </Card>
+  <Card title="No Key Leakage" icon="key">
+    Since the FiveM NUI layer runs in a Chromium browser, any API key sent to the client can be extracted by players using browser developer tools. Presigned URLs eliminate this risk entirely.
+  </Card>
+  <Card title="Time-Limited Access" icon="clock">
+    Presigned URLs are temporary. Even if intercepted, they expire after a short period and can only be used for a single upload. This limits the blast radius of any potential misuse.
+  </Card>
+  <Card title="Full Control" icon="sliders-horizontal">
+    You control the storage backend, file size limits, allowed file types, and expiration times — all from your own server.
+  </Card>
+</CardGroup>
+
+### How It Works
+
+<Steps>
+  <Step title="Phone requests upload" icon="smartphone">
+    The Phone NUI triggers a callback (`requestgfu`) to the **FiveM server**, asking for a presigned URL.
+  </Step>
+  <Step title="FiveM Server contacts your API" icon="server">
+    The FiveM server sends a `GET` request to your upload API endpoint, authenticating with your **API key** (server-side only).
+  </Step>
+  <Step title="Your API generates a presigned URL" icon="link">
+    Your API server generates a **time-limited presigned URL** from your storage provider (S3, R2, etc.) and returns it.
+  </Step>
+  <Step title="Presigned URL is passed back" icon="arrow-down-to-line">
+    The presigned URL travels back through the FiveM server to the Phone NUI — **without exposing any API key**.
+  </Step>
+  <Step title="Phone uploads directly to storage" icon="cloud-upload">
+    The Phone NUI uploads the file **directly** to the storage provider using the presigned URL.
+  </Step>
+  <Step title="Storage returns the file URL" icon="circle-check">
+    The storage provider returns the final public URL of the uploaded file back to the phone.
+  </Step>
+</Steps>
+
+<Info>
+  **Key point:** Your API key is only used in step 2 (server-to-server). The NUI client never touches it.
+</Info>
+
+---
+
+## Configuration
+
+### Step 1: Set Upload Method
+
+In `config.lua`, set the upload method to `custom`:
+
+```lua config.lua
+Config.uploadMethod = 'custom' -- Options: 'fivemanage', 'custom'
+```
+
+### Step 2: Configure Your Endpoint
+
+Edit `uploader/upload-server.lua` with your endpoint details:
+
+```lua uploader/upload-server.lua
+local APIKey = 'your-secret-api-key' -- Your API key (server-side only, never exposed to clients)
+
+Bridge.RegisterCallback('roadphone:server:custom:upload:request', function(source, cb, filetype)
+
+    local url = "https://your-api.example.com/presigned-url"
+
+    if filetype then
+        url = url .. "?fileType=" .. filetype -- image, video, or audio
+    end
+
+    PerformHttpRequest(url, function(statusCode, response, headers)
+        if statusCode == 200 then
+            local data = json.decode(response)
+            if data then
+                cb(data)
+            else
+                cb(nil)
+            end
+        else
+            cb(nil)
+        end
+    end, 'GET', '', {
+        ['Authorization'] = APIKey
+    })
+
+end)
+```
+
+This file is already included in `fxmanifest.lua` as a server script, so no additional setup is needed.
+
+---
+
+## API Response Format
+
+Your presigned URL endpoint must return a JSON response that contains a `presignedUrl` field. RoadPhone expects the following structure:
+
+### Presigned URL Response
+
+Your API endpoint (the one called by `upload-server.lua`) should return:
+
+```json
+{
+  "data": {
+    "presignedUrl": "https://your-storage.example.com/upload?signature=abc123&expires=1234567890"
+  }
+}
+```
+
+<Info>
+  The phone extracts the presigned URL from `response.data.presignedUrl`. Make sure your API returns this exact structure.
+</Info>
+
+### Upload Result Response
+
+After the client uploads a file to the presigned URL, the storage service should return the final URL of the uploaded file. RoadPhone supports two common response formats:
+
+<Tabs>
+  <Tab title="Format A (Nested)">
+    ```json
+    {
+      "data": {
+        "url": "https://your-cdn.example.com/uploads/image-abc123.png"
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Format B (Flat)">
+    ```json
+    {
+      "url": "https://your-cdn.example.com/uploads/image-abc123.png"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Both formats are supported. RoadPhone checks `response.data.url` first, then falls back to `response.url`.
+
+---
+
+## Supported File Types
+
+The `filetype` parameter passed to your endpoint indicates what kind of media is being uploaded:
+
+| File Type | Used By | Example MIME Types |
+|-----------|---------|-------------------|
+| `image` | Camera, Snapy, Livestream, Instagram, Control Centre | `image/png`, `image/jpeg`, `image/webp` |
+| `video` | Camera (video recording) | `video/webm` |
+| `audio` | Voice Memos, Voice Messages | `audio/webm`, `audio/mpeg` |
+
+You can use this parameter to configure different storage buckets, file size limits, or validation rules per file type.
+
+---
+
+## Example: Building Your Own Endpoint
+
+Here is a minimal example of a presigned URL API using Node.js and AWS S3:
+
+```javascript
+const express = require('express')
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner')
+const crypto = require('crypto')
+
+const app = express()
+const s3 = new S3Client({ region: 'eu-central-1' })
+
+const API_KEY = 'your-secret-api-key'
+const BUCKET = 'your-bucket-name'
+const CDN_URL = 'https://your-cdn.example.com'
+
+const MIME_TYPES = {
+  image: 'image/png',
+  video: 'video/webm',
+  audio: 'audio/webm',
+}
+
+app.get('/presigned-url', async (req, res) => {
+  // Validate API key
+  if (req.headers.authorization !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const fileType = req.query.fileType || 'image'
+  const fileId = crypto.randomUUID()
+  const key = `uploads/${fileType}/${fileId}`
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    ContentType: MIME_TYPES[fileType] || 'application/octet-stream',
+  })
+
+  const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 300 })
+
+  res.json({
+    data: {
+      presignedUrl: presignedUrl,
+      url: `${CDN_URL}/${key}`,
+    },
+  })
+})
+
+app.listen(3000)
+```
+
+<Note>
+  This is a simplified example. In production, add rate limiting, file size validation, and proper error handling.
+</Note>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Uploads fail silently">
+    - Check your FiveM server console for errors from `upload-server.lua`
+    - Verify your API endpoint is reachable from the FiveM server
+    - Ensure the API key in `upload-server.lua` matches your endpoint's expected key
+    - Confirm your endpoint returns `{ data: { presignedUrl: "..." } }` format
+  </Accordion>
+
+  <Accordion title="File uploads succeed but URL is empty">
+    - Check the response format from your storage provider after upload
+    - RoadPhone expects either `{ data: { url: "..." } }` or `{ url: "..." }`
+    - Test your presigned URL manually with `curl` to see the response format
+  </Accordion>
+
+  <Accordion title="Config.uploadMethod is set but nothing happens">
+    - Ensure `config.lua` has `Config.uploadMethod = 'custom'` (not `'fivemanage'`)
+    - Restart the FiveM resource completely after changing the config
+    - Check that `uploader/upload-server.lua` is listed in `fxmanifest.lua` under `server_scripts`
+  </Accordion>
+</AccordionGroup>

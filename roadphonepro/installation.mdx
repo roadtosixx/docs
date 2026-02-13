@@ -167,17 +167,17 @@ Open `API.lua` and configure your upload service:
         Get your API key from [fivemanage.com](https://fivemanage.com)
     </Tab>
 
-    <Tab title="Fivemerr">
-        ```lua API.lua
-        -- In config.lua
-        Config.uploadMethod = 'fivemerr'
+  <Tab title="Custom Upload">
+    ```lua API.lua
+    -- In config.lua
+    Config.uploadMethod = 'custom'
 
-        -- In API.lua
-        Cfg.API_KEY = "your-fivemerr-api-key"
-        ```
+    -- In uploader/upload-server.lua
+    -- Configure your presigned URL endpoint and API key
+    ```
 
-        Get your API key from [fivemerr.com](https://fivemerr.com)
-    </Tab>
+    Configure your own upload endpoint in `uploader/upload-server.lua`. The endpoint should return a presigned URL for file uploads.
+  </Tab>
 </Tabs>
 
 <Warning>
@@ -283,7 +283,7 @@ Config.UseMetadata = true
 Config.InventorySystem = 'ox_inventory' -- or 'jaksam'
 ```
 
-<Card title="Metadata System Guide" icon="card-sim" href="/roadphonepro/metadata">
+<Card title="Metadata System Guide" icon="nfc" href="/roadphonepro/metadata">
     Learn how to set up and use the metadata system for phone stealing, trading, and multiple phones.
 </Card>
 
@@ -416,7 +416,7 @@ Config.NewsAppAccess = {
 ## Next Steps
 
 <CardGroup cols={2}>
-    <Card title="Metadata System" icon="card-sim" href="/roadphonepro/metadata">
+    <Card title="Metadata System" icon="nfc" href="/roadphonepro/metadata">
         Enable phone stealing, trading, and multiple phones
     </Card>
     <Card title="Server Exports" icon="server" href="/roadphonepro/api/server">
