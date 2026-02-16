@@ -37,6 +37,7 @@
               "roadphonepro/commands/migrate",
               "roadphonepro/metadata",
               "roadphonepro/custom-apps",
+              "roadphonepro/commands",
               "roadphonepro/custom-upload"
             ]
           },
