@@ -419,6 +419,20 @@ local success = exports['roadphone']:DeleteContactFromMetadata(source, contactId
 
 ---
 
+### UpdatePhoneContacts
+
+Replace the entire contacts array in metadata.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneContacts(source, contacts)
+```
+
+<ParamField path="contacts" type="table" required>
+  Array of contact objects to replace all existing contacts.
+</ParamField>
+
+---
+
 ## Notes
 
 ### GetPhoneNotes
@@ -462,6 +476,20 @@ Delete a note.
 ```lua
 local success = exports['roadphone']:DeleteNoteFromMetadata(source, noteId)
 ```
+
+---
+
+### UpdatePhoneNotes
+
+Replace the entire notes array in metadata.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneNotes(source, notes)
+```
+
+<ParamField path="notes" type="table" required>
+  Array of note objects to replace all existing notes.
+</ParamField>
 
 ---
 
@@ -511,6 +539,153 @@ local success = exports['roadphone']:DeletePhotoFromMetadata(source, photoId)
 
 ---
 
+### UpdatePhonePhotos
+
+Replace the entire photos array in metadata.
+
+```lua
+local success = exports['roadphone']:UpdatePhonePhotos(source, photos)
+```
+
+<ParamField path="photos" type="table" required>
+  Array of photo objects to replace all existing photos.
+</ParamField>
+
+---
+
+## Albums
+
+### GetPhoneAlbumsFromMetadata
+
+Get all photo albums from the phone.
+
+```lua
+local albums = exports['roadphone']:GetPhoneAlbumsFromMetadata(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of album objects, or empty table if none exist.
+</ResponseField>
+
+---
+
+### AddAlbumToPhoneMetadata
+
+Create a new album.
+
+```lua
+local success = exports['roadphone']:AddAlbumToPhoneMetadata(source, album)
+```
+
+<ParamField path="album" type="table" required>
+  Album object with `id`, `name`, `photoIds` fields.
+</ParamField>
+
+---
+
+### UpdateAlbumInMetadata
+
+Update specific fields of an existing album.
+
+```lua
+local success = exports['roadphone']:UpdateAlbumInMetadata(source, albumId, updates)
+```
+
+<ParamField path="albumId" type="any" required>
+  The album's identifier.
+</ParamField>
+
+<ParamField path="updates" type="table" required>
+  Key/value pairs to merge into the album.
+</ParamField>
+
+---
+
+### DeleteAlbumFromMetadata
+
+Delete an album.
+
+```lua
+local success = exports['roadphone']:DeleteAlbumFromMetadata(source, albumId)
+```
+
+<ParamField path="albumId" type="any" required>
+  The album's identifier.
+</ParamField>
+
+---
+
+### AddPhotoToAlbumMetadata
+
+Add a photo to an album. Skips duplicates.
+
+```lua
+local success = exports['roadphone']:AddPhotoToAlbumMetadata(source, albumId, photoId)
+```
+
+<ParamField path="albumId" type="any" required>
+  The album's identifier.
+</ParamField>
+
+<ParamField path="photoId" type="any" required>
+  The photo's identifier to add.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success (or if already exists), `false` if album not found.
+</ResponseField>
+
+---
+
+### RemovePhotoFromAlbumMetadata
+
+Remove a photo from an album.
+
+```lua
+local success = exports['roadphone']:RemovePhotoFromAlbumMetadata(source, albumId, photoId)
+```
+
+<ParamField path="albumId" type="any" required>
+  The album's identifier.
+</ParamField>
+
+<ParamField path="photoId" type="any" required>
+  The photo's identifier to remove.
+</ParamField>
+
+---
+
+### AddMultiplePhotosToAlbumMetadata
+
+Add multiple photos to an album at once. Skips duplicates.
+
+```lua
+local success = exports['roadphone']:AddMultiplePhotosToAlbumMetadata(source, albumId, photoIds)
+```
+
+<ParamField path="albumId" type="any" required>
+  The album's identifier.
+</ParamField>
+
+<ParamField path="photoIds" type="table" required>
+  Array of photo identifiers to add.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Add multiple photos to an album
+exports['roadphone']:AddMultiplePhotosToAlbumMetadata(source, "album-001", {
+    "photo-001", "photo-002", "photo-003"
+})
+```
+</CodeGroup>
+
+---
+
 ## Alarms
 
 ### GetPhoneAlarms
@@ -553,6 +728,41 @@ local success = exports['roadphone']:DeleteAlarmFromMetadata(source, alarmId)
 
 ---
 
+### UpdatePhoneAlarms
+
+Replace all alarms on the phone at once.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneAlarms(source, alarms)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="alarms" type="table" required>
+  Array of alarm objects to set. Pass `{}` to clear all alarms.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the metadata was updated successfully, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Replace all alarms
+exports['roadphone']:UpdatePhoneAlarms(source, {
+    { id = 1, time = "07:00", label = "Morning", enabled = true, days = {1,2,3,4,5} },
+    { id = 2, time = "12:00", label = "Lunch", enabled = true, days = {1,2,3,4,5,6,7} }
+})
+
+-- Clear all alarms
+exports['roadphone']:UpdatePhoneAlarms(source, {})
+```
+</CodeGroup>
+
+---
+
 ## Messages
 
 ### GetPhoneMessages
@@ -582,6 +792,42 @@ Mark messages from a specific number as read.
 ```lua
 local success = exports['roadphone']:MarkMessagesReadInMetadata(source, phoneNumber)
 ```
+
+---
+
+### UpdatePhoneMessages
+
+Replace all messages on the phone at once. Messages are automatically limited to the configured maximum (default 300).
+
+```lua
+local success = exports['roadphone']:UpdatePhoneMessages(source, messages, unreadCount)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="messages" type="table" required>
+  Array of message objects to set.
+</ParamField>
+
+<ParamField path="unreadCount" type="number">
+  Number of unread messages. Defaults to `0`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the metadata was updated successfully, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Replace all messages
+exports['roadphone']:UpdatePhoneMessages(source, {
+    { id = 1, sender = "1234567", message = "Hello!", time = 1710000000, read = true },
+    { id = 2, sender = "7654321", message = "Hey there", time = 1710001000, read = false }
+}, 1)
+```
+</CodeGroup>
 
 ---
 
@@ -654,6 +900,41 @@ Clear all recent frequencies.
 ```lua
 local success = exports['roadphone']:ClearRadioRecentFromMetadata(source)
 ```
+
+---
+
+### UpdateRadioChannels
+
+Replace all saved radio channels on the phone at once.
+
+```lua
+local success = exports['roadphone']:UpdateRadioChannels(source, channels)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="channels" type="table" required>
+  Array of radio channel objects to set. Pass `{}` to clear all channels.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the metadata was updated successfully, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Replace all saved radio channels
+exports['roadphone']:UpdateRadioChannels(source, {
+    { id = 1, name = "Police", frequency = 150.0 },
+    { id = 2, name = "EMS", frequency = 155.0 }
+})
+
+-- Clear all channels
+exports['roadphone']:UpdateRadioChannels(source, {})
+```
+</CodeGroup>
 
 ---
 
@@ -776,6 +1057,39 @@ Update the homescreen layout (pages and dock).
 ```lua
 local success = exports['roadphone']:UpdateHomescreenLayout(source, homescreenData)
 ```
+
+---
+
+### UpdatePhoneApps
+
+Replace the entire apps data (installed apps and homescreen layout) at once.
+
+```lua
+local success = exports['roadphone']:UpdatePhoneApps(source, appsData)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="appsData" type="table" required>
+  Object with `installed` (array of app IDs) and `homescreen` (layout data).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the metadata was updated successfully, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:UpdatePhoneApps(source, {
+    installed = { "phone", "messages", "camera", "settings", "mail" },
+    homescreen = {
+        -- your layout structure
+    }
+})
+```
+</CodeGroup>
 
 ---
 

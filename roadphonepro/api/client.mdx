@@ -412,3 +412,414 @@ exports['roadphone']:SendMessageNUI({
 <Warning>
   This is an advanced export. Only use if you understand the phone's NUI event system.
 </Warning>
+
+---
+
+## Call Management
+
+### acceptCall
+
+Accept the current incoming call. Useful for smartwatch or external call control.
+
+```lua
+local accepted = exports['roadphone']:acceptCall()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if an incoming call was accepted, `false` if no incoming call exists.
+</ResponseField>
+
+---
+
+### declineCall
+
+Decline the current incoming call.
+
+```lua
+local declined = exports['roadphone']:declineCall()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if an incoming call was declined, `false` if no incoming call exists.
+</ResponseField>
+
+---
+
+### endCall
+
+End the current active, incoming, or outgoing call.
+
+```lua
+local ended = exports['roadphone']:endCall()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if a call was ended, `false` if no call exists.
+</ResponseField>
+
+---
+
+### getCallState
+
+Get the current call state including direction, number, mute status, and contact name.
+
+```lua
+local callState = exports['roadphone']:getCallState()
+```
+
+<ResponseField name="returns" type="table">
+  `{ state = "idle"|"active"|"incoming"|"outgoing", number = string|nil, isMuted = boolean, contactName = string|nil }`
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local state = exports['roadphone']:getCallState()
+if state.state == "active" then
+    print("In call with: " .. (state.contactName or state.number))
+    print("Muted: " .. tostring(state.isMuted))
+end
+```
+</CodeGroup>
+
+---
+
+## Phone Data Access
+
+### getContacts
+
+Get all contacts cached on the client.
+
+```lua
+local contacts = exports['roadphone']:getContacts()
+```
+
+<ResponseField name="returns" type="table">
+  Array of contact objects.
+</ResponseField>
+
+---
+
+### getMessages
+
+Get all messages cached on the client.
+
+```lua
+local messages = exports['roadphone']:getMessages()
+```
+
+<ResponseField name="returns" type="table">
+  Array of message objects.
+</ResponseField>
+
+---
+
+### getUnreadMessages
+
+Get all unread received messages.
+
+```lua
+local unread = exports['roadphone']:getUnreadMessages()
+```
+
+<ResponseField name="returns" type="table">
+  Array of unread message objects (only received messages, not sent).
+</ResponseField>
+
+---
+
+### getRecentCalls
+
+Get the recent call history.
+
+```lua
+local calls = exports['roadphone']:getRecentCalls()
+```
+
+<ResponseField name="returns" type="table">
+  Array of recent call objects.
+</ResponseField>
+
+---
+
+### getFavouriteContacts
+
+Get all contacts marked as favourites.
+
+```lua
+local favourites = exports['roadphone']:getFavouriteContacts()
+```
+
+<ResponseField name="returns" type="table">
+  Array of contact objects where `favourite == 1`.
+</ResponseField>
+
+---
+
+### getNotes
+
+Get the player's notes (requires RoadWatch).
+
+```lua
+local notes = exports['roadphone']:getNotes()
+```
+
+<ResponseField name="returns" type="table | nil">
+  Array of note objects, or `nil` if RoadWatch is disabled.
+</ResponseField>
+
+---
+
+### getBankTransactions
+
+Get the bank transaction history cached on the client.
+
+```lua
+local transactions = exports['roadphone']:getBankTransactions()
+```
+
+<ResponseField name="returns" type="table">
+  Array of bank transaction objects.
+</ResponseField>
+
+---
+
+### getBankIban
+
+Get the player's bank IBAN.
+
+```lua
+local iban = exports['roadphone']:getBankIban()
+```
+
+<ResponseField name="returns" type="string">
+  The player's bank IBAN string.
+</ResponseField>
+
+---
+
+### getWeather
+
+Get the most recent weather data.
+
+```lua
+local weather = exports['roadphone']:getWeather()
+```
+
+<ResponseField name="returns" type="table | nil">
+  The last weather data object, or `nil` if not yet received.
+</ResponseField>
+
+---
+
+## Music Control
+
+<Note>
+  These exports are designed for RoadWatch (smartwatch) integration but can be used by any external resource.
+</Note>
+
+### getMusicState
+
+Get the current music playback state.
+
+```lua
+local state = exports['roadphone']:getMusicState()
+```
+
+<ResponseField name="returns" type="table">
+  `{ isPlaying = bool, isPaused = bool, title = string|nil, artist = string|nil, image = string|nil, length = number, current = number, lengthFormatted = string, currentFormatted = string, volume = number, isRadio = bool }`
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local music = exports['roadphone']:getMusicState()
+if music.isPlaying then
+    print("Now playing: " .. (music.title or "Unknown") .. " by " .. (music.artist or "Unknown"))
+    print("Volume: " .. music.volume .. "%")
+end
+```
+</CodeGroup>
+
+---
+
+### watchPauseMusic
+
+Pause the currently playing music.
+
+```lua
+local paused = exports['roadphone']:watchPauseMusic()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if pause command was sent, `false` if no music playing or already paused.
+</ResponseField>
+
+---
+
+### watchResumeMusic
+
+Resume paused music.
+
+```lua
+local resumed = exports['roadphone']:watchResumeMusic()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if resume command was sent, `false` if not playing or not paused.
+</ResponseField>
+
+---
+
+### watchNextSong
+
+Skip to the next song (disabled for radio).
+
+```lua
+local skipped = exports['roadphone']:watchNextSong()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if next command was sent, `false` if not playing or is radio.
+</ResponseField>
+
+---
+
+### watchPreviousSong
+
+Go to the previous song (disabled for radio).
+
+```lua
+local skipped = exports['roadphone']:watchPreviousSong()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if previous command was sent, `false` if not playing or is radio.
+</ResponseField>
+
+---
+
+### watchSetVolume
+
+Set the music playback volume.
+
+```lua
+local success = exports['roadphone']:watchSetVolume(volume)
+```
+
+<ParamField path="volume" type="number" required>
+  Volume level between 0 and 100.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if volume was set, `false` if invalid volume.
+</ResponseField>
+
+---
+
+### watchPlaySong
+
+Play a specific song by its metadata.
+
+```lua
+local success = exports['roadphone']:watchPlaySong(song)
+```
+
+<ParamField path="song" type="table" required>
+  Song data object.
+</ParamField>
+
+<Expandable title="song structure">
+  <ParamField path="id" type="string" required>
+    The song ID.
+  </ParamField>
+  <ParamField path="url_type" type="string">
+    The URL type (e.g., `'youtube'`).
+  </ParamField>
+  <ParamField path="title" type="string">
+    The song title.
+  </ParamField>
+  <ParamField path="artist" type="string">
+    The artist name.
+  </ParamField>
+  <ParamField path="thumbnail" type="string">
+    Thumbnail image URL.
+  </ParamField>
+  <ParamField path="length" type="string">
+    Song duration.
+  </ParamField>
+</Expandable>
+
+<ResponseField name="returns" type="boolean">
+  `true` if play command was sent, `false` if song data is invalid or missing `id`.
+</ResponseField>
+
+---
+
+## Health Tracking
+
+<Note>
+  These exports return client-side simulated health data. The health system must be enabled in the config.
+</Note>
+
+### getClientHealthData
+
+Get all current client-side health data.
+
+```lua
+local health = exports['roadphone']:getClientHealthData()
+```
+
+<ResponseField name="returns" type="table">
+  `{ steps = number, distance = number, calories = number, activeMinutes = number, heartRate = number, stress = number, bloodPressure = { systolic = number, diastolic = number }, spo2 = number, isSleeping = boolean }`
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local health = exports['roadphone']:getClientHealthData()
+print("Steps: " .. health.steps)
+print("Heart Rate: " .. health.heartRate .. " bpm")
+print("Stress: " .. health.stress .. "%")
+print("SpO2: " .. health.spo2 .. "%")
+```
+</CodeGroup>
+
+---
+
+### getClientHeartRate
+
+Get the player's current simulated heart rate.
+
+```lua
+local heartRate = exports['roadphone']:getClientHeartRate()
+```
+
+<ResponseField name="returns" type="number">
+  Current heart rate in bpm (range: 50-200).
+</ResponseField>
+
+---
+
+### getClientStress
+
+Get the player's current simulated stress level.
+
+```lua
+local stress = exports['roadphone']:getClientStress()
+```
+
+<ResponseField name="returns" type="number">
+  Current stress level (0-100).
+</ResponseField>
+
+---
+
+### getClientSteps
+
+Get the player's accumulated step count for this session.
+
+```lua
+local steps = exports['roadphone']:getClientSteps()
+```
+
+<ResponseField name="returns" type="number">
+  Total steps walked/run this session.
+</ResponseField>

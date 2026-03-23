@@ -568,3 +568,590 @@ function AcceptCryptoPayment(identifier, coinId, amount)
     return false
 end
 ```
+
+---
+
+## Messages
+
+### sendMessage
+
+Send an SMS message from one phone number to another. Works for both online and offline players.
+
+```lua
+local success = exports['roadphone']:sendMessage(senderNumber, receiverNumber, message)
+```
+
+<ParamField path="senderNumber" type="string" required>
+  The sender's phone number.
+</ParamField>
+
+<ParamField path="receiverNumber" type="string" required>
+  The recipient's phone number.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The message content (must not be empty).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if validation fails (missing params, empty message, same sender/receiver).
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Send an automated SMS
+local sent = exports['roadphone']:sendMessage("911", "1234567", "Your report has been received.")
+```
+</CodeGroup>
+
+---
+
+## Social Media
+
+### deleteConnectAccount
+
+Delete a Connect (Instagram) account and all associated data (posts, likes, comments, stories).
+
+```lua
+local deleted = exports['roadphone']:deleteConnectAccount(username)
+```
+
+<ParamField path="username" type="string" required>
+  The Connect username to delete.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if account found and deleted, `false` if username not found.
+</ResponseField>
+
+---
+
+### deleteTweetWaveAccount
+
+Delete a TweetWave account and all associated data (tweets, likes, comments).
+
+```lua
+local deleted = exports['roadphone']:deleteTweetWaveAccount(username)
+```
+
+<ParamField path="username" type="string" required>
+  The TweetWave username to delete.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if account found and deleted, `false` if username not found.
+</ResponseField>
+
+---
+
+## Taxi
+
+### saveTaxiTripToHistory
+
+Save a taxi trip record to the database history.
+
+```lua
+exports['roadphone']:saveTaxiTripToHistory(customerPhone, driverPhone, driverName, pickupStreet, destinationStreet, price, vehicleType)
+```
+
+<ParamField path="customerPhone" type="string" required>
+  The customer's phone number.
+</ParamField>
+
+<ParamField path="driverPhone" type="string">
+  The driver's phone number (optional).
+</ParamField>
+
+<ParamField path="driverName" type="string">
+  The driver's name (optional).
+</ParamField>
+
+<ParamField path="pickupStreet" type="string">
+  The pickup street name (optional).
+</ParamField>
+
+<ParamField path="destinationStreet" type="string">
+  The destination street name (optional).
+</ParamField>
+
+<ParamField path="price" type="number">
+  The trip price (default: `0`).
+</ParamField>
+
+<ParamField path="vehicleType" type="string">
+  The vehicle type (default: `'economy'`).
+</ParamField>
+
+---
+
+## Health Tracking
+
+<Note>
+  The health system requires `Config.BatterySystem` or the health addon to be enabled. Server-side exports return data from the in-memory cache, which is updated by client sync events.
+</Note>
+
+### getPlayerHealth
+
+Get all current health data for a player from the server cache.
+
+```lua
+local health = exports['roadphone']:getPlayerHealth(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Health data table, or `nil` if not cached.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local health = exports['roadphone']:getPlayerHealth(source)
+if health then
+    print("Heart Rate: " .. health.heartRate)
+    print("Steps: " .. health.steps)
+    print("Stress: " .. health.stress)
+end
+```
+</CodeGroup>
+
+---
+
+### getPlayerHeartRate
+
+Get a player's current heart rate.
+
+```lua
+local heartRate = exports['roadphone']:getPlayerHeartRate(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Heart rate in bpm (default: `70` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerStress
+
+Get a player's current stress level.
+
+```lua
+local stress = exports['roadphone']:getPlayerStress(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Stress level 0-100 (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerSteps
+
+Get a player's step count for the current session.
+
+```lua
+local steps = exports['roadphone']:getPlayerSteps(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Steps today (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerDailyHealth
+
+Get a player's daily health summary from the database.
+
+```lua
+local summary = exports['roadphone']:getPlayerDailyHealth(source, date)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="date" type="string">
+  Date in `'YYYY-MM-DD'` format (default: today).
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Database row with daily stats (steps, distance, calories, etc.), or `nil` if no data.
+</ResponseField>
+
+---
+
+### getPlayerHealthHistory
+
+Get a player's health history for the last N days.
+
+```lua
+local history = exports['roadphone']:getPlayerHealthHistory(source, days)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="days" type="number">
+  Number of days to retrieve (default: `7`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of daily health records ordered by date DESC.
+</ResponseField>
+
+---
+
+### isPlayerSleeping
+
+Check if a player is currently sleeping.
+
+```lua
+local sleeping = exports['roadphone']:isPlayerSleeping(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if sleeping, `false` otherwise.
+</ResponseField>
+
+---
+
+### addSleepHours
+
+Add sleep hours to a player's daily health record. Useful for bed script integrations.
+
+```lua
+local success = exports['roadphone']:addSleepHours(source, hours)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="hours" type="number" required>
+  Number of sleep hours to add.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Bed script integration
+RegisterCommand('sleep', function(source)
+    exports['roadphone']:addSleepHours(source, 8)
+end)
+```
+</CodeGroup>
+
+---
+
+### setPlayerStress
+
+Set a custom stress level for a player. Updates the server cache and notifies the client.
+
+```lua
+local success = exports['roadphone']:setPlayerStress(source, stressLevel)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="stressLevel" type="number" required>
+  Stress level (automatically clamped to 0-100).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+---
+
+### getPlayerSpO2
+
+Get a player's blood oxygen saturation level.
+
+```lua
+local spo2 = exports['roadphone']:getPlayerSpO2(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  SpO2 percentage (default: `98` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerBloodPressure
+
+Get a player's blood pressure values.
+
+```lua
+local bp = exports['roadphone']:getPlayerBloodPressure(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ systolic = number, diastolic = number }` (default: `{ systolic = 120, diastolic = 80 }`).
+</ResponseField>
+
+---
+
+## DarkChat
+
+### getDarkchatRooms
+
+Get all DarkChat rooms/groups. Results are cached for 60 seconds.
+
+```lua
+local rooms = exports['roadphone']:getDarkchatRooms()
+```
+
+<ResponseField name="returns" type="table">
+  Array of `{ id = number, name = string, members = table }`.
+</ResponseField>
+
+---
+
+### getDarkchatGroupmessages
+
+Get all DarkChat group messages. Results are cached for 60 seconds.
+
+```lua
+local messages = exports['roadphone']:getDarkchatGroupmessages()
+```
+
+<ResponseField name="returns" type="table">
+  Array of `{ id, groupname, sender, message, members, date }`.
+</ResponseField>
+
+---
+
+### getGroupMessages
+
+Get messages for a specific DarkChat group.
+
+```lua
+local messages = exports['roadphone']:getGroupMessages(groupname, limit)
+```
+
+<ParamField path="groupname" type="string" required>
+  The DarkChat group name.
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum messages to return (default: config `MessageLimit` or `80`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of message objects in chronological order.
+</ResponseField>
+
+---
+
+## Music
+
+### getMusicLibrary
+
+Search the music library by title or artist.
+
+```lua
+local songs = exports['roadphone']:getMusicLibrary(search, limit)
+```
+
+<ParamField path="search" type="string">
+  Search term (optional — returns all if nil).
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum results (default: `50`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of `{ id, url_type, title, artist, thumbnail, length }`.
+</ResponseField>
+
+<Note>
+  Requires RoadWatch to be enabled. Returns empty table if disabled.
+</Note>
+
+---
+
+### getPlayerPlaylists
+
+Get a player's playlists and saved songs.
+
+```lua
+local data = exports['roadphone']:getPlayerPlaylists(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ playlists = table, songs = table }`.
+</ResponseField>
+
+---
+
+## Battery
+
+<Note>
+  Battery exports require `Config.BatterySystem = true` and `Config.UseMetadata = true`.
+</Note>
+
+### getBatteryLevel
+
+Get a player's current phone battery level.
+
+```lua
+local level = exports['roadphone']:getBatteryLevel(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Battery level (0-100).
+</ResponseField>
+
+---
+
+### setBatteryLevel
+
+Set a player's battery level. Updates metadata and notifies the client.
+
+```lua
+local newLevel = exports['roadphone']:setBatteryLevel(source, level)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="level" type="number" required>
+  The new battery level (clamped to 0-100).
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The new battery level after clamping.
+</ResponseField>
+
+---
+
+### chargeBattery
+
+Charge a player's battery by a specified amount.
+
+```lua
+local newLevel = exports['roadphone']:chargeBattery(source, amount)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount to charge (e.g., `10` for 10%).
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The new battery level (capped at 100).
+</ResponseField>
+
+---
+
+### isBatteryDead
+
+Check if a player's phone battery is dead.
+
+```lua
+local dead = exports['roadphone']:isBatteryDead(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if battery is at 0, `false` otherwise.
+</ResponseField>
+
+---
+
+### startCharging
+
+Start realistic (gradual) charging for a player's phone.
+
+```lua
+local started = exports['roadphone']:startCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if charging started, `false` if already charging or battery is full.
+</ResponseField>
+
+---
+
+### stopCharging
+
+Stop charging a player's phone.
+
+```lua
+exports['roadphone']:stopCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+---
+
+### isCharging
+
+Check if a player's phone is currently being charged.
+
+```lua
+local charging = exports['roadphone']:isCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if currently charging, `false` otherwise.
+</ResponseField>
