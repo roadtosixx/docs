@@ -38,6 +38,7 @@
               "roadphonepro/metadata",
               "roadphonepro/custom-apps",
               "roadphonepro/commands",
+              "roadphonepro/admin-menu",
               "roadphonepro/custom-upload"
             ]
           },
