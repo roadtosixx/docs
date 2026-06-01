@@ -169,6 +169,81 @@ if (window.roadphone) {
 }
 ```
 
+## App Setup
+
+Run these calls once when your app boots to declare your identity, isolate your data, and verify the phone supports the features you rely on.
+
+### app.setName(name)
+
+Registers the display name shown in permission and consent dialogs.
+
+<ParamField path="name" type="string" required>
+    The human-readable name of your app
+</ParamField>
+
+```javascript
+window.roadphone.app.setName('My App')
+```
+
+### app.setNamespace(namespace)
+
+Sets a unique namespace that isolates your app's stored data from other apps. Set this once and never change it.
+
+<ParamField path="namespace" type="string" required>
+    A unique identifier for your app's storage
+</ParamField>
+
+```javascript
+window.roadphone.app.setNamespace('my-app')
+```
+
+### app.getNamespace()
+
+Returns the currently configured namespace.
+
+<ResponseField name="returns" type="string">
+    The active storage namespace
+</ResponseField>
+
+```javascript
+const namespace = window.roadphone.app.getNamespace()
+// "my-app"
+```
+
+### minVersion(version)
+
+Validates that the phone meets the minimum required API version. Throws if the installed phone is too old.
+
+<ParamField path="version" type="string" required>
+    The minimum semantic version your app requires (e.g., `"1.3.0"`)
+</ParamField>
+
+```javascript
+roadphone.minVersion('1.3.0') // throws if the phone is older
+```
+
+### requireFeature(feature)
+
+Ensures a given capability is available before your app uses it. Throws if the feature is missing.
+
+<ParamField path="feature" type="string" required>
+    The feature key to require (e.g., `"storage"`)
+</ParamField>
+
+```javascript
+roadphone.requireFeature('storage') // throws if unavailable
+```
+
+### features
+
+An object describing the API capabilities the current phone exposes. Use it to gracefully degrade when a feature is unavailable.
+
+```javascript
+if (window.roadphone.features.storage) {
+  // safe to use the storage API
+}
+```
+
 ## Getter Functions
 
 ### isDarkMode()
@@ -276,6 +351,19 @@ const config = window.roadphone.getConfig()
 // { lockscreen: true, ... }
 ```
 
+### getLanguage()
+
+Returns the player's current locale.
+
+<ResponseField name="returns" type="string">
+    The active language code (e.g., `"de_DE"`, `"en_US"`)
+</ResponseField>
+
+```javascript
+const lang = window.roadphone.getLanguage()
+// "de_DE"
+```
+
 ## Utility Functions
 
 ### copyToClipboard(text)
@@ -344,6 +432,228 @@ window.roadphone.showNotification({
   message: 'You have received a new message!',
   icon: '/public/img/Apps/light_mode/custom.webp'
 })
+```
+
+### takePhoto(options)
+
+Opens the phone's camera and returns the captured media. Resolves once the player confirms or cancels.
+
+<ParamField path="options" type="object">
+    Capture configuration
+
+    <Expandable title="options properties">
+        <ParamField path="allowVideo" type="boolean" default="false">
+            Allow the player to record a video instead of a photo
+        </ParamField>
+    </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<object>">
+    The captured photo object (or `null` if cancelled)
+</ResponseField>
+
+```javascript
+const photo = await window.roadphone.takePhoto({ allowVideo: false })
+```
+
+### showBottomSheet(options)
+
+Displays a native bottom sheet with grouped, selectable actions and resolves with the player's choice.
+
+<ParamField path="options" type="object" required>
+    Bottom sheet configuration
+
+    <Expandable title="options properties">
+        <ParamField path="groups" type="array" required>
+            An array of action groups to display
+        </ParamField>
+    </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="Promise<object>">
+    The selected option (or `null` if dismissed)
+</ResponseField>
+
+```javascript
+const choice = await window.roadphone.showBottomSheet({
+  groups: [
+    {
+      items: [
+        { id: 'edit', label: 'Edit' },
+        { id: 'delete', label: 'Delete' }
+      ]
+    }
+  ]
+})
+```
+
+### pickEmoji()
+
+Opens the native emoji picker and resolves with the chosen emoji.
+
+<ResponseField name="returns" type="Promise<string>">
+    The selected emoji (or `null` if dismissed)
+</ResponseField>
+
+```javascript
+const emoji = await window.roadphone.pickEmoji()
+// "😀"
+```
+
+## Storage
+
+RoadPhone exposes two storage backends scoped to your app's namespace.
+
+<Info>
+    Synchronous storage is backed by `localStorage` and is fast but local to the device. Metadata storage is asynchronous, server-backed, and persists across character and device changes.
+</Info>
+
+### Synchronous Storage
+
+Fast, namespace-scoped key/value storage for non-critical data.
+
+```javascript
+window.roadphone.storage.set('lastTab', 'home')
+const tab = window.roadphone.storage.get('lastTab') // "home"
+window.roadphone.storage.delete('lastTab')
+const keys = window.roadphone.storage.keys()        // ["lastTab", ...]
+window.roadphone.storage.clear()                    // wipes the namespace
+```
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `storage.set(key, value)` | `void` | Store a value |
+| `storage.get(key)` | `any` | Read a value |
+| `storage.delete(key)` | `void` | Remove a value |
+| `storage.keys()` | `string[]` | List all stored keys |
+| `storage.clear()` | `void` | Remove everything in the namespace |
+
+### Metadata Storage
+
+Asynchronous, persistent storage that survives character and device changes. Requires the `storage.metadata` permission.
+
+```javascript
+await window.roadphone.storage.metadata.set('city', 'Berlin')
+const city = await window.roadphone.storage.metadata.get('city') // "Berlin"
+await window.roadphone.storage.metadata.delete('city')
+```
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `storage.metadata.set(key, value)` | `Promise<void>` | Persist a value |
+| `storage.metadata.get(key)` | `Promise<any>` | Read a persisted value |
+| `storage.metadata.delete(key)` | `Promise<void>` | Remove a persisted value |
+
+## Permissions
+
+Sensitive phone data (contacts, messages, bank, alarms) is gated behind a permission system. Request the scopes you need before calling the corresponding APIs — the player is shown a consent dialog.
+
+### permissions.request(scope)
+
+Requests access to a scope. Resolves to `true` if granted; denied requests reject.
+
+<ParamField path="scope" type="string" required>
+    The permission scope to request
+</ParamField>
+
+<ResponseField name="returns" type="Promise<boolean>">
+    `true` if the player granted the permission
+</ResponseField>
+
+```javascript
+const granted = await window.roadphone.permissions.request('contacts.read')
+if (granted) {
+  const contacts = await window.roadphone.contacts.list()
+}
+```
+
+### permissions.has(scope)
+
+Checks whether a scope has already been granted.
+
+<ResponseField name="returns" type="boolean">
+    `true` if the permission is currently granted
+</ResponseField>
+
+```javascript
+if (window.roadphone.permissions.has('bank.read')) {
+  // already authorized
+}
+```
+
+### permissions.revoke(scope)
+
+Revokes a previously granted scope.
+
+```javascript
+window.roadphone.permissions.revoke('contacts.read')
+```
+
+### permissions.list()
+
+Returns all permission decisions made for your app.
+
+<ResponseField name="returns" type="object">
+    A map of scope strings to their granted/denied state
+</ResponseField>
+
+```javascript
+const decisions = window.roadphone.permissions.list()
+```
+
+### Available Scopes
+
+| Scope | Grants access to |
+|-------|------------------|
+| `contacts.read` | Reading the player's contacts |
+| `messages.read` | Reading message threads |
+| `messages.send` | Sending messages |
+| `bank.read` | Reading balance, IBAN, and accounts |
+| `alarms.read` | Reading alarms |
+| `alarms.write` | Creating and deleting alarms |
+| `storage.metadata` | Persistent metadata storage |
+
+## Phone Data APIs
+
+These APIs read and write the player's phone data and require the matching permission scope. Each method is asynchronous.
+
+### Contacts
+
+Requires `contacts.read`.
+
+```javascript
+const contacts = await window.roadphone.contacts.list()       // [{ id, firstname, ... }]
+const contact = await window.roadphone.contacts.find('1234567') // contact object
+const total = await window.roadphone.contacts.count()          // number
+```
+
+### Messages
+
+`list` requires `messages.read`; `send` requires `messages.send`.
+
+```javascript
+await window.roadphone.messages.send('1234567', 'Hi!')
+const thread = await window.roadphone.messages.list('1234567') // message array
+```
+
+### Bank
+
+Requires `bank.read`.
+
+```javascript
+const balance = await window.roadphone.bank.getBalance()  // number
+const iban = await window.roadphone.bank.getIban()        // "..."
+const accounts = await window.roadphone.bank.getAccounts() // accounts array
+```
+
+### Alarms
+
+`list` requires `alarms.read`; `create` and `delete` require `alarms.write`.
+
+```javascript
+const alarms = await window.roadphone.alarms.list()
+await window.roadphone.alarms.create({ time: '07:30', label: 'Wake up' })
+await window.roadphone.alarms.delete(id)
 ```
 
 ## Event System
@@ -457,6 +767,72 @@ window.roadphone.off('darkModeChanged', handler)
     } else {
         fetchLatestData()
     }
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="languageChanged" icon="languages">
+        Fired when the player changes the phone language.
+
+        **Payload:** `string` - The new locale (e.g., `"en_US"`)
+
+        ```javascript
+        window.roadphone.on('languageChanged', (locale) => {
+        applyTranslations(locale)
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="appOpened" icon="app-window">
+        Fired when your custom app is opened.
+
+        ```javascript
+        window.roadphone.on('appOpened', () => {
+        refreshData()
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="appClosed" icon="app-window">
+        Fired when your custom app is closed.
+
+        ```javascript
+        window.roadphone.on('appClosed', () => {
+        saveState()
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="incomingCall" icon="phone-incoming">
+        Fired when the player receives a call.
+
+        **Payload:** `object` - Call details (caller number, etc.)
+
+        ```javascript
+        window.roadphone.on('incomingCall', (call) => {
+        console.log('Incoming call from', call.number)
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="callEnded" icon="phone-off">
+        Fired when an active call ends.
+
+        ```javascript
+        window.roadphone.on('callEnded', () => {
+        console.log('Call ended')
+    })
+        ```
+    </Accordion>
+
+    <Accordion title="notificationReceived" icon="bell">
+        Fired when the phone receives a notification.
+
+        **Payload:** `object` - The notification data
+
+        ```javascript
+        window.roadphone.on('notificationReceived', (notification) => {
+        console.log('New notification:', notification.title)
     })
         ```
     </Accordion>
@@ -698,6 +1074,8 @@ end)
 
 ## API Reference
 
+**Core**
+
 | Function | Returns | Description |
 |----------|---------|-------------|
 | `isDarkMode()` | `boolean` | Check if dark mode is enabled |
@@ -705,14 +1083,51 @@ end)
 | `getPlayerName()` | `string` | Get the player's name |
 | `getJob()` | `string` | Get the player's job |
 | `getIdentifier()` | `string` | Get the player's identifier |
+| `getLanguage()` | `string` | Get the active locale |
 | `getBrightness()` | `number` | Get brightness (10-100) |
 | `isFlightMode()` | `boolean` | Check if flight mode is on |
 | `getConfig()` | `object` | Get the full config |
 | `copyToClipboard(text)` | `void` | Copy text to clipboard |
 | `post(event, data)` | `Promise` | Send data to Lua backend |
 | `showNotification(opts)` | `void` | Show a notification |
+| `takePhoto(opts)` | `Promise<object>` | Capture a photo/video |
+| `showBottomSheet(opts)` | `Promise<object>` | Show a native action sheet |
+| `pickEmoji()` | `Promise<string>` | Open the emoji picker |
 | `on(event, callback)` | `void` | Subscribe to an event |
 | `off(event, callback)` | `void` | Unsubscribe from an event |
+
+**App & Compatibility**
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `app.setName(name)` | `void` | Set the app display name |
+| `app.setNamespace(ns)` | `void` | Set the storage namespace |
+| `app.getNamespace()` | `string` | Get the storage namespace |
+| `minVersion(version)` | `void` | Require a minimum phone version |
+| `requireFeature(feature)` | `void` | Require a capability |
+| `features` | `object` | Available API capabilities |
+
+**Storage**
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `storage.set/get/delete(key, [value])` | `any` | Synchronous key/value storage |
+| `storage.keys()` | `string[]` | List stored keys |
+| `storage.clear()` | `void` | Clear the namespace |
+| `storage.metadata.set/get/delete(key, [value])` | `Promise` | Persistent metadata storage |
+
+**Permissions & Data** (require the matching scope)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `permissions.request(scope)` | `Promise<boolean>` | Request a scope |
+| `permissions.has(scope)` | `boolean` | Check a granted scope |
+| `permissions.revoke(scope)` | `void` | Revoke a scope |
+| `permissions.list()` | `object` | List all decisions |
+| `contacts.list/find/count()` | `Promise` | Read contacts (`contacts.read`) |
+| `messages.send/list()` | `Promise` | Send/read messages (`messages.*`) |
+| `bank.getBalance/getIban/getAccounts()` | `Promise` | Read bank data (`bank.read`) |
+| `alarms.list/create/delete()` | `Promise` | Manage alarms (`alarms.*`) |
 
 | Event | Payload | Description |
 |-------|---------|-------------|
@@ -721,9 +1136,15 @@ end)
 | `darkModeChanged` | `boolean` | Dark mode toggled |
 | `brightnessChanged` | `number` | Brightness changed |
 | `flightModeChanged` | `boolean` | Flight mode toggled |
+| `languageChanged` | `string` | Language changed |
+| `appOpened` | none | Custom app opened |
+| `appClosed` | none | Custom app closed |
+| `incomingCall` | `object` | Incoming call received |
+| `callEnded` | none | Active call ended |
+| `notificationReceived` | `object` | Notification received |
 
 <Card title="Version" icon="tag">
-    Current API Version: **1.0.0**
+    Current API Version: **1.3.0**
 
     Access via: `window.roadphone.version`
 </Card>
