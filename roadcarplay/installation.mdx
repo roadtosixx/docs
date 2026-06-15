@@ -8,10 +8,6 @@ icon: "download"
     **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
 </Danger>
 
-<Warning>
-    Enter your TebexTransactionID in `API.lua`. The music app will not work without a TebexID.
-</Warning>
-
 ## Installation Steps
 
 <Steps>
@@ -25,23 +21,7 @@ icon: "download"
     Import the SQL file `roadcarplay.sql` into your database.
   </Step>
 
-    <Step title="Configure API">
-
-        - Open <code>API.lua</code> and enter your **TebexTransactionID**.
-
-        **Where to find your Transaction ID:**
-        - Check your purchase confirmation email from Tebex
-        - Or log in to view your payment history:
-
-        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
-            View and retrieve your transaction ID from past purchases
-        </Card>
-    </Step>
-
-  <Step title="Add Inventory Item (QBCore Only)">
-    <Warning>
-      This step is **only required for QBCore** servers.
-    </Warning>
+  <Step title="Add Inventory Item">
 
     Add the item `carplay` to your inventory system.
   </Step>
