@@ -1,0 +1,72 @@
+---
+title: 'GIFs'
+description: 'Enable the GIF picker in Messages, powered by the Klipy API'
+icon: 'images'
+---
+
+# GIF Setup
+
+RoadPhone ships with a GIF picker in the Messages app (and every other app that supports media attachments), powered by [Klipy](https://klipy.com). All API requests run **server-side** — the API key never reaches the client.
+
+## Quick Start
+
+<Steps>
+    <Step title="Create a Klipy API key">
+        Sign up at [klipy.com](https://klipy.com) (free) and create an API key in your Klipy dashboard.
+    </Step>
+    <Step title="Add the key to API.lua">
+        Open `lua-code/API.lua` and replace the placeholder with your key:
+
+        ```lua API.lua
+        Cfg.KlipyGifsApiKey = 'your-klipy-api-key-here'
+        ```
+
+        <Warning>
+            `API.lua` is server-only. Never move this key into a shared or client script — anything the NUI/client can read can be extracted by players.
+        </Warning>
+    </Step>
+    <Step title="Restart the resource">
+        Restart RoadPhone (`ensure roadphone`). The GIF button appears in the Messages chat input automatically.
+    </Step>
+</Steps>
+
+## How it works
+
+```
+NUI (GIF picker) → client callback → server (gifs.lua) → Klipy API
+```
+
+- The server proxies **trending** and **search** requests to Klipy and returns a sanitized item list (URL, width, height only).
+- Trending page 1 is cached in memory for 30 seconds as a rate-limit guard.
+- Results are requested with rating `pg-13` and locale `en`, 24 items per page. These values are fixed in `lua-code/server/gifs.lua` — adjust them there if you need a different rating or locale.
+
+## Enabling / disabling the feature
+
+The API key **is** the feature switch:
+
+- **No key configured** (empty or the `YOUR_KLIPY_API_KEY` placeholder) → the server returns empty results and the picker stays empty.
+- **Key configured** → GIFs are live.
+
+To hide the GIF button in the UI entirely, set the flag in `public/static/config/config.json`:
+
+```json public/static/config/config.json
+{
+  "gifs": false
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="The GIF picker is empty">
+        - Check that `Cfg.KlipyGifsApiKey` in `lua-code/API.lua` contains your real key (not the placeholder).
+        - Restart the resource after changing `API.lua`.
+        - Check the server console for HTTP errors — the Klipy API must be reachable from your game server (outbound HTTPS).
+    </Accordion>
+    <Accordion title="The GIF button does not show up">
+        Make sure `"gifs": true` is set in `public/static/config/config.json` and that you deployed a build that includes it.
+    </Accordion>
+    <Accordion title="GIFs load in the picker but do not animate in chats">
+        GIFs are delivered as regular image URLs (`.gif`). If a media host or proxy re-encodes images, animation can get lost — send the original Klipy URL through unchanged.
+    </Accordion>
+</AccordionGroup>
