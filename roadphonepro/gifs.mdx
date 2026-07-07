@@ -15,7 +15,7 @@ RoadPhone ships with a GIF picker in the Messages app (and every other app that 
         Sign up at [klipy.com](https://klipy.com) (free) and create an API key in your Klipy dashboard.
     </Step>
     <Step title="Add the key to API.lua">
-        Open `lua-code/API.lua` and replace the placeholder with your key:
+        Open `API.lua` and replace the placeholder with your key:
 
         ```lua API.lua
         Cfg.KlipyGifsApiKey = 'your-klipy-api-key-here'
@@ -38,7 +38,7 @@ NUI (GIF picker) → client callback → server (gifs.lua) → Klipy API
 
 - The server proxies **trending** and **search** requests to Klipy and returns a sanitized item list (URL, width, height only).
 - Trending page 1 is cached in memory for 30 seconds as a rate-limit guard.
-- Results are requested with rating `pg-13` and locale `en`, 24 items per page. These values are fixed in `lua-code/server/gifs.lua` — adjust them there if you need a different rating or locale.
+- Results are requested with rating `pg-13` and locale `en`, 24 items per page. These values are fixed in `server/gifs.lua` — adjust them there if you need a different rating or locale.
 
 ## Enabling / disabling the feature
 
@@ -59,7 +59,7 @@ To hide the GIF button in the UI entirely, set the flag in `public/static/config
 
 <AccordionGroup>
     <Accordion title="The GIF picker is empty">
-        - Check that `Cfg.KlipyGifsApiKey` in `lua-code/API.lua` contains your real key (not the placeholder).
+        - Check that `Cfg.KlipyGifsApiKey` in `API.lua` contains your real key (not the placeholder).
         - Restart the resource after changing `API.lua`.
         - Check the server console for HTTP errors — the Klipy API must be reachable from your game server (outbound HTTPS).
     </Accordion>
