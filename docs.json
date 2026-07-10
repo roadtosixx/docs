@@ -40,7 +40,8 @@
               "roadphonepro/commands",
               "roadphonepro/admin-menu",
               "roadphonepro/custom-upload",
-              "roadphonepro/gifs"
+              "roadphonepro/gifs",
+              "roadphonepro/standalone"
             ]
           },
           {
@@ -50,8 +51,7 @@
               "roadphone/faq",
               "roadphone/job-calls",
               "roadphone/commands",
-              "roadphone/fivemanage",
-              "roadphone/fivemerr"
+              "roadphone/fivemanage"
             ]
           },
           {
