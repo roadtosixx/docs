@@ -1,0 +1,204 @@
+---
+title: 'Custom Music API'
+description: 'Serve your own music library to the Music app from your own HTTP server'
+icon: 'music'
+---
+
+# Custom Music API
+
+By default, the Music app searches the built-in music library (`roadshop_music_library`), which is filled through player submissions and the in-app admin panel. With the **Custom Music API** you can replace that library entirely and serve songs from your own HTTP server — the same server-to-server pattern used by [Custom Upload](/guides/custom-upload).
+
+## How It Works
+
+```
+┌─────────┐         ┌──────────────┐         ┌──────────────────┐
+│  Phone   │         │  FiveM       │         │  Your Music      │
+│  NUI     │         │  Server      │         │  API Server      │
+└────┬─────┘         └──────┬───────┘         └────────┬─────────┘
+     │  1. search "query"   │                          │
+     │ ───────────────────> │  2. GET ?search=query    │
+     │                      │ ───────────────────────> │
+     │                      │                          │  3. Filter songs
+     │                      │  4. JSON song array      │
+     │                      │ <─────────────────────── │
+     │  5. search results   │                          │
+     │ <─────────────────── │                          │
+     │                      │                          │
+     │  6. Player taps a song → plays via YouTube id or direct URL
+```
+
+<CardGroup cols={2}>
+  <Card title="Server-Side Only" icon="shield-halved">
+    The request runs on the FiveM server via `PerformHttpRequest`. Your API key **never leaves the server** — the NUI frontend never sees your endpoint or credentials.
+  </Card>
+  <Card title="No Frontend Changes" icon="mobile">
+    The Music app works exactly as before: search, playlists, and playback are untouched. Only the data source changes.
+  </Card>
+  <Card title="Unlimited Catalog" icon="infinity">
+    Every search hits your server live, so your catalog can be as large as you want — your server does the filtering.
+  </Card>
+  <Card title="YouTube & Direct Files" icon="file-audio">
+    Each song can either be a YouTube video id or a direct link to an audio file (mp3/ogg) on your own CDN.
+  </Card>
+</CardGroup>
+
+<Warning>
+  While the Custom Music API is enabled, the built-in music library, song submissions, and the music admin panel are **bypassed**. Songs already saved in player playlists keep working, since playlists store the song id and type directly.
+</Warning>
+
+---
+
+## Configuration
+
+Edit `MusicAPI.lua` in the resource root (it is `escrow_ignore`, so you can edit it freely):
+
+```lua MusicAPI.lua
+MusicAPI.Enabled = true                                 -- Enable your own music source
+MusicAPI.URL = 'https://your-server.com/api/music'      -- Your music search endpoint
+MusicAPI.APIKey = 'your-secret-key'                     -- Optional, sent as Authorization header
+```
+
+That's it — no `config.lua` changes and no frontend rebuild needed. Restart the resource after changing these values.
+
+---
+
+## Request Format
+
+For every search in the Music app, RoadPhone sends:
+
+```
+GET <MusicAPI.URL>?search=<urlencoded search term>
+Authorization: <MusicAPI.APIKey>
+```
+
+- The `Authorization` header is only sent when `MusicAPI.APIKey` is set.
+- An **empty** `search` parameter is sent when the player opens the search view. Return your newest or featured songs in that case.
+
+---
+
+## Response Format
+
+Your endpoint must respond with **HTTP 200** and a JSON array of songs (RoadPhone uses at most the first 50):
+
+```json
+[
+  {
+    "id": "dQw4w9WgXcQ",
+    "url_type": "youtube",
+    "title": "Never Gonna Give You Up",
+    "artist": "Rick Astley",
+    "thumbnail": "https://your-cdn.example.com/covers/rick.jpg",
+    "length": "3:32"
+  },
+  {
+    "id": "https://your-cdn.example.com/songs/track.mp3",
+    "url_type": "direct",
+    "title": "My Custom Track",
+    "artist": "Server DJ",
+    "thumbnail": "https://your-cdn.example.com/covers/track.jpg",
+    "length": "2:45"
+  }
+]
+```
+
+Wrapping the array in an object is also supported: `{ "songs": [ ... ] }`
+
+### Song Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | ✅ | YouTube video id when `url_type` is `youtube`, or a full `https://` URL to an audio file when `url_type` is `direct` |
+| `title` | ✅ | Song title shown in the app |
+| `artist` | ✅ | Artist name shown in the app |
+| `url_type` | ❌ | `"youtube"` or `"direct"` — defaults to `"youtube"` |
+| `thumbnail` | ❌ | Cover image URL |
+| `length` | ❌ | Song length as `mm:ss` — defaults to `0:00` |
+
+<Info>
+  Songs without an `id` or `title` are skipped. On any error (non-200 status, invalid JSON), the app shows an empty result list and a warning is printed to the FiveM server console.
+</Info>
+
+---
+
+## Example: Building Your Own Endpoint
+
+A minimal music API using Node.js and Express:
+
+```javascript
+const express = require('express')
+const app = express()
+
+const API_KEY = 'your-secret-key'
+
+const LIBRARY = [
+  {
+    id: 'dQw4w9WgXcQ',
+    url_type: 'youtube',
+    title: 'Never Gonna Give You Up',
+    artist: 'Rick Astley',
+    thumbnail: 'https://your-cdn.example.com/covers/rick.jpg',
+    length: '3:32',
+  },
+  {
+    id: 'https://your-cdn.example.com/songs/track.mp3',
+    url_type: 'direct',
+    title: 'My Custom Track',
+    artist: 'Server DJ',
+    thumbnail: 'https://your-cdn.example.com/covers/track.jpg',
+    length: '2:45',
+  },
+]
+
+app.get('/api/music', (req, res) => {
+  // Validate API key (skip this block if you don't use one)
+  if (req.headers.authorization !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const search = (req.query.search || '').toLowerCase()
+
+  // Empty search: return newest/featured songs
+  if (!search) {
+    return res.json(LIBRARY.slice(0, 50))
+  }
+
+  const results = LIBRARY.filter(
+    (song) =>
+      song.title.toLowerCase().includes(search) ||
+      song.artist.toLowerCase().includes(search)
+  )
+
+  res.json(results.slice(0, 50))
+})
+
+app.listen(3000)
+```
+
+<Note>
+  In production, serve the library from a database, add rate limiting, and cache popular queries. Direct audio files must be publicly reachable from every player's game client (they are streamed via xSound/mx-surround).
+</Note>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Search always shows an empty list">
+    - Check the FiveM server console for `[RoadPhone] MusicAPI ...` warnings
+    - Verify your endpoint is reachable **from the FiveM server** (try `curl` on the machine)
+    - Confirm the response is a JSON array (or `{ "songs": [...] }`) with `id` and `title` on every song
+    - Make sure the API key in `MusicAPI.lua` matches what your endpoint expects
+  </Accordion>
+
+  <Accordion title="Songs appear but won't play">
+    - For `url_type: "youtube"`, `id` must be the plain video id (e.g. `dQw4w9WgXcQ`), not a full URL
+    - For `url_type: "direct"`, `id` must be a full `https://` URL to an audio file that players' game clients can reach
+    - Test a direct URL in your browser — it should download/stream the audio file without a login
+  </Accordion>
+
+  <Accordion title="The built-in library still shows up">
+    - Ensure `MusicAPI.Enabled = true` in `MusicAPI.lua` (resource root, next to `API.lua`)
+    - Restart the resource completely after changing the file
+    - Check that `MusicAPI.lua` is listed in `fxmanifest.lua` under `server_scripts`
+  </Accordion>
+</AccordionGroup>

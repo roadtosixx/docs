@@ -40,6 +40,7 @@
               "roadphonepro/commands",
               "roadphonepro/admin-menu",
               "roadphonepro/custom-upload",
+              "roadphonepro/custom-music-api",
               "roadphonepro/gifs",
               "roadphonepro/standalone"
             ]
