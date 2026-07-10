@@ -1,0 +1,237 @@
+---
+title: 'Standalone Mode'
+description: 'Run RoadPhone Pro without ESX, QBCore or Qbox — what works out of the box and what you need to configure in the Bridge'
+icon: 'cube'
+---
+
+# Standalone Mode
+
+RoadPhone Pro can run without any framework. If neither `es_extended`, `qb-core` nor `qbx_core` is started, the Bridge automatically falls back to **standalone mode** — no configuration flag needed.
+
+```
+[Bridge] No framework detected - Standalone mode
+[Bridge WARNING] You are running in standalone mode!
+[Bridge WARNING] Please configure your database tables in bridge/main.lua
+```
+
+<Warning>
+  Standalone mode is **not** plug-and-play. The Bridge provides working fallbacks for identity, callbacks, notifications and locales — but **money, jobs and inventory are stubs** that you must configure or implement yourself. Read this guide fully before going live.
+</Warning>
+
+---
+
+## How Detection Works
+
+On resource start, `bridge/main.lua` probes the framework resources in this order:
+
+1. `qbx_core` started → `Bridge.Framework = 'qbox'`
+2. `es_extended` started → `Bridge.Framework = 'esx'`
+3. `qb-core` started → `Bridge.Framework = 'qbcore'`
+4. Nothing found → `Bridge.Framework = 'standalone'`
+
+If a framework resource is still in the `starting` state, detection retries for up to 10 seconds before locking into standalone. There is no config option to force standalone — simply don't run a framework.
+
+<Note>
+  The shipped `fxmanifest.lua` has **no hard framework dependency**. Its only declared dependencies are OneSync and `xsound`; it additionally loads `@ox_lib/init.lua` and `@mysql-async/lib/MySQL.lua`. You still need **ox_lib, mysql-async and a MySQL database** on a standalone server — the phone's own `roadshop_*` tables are auto-created on boot.
+</Note>
+
+---
+
+## What Works, What Doesn't
+
+| Area | Standalone Behavior |
+|------|---------------------|
+| Callbacks (`Bridge.RegisterCallback` / `TriggerCallback`) | ✅ Fully working custom net-event implementation (10s timeout) |
+| Player identity (`GetIdentifier`, `GetName`, `GetPlayers`) | ✅ Works via FiveM natives — identifier is the player's **first** identifier (usually `license:...`) |
+| Notifications (`Bridge.Notification.*`, `Bridge.UI.Notify`) | ✅ Works (native GTA feed) |
+| Locales (`Bridge.Locale.Translate`, `_U`) | ✅ Works (driven by `Config.Locale`) |
+| Phone number assignment | ⚠️ Works **only if** a `users` table exists (see Database Setup) |
+| Money (`Bridge.Player.*Money`, `Bridge.Account.*`) | ❌ Stubs — `GetMoney`/`GetBalance` return `0`, `Add`/`Remove`/`Set` return `false` |
+| Banking app | ❌ Balance always `$0`, transfers and payments fail (depends on the money stubs) |
+| Inventory (no inventory resource running) | ❌ Stubs — `AddItem`/`RemoveItem`/`HasItem` do nothing, `RegisterUseableItem` unsupported |
+| Jobs (`Bridge.Job.*`) | ❌ Every player is always `unemployed` and always on duty; setters are no-ops |
+| Framework events (`Bridge.Events.On('PlayerLoaded')` etc.) | ⚠️ Mapped to plain custom events (`playerLoaded`, `jobUpdate`, ...) that **nothing fires automatically** |
+| UI extras (context menu, input dialog, progressbar) | ⚠️ Context menu & input do nothing / return `nil`; progressbar is an invisible wait |
+
+---
+
+## Required Setup
+
+<Steps>
+  <Step title="Create a users table">
+    Standalone mode reuses the ESX-style defaults: identity queries run against a table called `users` with an `identifier` column. **Nothing auto-creates this table** — without it, phone number assignment and IBAN generation will throw SQL errors.
+
+    Minimal schema:
+
+    ```sql
+    CREATE TABLE IF NOT EXISTS `users` (
+      `identifier` VARCHAR(60) NOT NULL,
+      PRIMARY KEY (`identifier`)
+    );
+    ```
+
+    You must also insert a row per player (e.g. on `playerJoining`, keyed by their first identifier). RoadPhone auto-adds the `phone_number` and `phone_bank_iban` columns on boot **if the table exists** — if it doesn't, you'll see this in the console and the columns are skipped:
+
+    ```
+    framework table 'users' not found — skipping phone_number/phone_bank_iban
+    ```
+
+    <Note>
+      A few name-lookup queries (news, billing, service) take the non-ESX code path in standalone and read QB-style `JSON_VALUE(charinfo, '$.firstname')` / `JSON_VALUE(job, '$.name')` columns. If you use those features, add `charinfo` and `job` JSON columns to your `users` table — otherwise you can ignore this.
+    </Note>
+  </Step>
+
+  <Step title="Point the Bridge at your tables">
+    If your identity table is **not** called `users` (or uses a different identifier column), change the standalone defaults in `bridge/main.lua` (`SetStandalone()`):
+
+    ```lua bridge/main.lua
+    local function SetStandalone()
+        Bridge.Framework = 'standalone'
+        Bridge.UserTable = 'users'                 -- ← your player table
+        Bridge.IdentifierColumn = 'identifier'     -- ← your identifier column
+        Bridge.VehiclesTable = 'owned_vehicles'    -- ← your vehicles table (valet app)
+        Bridge.VehiclesOwnerColumn = 'owner'       -- ← owner column in that table
+        ...
+    end
+    ```
+
+    Every framework-agnostic SQL query in RoadPhone builds on these four variables — this is the single place to adapt them.
+  </Step>
+
+  <Step title="Decide how the phone opens">
+    In pure standalone (no inventory resource), `Bridge.Inventory.RegisterUseableItem` is unsupported — a phone **item** can never open the phone. Pick one:
+
+    <Tabs>
+      <Tab title="No item (simplest)">
+        ```lua config.lua
+        Config.NeedItem = false
+        ```
+
+        Every player can open the phone with the keybind (`Config.OpenKey`, default F1). No inventory needed at all.
+      </Tab>
+
+      <Tab title="Run an inventory resource">
+        The inventory bridge detects inventory resources **independently of the framework**. Running `ox_inventory` alongside standalone gives you working item handling and metadata:
+
+        ```lua config.lua
+        Config.NeedItem = true
+        Config.InventorySystem = 'ox_inventory' -- or leave 'auto'
+        Config.UseMetadata = true               -- optional, works with ox_inventory
+        ```
+      </Tab>
+    </Tabs>
+
+    <Warning>
+      Without an inventory resource, keep `Config.UseMetadata = false`. Metadata support resolves to `'none'` in pure standalone and item-based phone data would silently not persist. This also means `Config.BatterySystem` must stay `false`.
+    </Warning>
+  </Step>
+
+  <Step title="Implement the money stubs (Banking app)">
+    All money functions are intentional no-ops in standalone — the Bank app will show `$0` and every transfer fails until you wire them to your own economy. The stubs print to the console when hit:
+
+    ```
+    [Bridge] Standalone: AddMoney not implemented
+    ```
+
+    Fill in the `standalone` branches in **two files**:
+
+    ```lua bridge/modules/player/server.lua
+    -- Bridge.Player.AddMoney / RemoveMoney / GetMoney
+    elseif Bridge.Framework == 'standalone' then
+        -- Example: your own economy resource
+        return exports.my_economy:AddMoney(source, moneyType, amount)
+    ```
+
+    ```lua bridge/modules/account/server.lua
+    -- Bridge.Account.GetBalance / AddMoney / RemoveMoney / SetMoney
+    elseif Bridge.Framework == 'standalone' then
+        return exports.my_economy:GetBalance(source, accountType)
+    ```
+
+    `HasMoney`, `TransferMoney` and `GetAccounts` derive from these, so implementing `GetBalance`, `AddMoney` and `RemoveMoney` covers the Banking app.
+  </Step>
+
+  <Step title="Optional: jobs and framework events">
+    **Jobs:** `Bridge.Job.GetJob()` always returns `unemployed` in standalone. Every job-gated phone feature therefore never matches: dispatch numbers (`Config.Leitstelle`), news posting (`Config.NewsAppAccess`), the service app, taxi job checks and the Career Hub. If you have your own job system, implement the standalone branches in `bridge/modules/job/server.lua` and `job/client.lua` (`GetJob`, `HasJob`, `GetGrade`).
+
+    **Events:** In standalone, `Bridge.Events.Get('PlayerLoaded')` maps to a plain custom event named `playerLoaded` (likewise `playerUnload`, `jobUpdate`, `moneyChange`, ...). **No framework fires these** — if your own scripts rely on `Bridge.Events.On(...)`, trigger the mapped events yourself:
+
+    ```lua
+    -- your standalone character/spawn script
+    TriggerEvent('playerLoaded', playerData)
+    ```
+
+    The phone itself still boots fine without them — its player-load flow is driven by the phone client, not by framework events.
+  </Step>
+
+  <Step title="Review the remaining config">
+    Go through `config.lua` and disable anything that assumes a framework resource:
+
+    ```lua config.lua
+    Config.HousingSystem = 'custom'   -- default 'esx_property' is an ESX resource
+
+    -- All billing/banking/garage integrations require their (framework-based)
+    -- resources — keep them false in standalone:
+    Config.okokBilling = false
+    Config.okokBanking = false
+    Config.JGAdvancedGarages = false
+    -- ...etc.
+    ```
+
+    Voice integration (`Config.UsePmaVoice`, `Config.UseSaltyChat`, ...) is framework-independent and works in standalone as long as the voice resource itself runs.
+  </Step>
+</Steps>
+
+---
+
+## Standalone Identity Details
+
+- `Bridge.Player.GetIdentifier(source)` returns `GetPlayerIdentifier(source, 0)` — the **first** identifier the server exposes (typically `license:...`, but this depends on your server's identifier order). All phone data is keyed by this value, so make sure it's stable.
+- `Bridge.Player.GetName(source)` returns the FiveM display name (`GetPlayerName`), not a character name.
+- `Bridge.Player.GetPlayerByIdentifier()` only finds **online** players (it scans the player list, there is no offline lookup).
+- Client-side, `Bridge.GetIdentifier()` returns `nil` and `Bridge.IsDead()` always returns `false` in standalone.
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="SQL error: Table 'users' doesn't exist">
+    Standalone queries the `users` table for phone numbers, IBANs and names. Create the table (see Step 1) or point `Bridge.UserTable` at your own table in `bridge/main.lua`.
+  </Accordion>
+
+  <Accordion title="Phone doesn't open">
+    In pure standalone, `Config.NeedItem` must be `false` — item registration is unsupported without an inventory resource. Also verify the keybind (`Config.OpenKey`, default F1) and that no framework resource is stuck in `starting` (which delays Bridge init).
+  </Accordion>
+
+  <Accordion title="Bank app always shows $0">
+    Expected — the standalone money branches are stubs. Implement `GetBalance`/`AddMoney`/`RemoveMoney` in `bridge/modules/account/server.lua` and `bridge/modules/player/server.lua` (see Step 4). Watch the console for `[Bridge] Standalone: ... not implemented` prints.
+  </Accordion>
+
+  <Accordion title="Dispatch / News / Service apps show nothing">
+    These are job-gated and every standalone player is `unemployed`. Implement the standalone branches in `bridge/modules/job/` or accept that job features stay disabled.
+  </Accordion>
+
+  <Accordion title="Console shows the standalone Bridge warning">
+    The warning on every boot reminds you to configure `Bridge.UserTable` & friends. Once your tables are set up correctly you can remove the warning prints from `SetStandalone()` in `bridge/main.lua`.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/guides/installation">
+    Full installation walkthrough (database, upload API, voice)
+  </Card>
+  <Card title="Metadata System" icon="box-archive" href="/guides/metadata-system">
+    Item-based phone data — works in standalone with ox_inventory
+  </Card>
+  <Card title="Server Exports" icon="server" href="/exports/server">
+    Integrate RoadPhone with your own standalone resources
+  </Card>
+  <Card title="Client Exports" icon="mobile" href="/exports/client">
+    Client-side integration options
+  </Card>
+</CardGroup>
