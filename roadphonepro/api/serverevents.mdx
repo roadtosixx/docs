@@ -1,0 +1,581 @@
+---
+title: 'Server Events'
+description: 'All server-side events registered by RoadPhone Pro'
+icon: 'radio-tower'
+---
+
+# Server Events
+
+This page documents every networked server event RoadPhone Pro registers, plus the server-side hooks it emits for other resources.
+
+<Note>
+  **How identity works:** Almost every handler resolves the acting player from the event `source` — phone number, identifier, job and account sessions are looked up server-side. Client-supplied IDs are never trusted. That means an external resource triggering an "internal" event can only ever act as the triggering player, never on behalf of someone else.
+</Note>
+
+```lua
+-- From the client
+TriggerServerEvent('roadphone:sendMessage', "1234567", "Hello!")
+
+-- From another server resource (server-side entry points only)
+TriggerEvent('roadphone:addBankTransfer', senderIban, receiverIban, reason, amount, endamount)
+```
+
+Events are grouped below by feature. The **Integration Events** section documents the entry points intended for external resources in detail; the reference tables that follow list every registered event.
+
+---
+
+## Integration Events
+
+These are the server events you can safely build on from your own resources.
+
+### roadphone:sendDispatch
+
+Creates a service/emergency dispatch and pushes it to all online members of a job. This is the handler behind the `sendDispatch` export.
+
+```lua
+-- Recommended: use the export
+exports['roadphone']:sendDispatch(message, job, coords, image)
+
+-- Equivalent server-side trigger
+TriggerEvent('roadphone:sendDispatch', source, message, job, coords, anonym, image, deathcause)
+```
+
+<ParamField path="claimedSource" type="number" required>
+  The dispatching player's server ID (used for server-side calls; real net source wins for client calls).
+</ParamField>
+<ParamField path="message" type="string" required>
+  The dispatch text.
+</ParamField>
+<ParamField path="job" type="string" required>
+  Target job name (e.g. `"police"`, `"ambulance"`).
+</ParamField>
+<ParamField path="coords" type="table">
+  Dispatch coordinates `{ x, y, z }`.
+</ParamField>
+<ParamField path="anonym" type="boolean">
+  Hide the sender's identity.
+</ParamField>
+<ParamField path="image" type="string">
+  Optional image URL.
+</ParamField>
+
+---
+
+### roadphone:addBankTransfer
+
+Inserts a bank transaction row into `roadshop_banktransfer` and live-pushes it to both parties if they are online. This is the main hook point for external transaction logging (also exposed as the `addBankTransaction` export).
+
+```lua
+TriggerEvent('roadphone:addBankTransfer', senderIban, receiverIban, reason, amount, endamount)
+```
+
+<ParamField path="senderIban" type="string" required>
+  Sender IBAN.
+</ParamField>
+<ParamField path="receiverIban" type="string" required>
+  Receiver IBAN.
+</ParamField>
+<ParamField path="reason" type="string" required>
+  Transaction label shown in the bank app.
+</ParamField>
+<ParamField path="amount" type="number" required>
+  Transferred amount.
+</ParamField>
+<ParamField path="endamount" type="number" required>
+  Amount after tax/fees.
+</ParamField>
+
+<Note>
+  RoadPhone itself fires this for taxi fares/tips (`taxi.lua`) and crypto buys/sells (`crypto.lua`).
+</Note>
+
+---
+
+### roadphone:roaddrop:receive
+
+Shares a picture, contact card or playlist with a nearby player (AirDrop-style). Backing handler for the `sendRoadDrop` / `sendAirdrop` exports.
+
+```lua
+TriggerEvent('roadphone:roaddrop:receive', {
+    playerId = targetSource,
+    picturelink = "https://example.com/image.jpg" -- OR contact = {...} OR playlist = {...}
+})
+```
+
+<ParamField path="data" type="table" required>
+  `{ playerId (number), picturelink?, contact? (table, `own = true` sends the caller's own card), playlist?, roadpad? }` — the sender name is derived server-side.
+</ParamField>
+
+---
+
+### roadphone:receiveMail:offline
+
+Inserts a system mail addressed to a player identifier — works while the recipient is offline. Backing handler for the `sendMailOffline` export.
+
+```lua
+TriggerEvent('roadphone:receiveMail:offline', "license:abc123", {
+    sender = "admin@server.com",
+    subject = "Important",
+    message = "Delivered on next login.",
+    button = { text = "Open", event = "myresource:action", data = {} } -- optional
+})
+```
+
+<Warning>
+  This event is also net-registered, so a modified client could forge system mail to arbitrary identifiers. Prefer the export, and consider restricting the event on your server if you don't need net exposure.
+</Warning>
+
+---
+
+### roadphone:server:call:eventnumber
+
+Customization stub fired whenever a player dials a configured event number (`Config.EventNumbers`, e.g. `"77777"`). Add your own handler to react to special numbers.
+
+```lua
+AddEventHandler('roadphone:server:call:eventnumber', function(number)
+    local src = source
+    if number == '77777' then
+        -- custom logic
+    end
+end)
+```
+
+---
+
+### roadphone:playerLoad
+
+Reloads all phone data for a player and ships it to their client (used by the `fixphone` command and the framework `PlayerLoaded` bridge). Can be fired server-side to force a data refresh.
+
+```lua
+TriggerEvent('roadphone:playerLoad', playerSource)
+```
+
+---
+
+### Server-side-only handlers
+
+These handlers are registered with `AddEventHandler` only — **not** net-exposed — and can only be fired by server-side code:
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:addCallHistory` | `source, number, isIncoming, isAnonym, callType, isMissed` | Inserts a call-history row for a player and pushes it to their client. Deliberately not net-exposed (first arg is a target source). |
+| `roadphone:sendNotification:offline` | `number, apptitle, title, message, img, path, app` | Queues an offline notification in `roadshop_notifications`. Emitted internally by `PhoneNotifyNumber`. |
+| `roadphone:fetchallmails` | `source, mail` | Reloads a mailbox and pushes it to the client. |
+| `roadphone:taxi:sync` / `roadphone:taxi:sync:remove` | taxi job fields / `phone` | RoadPad bridge: writes/clears a taxi job in server state. |
+
+### Consumed external events
+
+RoadPhone itself listens to these third-party events:
+
+| Event | Source resource | Description |
+|---|---|---|
+| `billing_ui:onBillCreated` | Jaksam billing_ui | Pushes a billing refresh to the invoiced player (only with `Config.JaksamBilling`). |
+| `ox_inventory:usedItem` | ox_inventory | Phone item-use detection (metadata backup flow). |
+
+---
+
+## Core Phone — `server/server.lua`
+
+| Event | Params (after `source`) | Description |
+|---|---|---|
+| `roadphone:playerLoad` | `source` | Loads all global + per-phone data and ships it to the client. |
+| `roadphone:finishSetup` | — | Marks the phone as set up (`phone_setup = 1`). |
+| `roadphone:server:leitstelle:add` | `number` | Registers the caller as dispatcher for an emergency line (job-checked). |
+| `roadphone:server:leitstelle:remove` | — | Removes the caller from the dispatcher registry. |
+| `roadphone:prop:delete` | `netId` | Deletes a phone prop attached to the caller's ped (ownership-checked). |
+| `roadphone:phone:shutdown` | — | Sets `phone_powered_on = 0` in metadata. |
+| `roadphone:phone:poweron` | — | Sets `phone_powered_on = 1` in metadata. |
+
+### Contacts
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:addContact` | `firstname, lastname, number, picture, note, mail, company` | Inserts a contact (DB + metadata), anti-spam guarded. |
+| `roadphone:server:editContact` | `id, firstname, lastname, number, picture, note, mail, company` | Updates a caller-owned contact. |
+| `roadphone:server:deleteContact` | `id` | Deletes a caller-owned contact. |
+| `roadphone:server:setContactFavorite` | `id, favorite (0/1)` | Toggles a contact's favourite flag. |
+| `roadphone:server:GiveContactDetails` | `playerId` | Sends the caller's name + number to another player to add as a contact. |
+
+### Calls
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:call` | `selfnumber, targetnumber, isAnonym` | Places a call: SIM/battery checks, Leitstelle routing, rings the target or logs a missed call. |
+| `roadphone:server:acceptIncomingCall` | `number` | Accepts an incoming call: voice channel pairing, SIM billing, battery activity. |
+| `roadphone:server:endCall` | `number, leitstellenSrc?` | Ends/declines a call, stops billing, routes `endCall` to the peer. |
+| `roadphone:call:mute` | `id (legacy), mute (bool)` | Mutes/unmutes the caller via the voice backend. |
+| `roadphone:call:requestVideoUpgrade` | `targetNumber` | Relays a "switch to FaceTime" request. |
+| `roadphone:call:respondVideoUpgrade` | `targetNumber, accepted` | Relays the accept/decline of a video upgrade. |
+| `roadphone:server:startGroupCall` | `groupid, owner, name, members` | Rings all group members with an incoming group call. |
+| `roadphone:server:newGroupChatMember` | `groupid` | Relays "member joined" to the group roster. |
+| `roadphone:server:groupChatMemberLeaved` | `groupid` | Relays "member left" to the group roster. |
+| `roadphone:server:kickFromGroupCall` | `number, groupid` | Tells the target's client to leave the group call. |
+| `roadphone:server:addContactToGroupCall` | `group, number` | Rings a specific number into a running group call. |
+
+### Photos & Albums
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:addPhotoToGallery` | `link` | Saves a photo (DB + metadata). |
+| `roadphone:deletePicture` | `id` | Soft-deletes a photo (`isDeleted = 1`). |
+| `roadphone:deletePicture:confirm` | `id` | Hard-deletes a photo. |
+| `roadphone:recoverPicture` | `id` | Restores a soft-deleted photo. |
+| `roadphone:togglePhotoFavourite` | `id, isFavourite (0/1)` | Toggles a photo's favourite flag. |
+| `roadphone:editPicture` | `id, newUrl, originalUrl` | Points a photo at an edited URL (original preserved). |
+| `roadphone:revertPicture` | `id, originalUrl` | Reverts an edited photo to its original. |
+| `roadphone:createAlbum` | `albumName` | Creates a photo album. |
+| `roadphone:deleteAlbum` | `albumId` | Deletes an album and its photo links. |
+| `roadphone:renameAlbum` | `albumId, newName` | Renames an album. |
+| `roadphone:addPhotoToAlbum` | `albumId, photoId` | Adds a photo to an album. |
+| `roadphone:removePhotoFromAlbum` | `albumId, photoId` | Removes a photo from an album. |
+| `roadphone:addMultiplePhotosToAlbum` | `albumId, photoIds (array)` | Bulk-adds photos to an album. |
+
+### Alarms
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:alarm:add` | `alarmData` (`time, label, enabled, repeatType, days, sound`) | Creates an alarm in metadata. |
+| `roadphone:alarm:update` | `alarmId, updatedAlarm` | Updates an alarm. |
+| `roadphone:alarm:delete` | `alarmId` | Deletes an alarm. |
+| `roadphone:alarm:toggle` | `alarmId, enabled` | Enables/disables an alarm. |
+| `roadphone:alarm:snooze` | `alarmId, snoozeUntil` | Sets an alarm's snooze timestamp. |
+
+---
+
+## Server API — `server/serverAPI/serverAPI.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:sendDispatch` | see [Integration Events](#roadphone-senddispatch) | Creates a dispatch for a job. |
+| `roadphone:server:call:eventnumber` | `number` | Customization stub for dialed event numbers. |
+| `roadphone:server:blocknumber` | `number` | Adds a number to the caller's blocked list. |
+| `roadphone:server:unblocknumber` | `number` | Removes a number from the blocked list. |
+| `roadphone:server:call:saltychat` | `callchannel` | Adds the caller to a SaltyChat/Yaca call channel. |
+| `roadphone:server:call:saltychat:end` | `callchannel` | Removes the caller from a call channel. |
+| `roadphone:server:call:saltychat:speaker` | `boolean` | Toggles phone speaker mode. |
+
+## Bank — `server/serverAPI/bank.lua`, `bank_requests.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:bank:transfer` | `recipient, amount, recipientType ('number' or IBAN)` | Player transfer: validation, tax, history, notifications. Serialized per player. |
+| `roadphone:addBankTransfer` | see [Integration Events](#roadphone-addbanktransfer) | Inserts a transaction row and live-pushes it. |
+| `roadphone:bank:saveFavorites` | `favorites` (array of `type, value, label`) | Stores the caller's bank favourites in metadata. |
+
+## Billing — `server/serverAPI/billing.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:payBill` | `id` | Pays a RoadPhone/BCS bill (society or player payout, race-safe). |
+| `roadphone:server:rxBilling:payBill` | `id` | Pays an RxBilling invoice via export. |
+| `roadphone:server:codem:payBill` | `id` | Pays a codem-billing invoice via export. |
+
+## Metadata & Settings — `server/phone_metadata.lua`, `phone_cache.lua`, `customapp_storage.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:clearActivePhoneSlot` | — | On phone close: flushes buffered metadata writes, clears slot + cache. |
+| `roadphone:assignPhoneNumber` | `itemName, slot` | Assigns a number to a phone item lacking one (legacy path). |
+| `roadphone:updatePhoneBackground` | `background` | Saves the wallpaper to item metadata. |
+| `roadphone:updatePhoneSettings` | `settings` (whitelisted keys) | Persists phone settings to metadata. |
+| `roadphone:updatePhonePin` | `pin, pinNeeded (0/1)` | Stores/clears the phone PIN. |
+| `roadphone:updatePhoneFaceID` | `enabled` | Binds/unbinds the holder as FaceID owner. |
+| `roadphone:updateInstalledApps` | `installedApps` | Persists the installed-apps list. |
+| `roadphone:updateHomescreenLayout` | `homescreenData` | Persists the homescreen layout. |
+| `roadphone:server:playerLoaded` | — | Caches the player's phone items for fast number lookups. |
+| `roadphone:customapp:storageSet` | `namespace, key, value` | Writes a key into per-phone custom-app storage. |
+| `roadphone:customapp:storageDelete` | `namespace, key` | Deletes a key from custom-app storage. |
+
+## Admin — `server/admin.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:admin:saveChunk` | `transferId, eventName, index, total, chunk` | ACE-gated (`roadphone.phoneadmin`) chunked upload for admin-panel saves. |
+
+## GPS — `server/gps.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:gps:deleteWaypoint` | `id` | Deletes a caller-owned saved waypoint. |
+
+---
+
+## Messages — `server/messages.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:sendMessage` | `phoneNumber, message, replyto?` | Core SMS send: SIM check, persists both copies, notifies recipient, webhook. |
+| `roadphone:deleteMessage` | `id` | Deletes one message from the caller's own mailbox. |
+| `roadphone:setReadMessage` | `number` | Marks a conversation read; fires read receipts. |
+| `roadphone:messages:deleteConversation` | `otherNumber` | Deletes the caller's copy of a 1:1 conversation. |
+| `roadphone:messages:markGroupRead` | `groupid` | Clears the per-phone unread badge for a group. |
+| `roadphone:messages:createGroup` | `name, image, members, message` | Creates a group chat and sends the first message. |
+| `roadphone:messages:sendGroupMessage` | `groupid, groupname, message, members, number, replyto?` | Sends a group message (membership re-resolved server-side). |
+| `roadphone:messages:leaveGroup` | `groupid, number` | Leave (self) or kick (owner-only). |
+| `roadphone:messages:addGroup` | `groupid, number` | Invites a member (members-only). |
+| `roadphone:messages:setGroupOwner` | `groupid, newOwner` | Transfers ownership (owner-only). |
+| `roadphone:messages:deleteGroup` | `groupid` | Deletes a group + messages (owner-only). |
+| `roadphone:messages:saveGroupSettings` | `groupid, name, picture` | Updates group name/image (members-only). |
+
+## Mail — `server/mail_app.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:mail:sendmail` | `mailData` (`sender, receivermail, title, message, image`) | Sends a mail; sender address resolved from the Cloud account, spam-tracked. |
+| `roadphone:setMailRead` | `mailid` | Marks a caller-owned mail read. |
+| `roadphone:deleteMail` | `mailid` | Deletes a caller-owned mail. |
+| `roadphone:receiveMail` | `mailData` (`sender, subject, message, button?`) | Inserts a system mail into the caller's own mailbox. |
+| `roadphone:receiveMail:offline` | see [Integration Events](#roadphone-receivemail-offline) | System mail by identifier (offline-capable). |
+| `roadphone:receivemail:notify` | `source, sender` | Fires a "mail received" notification to a source. |
+| `qb-phone:server:sendNewMail` | `mailData` (`senderMail, receivermail, title, message, image`) | QBCore-compat mail send shim. |
+
+## FaceTime — `server/facetime.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:facetime:start` | `targetNumber, isAnonym` | Starts a LiveKit video call (blocked/DnD checks, room, ring timeout). |
+| `roadphone:facetime:accept` | `callId` | Accepts (invite validated), mints join token, voice setup. |
+| `roadphone:facetime:decline` | `callId` | Declines/leaves ringing. |
+| `roadphone:facetime:end` | `callId` | Ends/leaves an active call. |
+| `roadphone:facetime:addParticipant` | `callId, targetNumber` | Group-call invite (max 5, blocked check). |
+| `roadphone:facetime:reaction` | `emoji` | Broadcasts a mid-call emoji reaction. |
+
+## Service (Dispatch & Business) — `server/service.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:service:deleteDispatch` | `id` | Deletes a dispatch (job-scoped). |
+| `roadphone:service:dispatchFinish` | `id` | Marks a dispatch finished. |
+| `roadphone:service:declineDispatch` | `id` | Marks a dispatch declined. |
+| `roadphone:service:declineDispatchWithReason` | `id, reason` | Declines with a reason. |
+| `roadphone:service:updateDispatchStatus` | `id, status` | Updates status (`accepted/enroute/onscene/finished`, atomic accept guard). |
+| `roadphone:service:forwardDispatch` | `dispatchId, targetSource` | Reassigns a dispatch to a same-job coworker. |
+| `roadphone:service:requestShareLocation` | `dispatchId, targetNumber` | Worker offers live location to the dispatch sender. |
+| `roadphone:service:acceptLocationSharing` | `dispatchId` | Sender accepts; opens a live-location session. |
+| `roadphone:service:updateLiveLocation` | `dispatchId, x, y` | Pushes coordinates into the session. |
+| `roadphone:service:stopLiveLocation` | `dispatchId` | Ends a live-location session. |
+| `roadphone:setBusinessStatus` | `data` (`job, isOpen`) | Opens/closes a business (job + grade gated). |
+| `roadphone:postBusinessNews` | `data` (`job, title, message`) | Posts a business news item (job + grade gated). |
+
+## Taxi — `server/taxi.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:taxi:call` | `profile, price, loca, curloca, phone, gps, GPStogo, distance, csrc, vehicleType` | Customer requests a taxi (driver availability + balance check). |
+| `roadphone:taxi:accept` | `phone, profile` | Driver accepts (server-authoritative driver gate). |
+| `roadphone:taxi:pickedup:check` | `phone, gpstogo, vehicle, customersrc` | Driver asks the customer to confirm pickup. |
+| `roadphone:taxi:pickedup` | `phone, Gps, taxiplate, myplate, taxisource` | Customer confirms pickup (plate match required). |
+| `roadphone:taxi:arrived` | `phone` | Completes trip: server-authoritative price, payment, history, rating prompt. |
+| `roadphone:taxi:cancel` | `phone` | Cancels a job (customer or assigned driver only). |
+| `roadphone:taxi:savefavorite` | `favoriteType ('home'/'work'), name, coords` | Saves a favourite location. |
+| `roadphone:taxi:deletefavorite` | `favoriteType` | Deletes a favourite. |
+| `roadphone:taxi:rating` | `driverPhone, rating (1-5), tip, comment, tripId` | Post-ride rating + optional tip. |
+
+## Calendar / Notes / Voice Memos / Yellow Pages
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:calendar:add` | `title, location, notes, allDay, startAt, endAt` | Adds a calendar event. |
+| `roadphone:calendar:edit` | `id, title, location, notes, allDay, startAt, endAt` | Edits a caller-owned event. |
+| `roadphone:calendar:delete` | `id` | Deletes a caller-owned event. |
+| `roadphone:notes:add` | `title, message` | Creates a note. |
+| `roadphone:notes:edit` | `id, title, message` | Edits a caller-owned note. |
+| `roadphone:notes:delete` | `id` | Deletes a caller-owned note. |
+| `roadphone:notes:pin` | `id, isPinned` | Pins/unpins a note. |
+| `roadphone:voicemail:add` | `memo` | Saves a voice memo. |
+| `roadphone:voicemail:delete` | `id` | Deletes a caller-owned voice memo. |
+| `roadphone:yellowpages:addPost` | `title, text, picture` | Creates an ad (charges `Cfg.YellowPageFee`). |
+| `roadphone:yellowpages:deletePost` | `id` | Deletes a caller-owned ad. |
+
+## News — `server/news.lua`
+
+All news events require job-based news access (`hasNewsAccess`).
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:news:addPost` | `title, text, picture, categoryId, isBreaking, breakingDuration` | Publishes an article + global notification. |
+| `roadphone:news:editPost` | `id, title, text, picture, categoryId, isBreaking, breakingDuration` | Edits a post. |
+| `roadphone:news:deletePost` | `id` | Deletes a post. |
+| `roadphone:news:createCategory` | `name, color` | Creates a category. |
+| `roadphone:news:deleteCategory` | `id` | Deletes a category (posts keep existing, category nulled). |
+| `roadphone:news:toggleBreaking` | `postId, isBreaking, durationMinutes` | Toggles the breaking-news flag + broadcast. |
+
+## Music — `server/music.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:music:client` | `type, musicid, volume, loop, pos, timestamp` | Relays a player's playback state to all clients (3D audio). |
+| `roadphone:music:createPlaylist` | `title` | Creates a playlist. |
+| `roadphone:music:changePlaylist` | `playlistId, playlistTitle, playlistImage` | Renames/re-images a caller-owned playlist. |
+| `roadphone:music:copyPlaylist` | `playlistId, playlistTitle, playlistImage` | Duplicates a caller-owned playlist. |
+| `roadphone:music:deletePlaylist` | `playlistId` | Deletes a caller-owned playlist. |
+| `roadphone:music:addPlaylistMusic` | `playlist, musicid, musicname, musicartist, musicimage, musiclength` | Adds a song to a playlist. |
+| `roadphone:music:removePlaylistMusic` | `playlist, musicid` | Removes a song (ownership-scoped). |
+| `roadphone:music:submitSong` | `data` (`songid, title, artist, url_type, thumbnail, length`) | Submits a song to the library (auto-approve or pending). |
+| `roadphone:music:approveSubmission` | `submissionId, overrides?` | Approves a submission (music-admin gated). |
+| `roadphone:music:rejectSubmission` | `submissionId` | Rejects a submission (music-admin gated). |
+| `roadphone:music:deleteLibrarySong` | `songId` | Deletes a library song (music-admin gated). |
+
+Only relevant with mx-surround (`MXSurround`): `roadphone:mx:play`, `roadphone:mx:attach`, `roadphone:mx:setVolume`, `roadphone:mx:seek`, `roadphone:mx:resume`, `roadphone:mx:stop`, `roadphone:mx:destroy`, `roadphone:mx:streamer` — thin wrappers over the mx-surround positional-audio API.
+
+## Crypto / Health — `server/crypto.lua`, `server/health.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:crypto:buy` | `coinid, amount` | Buys crypto (atomic debit → credit under a per-player lock). |
+| `roadphone:crypto:sell` | `coinid, amount` | Sells crypto under the same lock. |
+| `roadphone:health:sync` | `data` (`steps, distance, calories, activeMinutes, heartRate, stress, systolicBp, diastolicBp, spo2, isSleeping`) | Updates the health cache (rate-limited to 1/55s). |
+
+## RoadDrop — `server/roaddrop.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:roaddrop:receive` | see [Integration Events](#roadphone-roaddrop-receive) | Shares picture/contact/playlist with a nearby player. |
+
+## Dating (DateMe) — `server/dating.lua`
+
+All handlers resolve the caller's identifier server-side and validate match/ownership.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:dating_checkAuth` | — | Returns whether the caller has a profile. |
+| `roadphone:dating_login` | `credentials` (`username, password`) | Logs into a profile and reassigns it to the caller. |
+| `roadphone:dating_register` | `data` (`username, password, name, birthdate, age, gender`) | Creates a profile. |
+| `roadphone:dating_completeSetup` | `profileData` (`bio, photo, interests`) | Finalizes a profile. |
+| `roadphone:dating_getProfile` | — | Sends the caller's own profile. |
+| `roadphone:dating_updateProfile` | `data` (`name, bio, age, gender, photo, interests, active`) | Creates/updates the profile. |
+| `roadphone:dating_getSwipeQueue` | — | Builds a swipe queue (prefs + distance). |
+| `roadphone:dating_swipe` | `targetIdentifier, action ('like'/'pass'/'superlike')` | Records a swipe; creates matches on mutual like. |
+| `roadphone:dating_rewindSwipe` | `targetIdentifier` | Undoes the last swipe. |
+| `roadphone:dating_getMatches` | — | Returns matches with profiles. |
+| `roadphone:dating_unmatch` | `matchId` | Deletes a match + its messages. |
+| `roadphone:dating_getMessages` | `matchId` | Returns messages; marks incoming read. |
+| `roadphone:dating_sendMessage` | `matchId, message, image?` | Sends a text/image message. |
+| `roadphone:dating_markRead` | `matchId` | Marks messages read; echoes receipts. |
+| `roadphone:dating_getLikes` | — | Returns profiles that liked the caller. |
+| `roadphone:dating_updatePreferences` | `prefs` (`pref_gender, pref_age_min, pref_age_max`) | Updates discovery preferences. |
+
+## Livestream — `server/livestream.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:livestream:createAccount` | `username, password` | Creates a livestream account bound to the caller. |
+| `roadphone:livestream:login` | `username, password` | Logs into an account. |
+| `roadphone:livestream:updateProfile` | `oldUsername, password, newUsername, avatarUrl` | Renames/re-avatars (credential-gated). |
+| `roadphone:livestream:start` | `title, preview, username, password` | Starts a stream (LiveKit room + DB row, broadcast). |
+| `roadphone:livestream:stop` | `username, password` | Stops the caller's stream. |
+| `roadphone:livestream:sendMessage` | `data` (`message, username, streamId, color?`) | Sends a stream chat message. |
+| `roadphone:livestream:donation` | `username, streamId, amount` | Donates to a streamer (balance check, tax, transfer). |
+| `livestream:requestJoinStream` | `streamId` | Registers the caller as a viewer. |
+| `livestream:requestLeaveStream` | `streamId` | Removes the caller as a viewer. |
+| `livestream:requestViewerCount` | `streamId` | Returns a stream's viewer count. |
+| `roadphone:requestActiveStreams` | — | Returns the active-streams list. |
+
+---
+
+## Connect (Instagram) — `server/connect.lua`
+
+Identity resolves via `GetConnectAccountForSource`; the legacy `username, password` parameters on most events are **ignored** — only login/register actually authenticate by credentials.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:instagram_login` | `username, password, silent?` | Authenticates by credentials, issues a session. |
+| `roadphone:instagram_createAccount` | `username, password, avatarUrl` | Creates an account + session, broadcasts it. |
+| `roadphone:instagram_logout` | — | Clears the session. |
+| `roadphone:instagram_deleteAccount` | `username, password (ignored)` | Deletes the session account + all content. |
+| `roadphone:instagram_getposts` | `username, password (ignored)` | Returns the home feed. |
+| `roadphone:instagram_post` | `…, message, image (string or array), filters` | Creates a post (carousel-capable), broadcasts it. |
+| `roadphone:connect:editpost` | `…, postId, newMessage` | Edits the caller's own post caption. |
+| `roadphone:connect:deletepost` | `…, postId` | Deletes the caller's own post. |
+| `roadphone:instagram:toggleLike` | `…, inapId` | Toggles a post like. |
+| `roadphone:connect:toggleCommentLike` | `…, commentId` | Toggles a comment like. |
+| `roadphone:instagram:comment` | `…, postid, commentText, parentId?` | Adds a comment or reply. |
+| `roadphone:instagram:follow` | `…, accountid` | Follows an account. |
+| `roadphone:instagram:unfollow` | `…, accountid` | Unfollows an account. |
+| `roadphone:instagram:createStory` | `…, image` | Posts a story. |
+| `roadphone:instagram:reactStory` | `…, storyId, emoji` | Reacts to a story (one reaction per account). |
+| `roadphone:instagram_setProfileInformations` | `…, firstname, lastname, username, password?` | Updates profile info. |
+| `roadphone:instagram_setAvatarUrl` | `…, avatarUrl` | Updates the avatar. |
+
+### Connect DMs — `server/connect_dm.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:connect_dm_send` | `data` (`toAccountId, type ('text'/'image'/'post_share'), body, attachment`) | Sends a DM (rate-limited, media-host allow-list). |
+| `roadphone:connect_dm_markRead` | `data` (`peerId`) | Advances the read pointer; notifies the peer. |
+| `roadphone:connect_dm_react` | `data` (`messageId, emoji`) | Toggles one emoji reaction per user per message. |
+| `roadphone:connect_dm_typing` | `data` (`peerId, isTyping`) | Relays ephemeral typing state. |
+
+### Connect Live — `server/connectlive.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:getConnectLivestreams` | — | Returns active Connect livestreams with viewer counts. |
+
+## TweetWave — `server/tweetwave.lua`
+
+Identity resolves via `GetTweetWaveAccountForSource`; `username, password` are ignored except on login/register/changePassword.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:twitter_login` | `username, password` | Authenticates by credentials, issues a session. |
+| `roadphone:twitter_createAccount` | `username, password, avatarUrl` | Creates an account + session. |
+| `roadphone:twitter_changePassword` | `username, password, newPassword` | Verifies old credentials, updates the password. |
+| `roadphone:twitter_logout` | — | Clears the session. |
+| `roadphone:twitter_deleteAccount` | `username, password (ignored)` | Deletes the session account + content. |
+| `roadphone:twitter_postTweets` | `…, message, image?` | Posts a tweet, notifies mentions. |
+| `roadphone:twitter_usersDeleteTweet` | `…, tweetId` | Deletes the caller's own tweet. |
+| `roadphone:twitter_toogleLikeTweet` | `…, tweetId` | Toggles a like. |
+| `roadphone:twitter_toggleRepost` | `…, tweetId` | Toggles a repost. |
+| `roadphone:twitter_quoteRepost` | `…, tweetId, message` | Creates a quote-tweet. |
+| `roadphone:twitter_toggleBookmark` | `…, tweetId` | Toggles a bookmark. |
+| `roadphone:twitter_toggleFollow` | `…, targetUserId` | Toggles follow. |
+| `roadphone:twitter:comment` | `…, postid, comment` | Adds a comment. |
+| `roadphone:twitter_getUserTweets` | `…` | Returns the session account's own tweets. |
+| `roadphone:twitter_setAvatarUrl` | `…, avatarUrl` | Updates the avatar. |
+
+## Snapy — `server/snapy.lua`
+
+Identity resolves via `GetSnapyAccountForSource`; all events are rate-limited per `SnapyCfg.RateLimits`.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:snapy_login` | `username, password` | Authenticates by credentials, issues a session. |
+| `roadphone:snapy_register` | `data` (`username, password, displayName, avatarUrl`) | Creates an account. |
+| `roadphone:snapy_logout` | — | Clears the session. |
+| `roadphone:snapy_addFriend` | `accountId (ignored), targetUsernameOrSnapcode` | Sends a friend request. |
+| `roadphone:snapy_acceptFriend` | `requestId` | Accepts a request (ownership-scoped). |
+| `roadphone:snapy_ignoreFriend` | `requestId` | Ignores/deletes a pending request. |
+| `roadphone:snapy_removeFriend` | `friendId` | Removes a friendship + the 1:1 conversation. |
+| `roadphone:snapy_blockUser` | `targetId` | Blocks a user (removes friendship + conversation). |
+| `roadphone:snapy_unblockUser` | `targetId` | Unblocks a user. |
+| `roadphone:snapy_sendSnap` | `data` (`recipients, imageUrl, thumbUrl, blurhash, caption, duration, mode, mediaType, overlays`) | Sends a snap to accepted friends; advances snapstreaks. |
+| `roadphone:snapy_markSnapViewed` | `snapId` | Marks a received snap opened. |
+| `roadphone:snapy_screenshot` | `snapId` | Flags a snap screenshotted; alerts the sender. |
+| `roadphone:snapy_saveSnap` | `data` (`snapId`) | Saves a viewed snap into the chat. |
+| `roadphone:snapy_createStory` | `data` (`imageUrl, thumbUrl, blurhash, caption, visibility, group_id, overlays, mediaType`) | Posts a 24h story. |
+| `roadphone:snapy_viewStory` | `storyId, viewerId (ignored)` | Records a unique story view. |
+| `roadphone:snapy_setHighlight` | `storyId, on` | Marks/unmarks a story as a profile highlight. |
+| `roadphone:snapy_sendMessage` | `data` (`receiverId or groupId, message, messageType, imageUrl, storyRef`) | Sends a chat message (friendship/membership enforced). |
+| `roadphone:snapy_typing` | `data` (`receiverId or groupId`) | Relays typing state. |
+| `roadphone:snapy_reactMessage` | `data` (`messageId, emoji`) | Reacts to a message. |
+| `roadphone:snapy_leaveGroup` | `groupId` | Leaves a group (ownership transfer / cleanup). |
+| `roadphone:snapy_updateProfile` | `accountId (ignored), data` (`displayName, avatarUrl`) | Updates the profile. |
+| `roadphone:snapy_updateSettings` | `data` (`ghost_mode, quick_add, story_default, memories_autosave`) | Updates settings/privacy. |
+| `roadphone:snapy_addMemory` | `data` (`mediaUrl, thumbUrl, blurhash, caption, mediaType, kind`) | Saves a permanent memory. |
+| `roadphone:snapy_deleteMemory` | `data` (`id`) | Deletes a caller-owned memory. |
+
+## Addon: Battery — `addons/battery/server/server.lua`
+
+Only active with `Config.BatterySystem` and `Config.UseMetadata`.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:battery:phoneOpened` | — | Starts battery drain tracking. |
+| `roadphone:battery:phoneClosed` | — | Stops drain, persists battery to metadata. |
+| `roadphone:battery:stopCharging` | — | Stops the charging loop. |
+| `roadphone:battery:activity` | `activity ('flashlight'/'music'/'call'), active` | Sets an activity flag that increases drain. |
+
+<Note>
+  The SIM card, RoadPods and Mechanic addons register **no** networked server events — their APIs are Bridge callbacks and commands.
+</Note>

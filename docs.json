@@ -98,6 +98,8 @@
             "pages": [
               "roadphonepro/api/client",
               "roadphonepro/api/server",
+              "roadphonepro/api/clientevents",
+              "roadphonepro/api/serverevents",
               "roadphonepro/api/metadata"
             ]
           },
