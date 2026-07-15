@@ -1,247 +1,213 @@
 ---
-title: Custom Apps
-description: Add custom apps to the phone via config.json or build a self-hosted app with NUI messaging
-icon: "pickaxe"
+title: 'Custom App API'
+description: 'Build custom apps with full access to RoadPhone data and events'
+icon: 'code'
 ---
-
-## Configuration
-
-Navigate to `/public/static/config/config.json` and locate the **AppStore** section.
-
-<Warning>
-  Do not change the `redirect` value — it tells the phone where to route requests.
-</Warning>
-
-## Configuration Properties
-
-<ParamField path="name" type="string" required>
-  Display name of the app
-</ParamField>
-
-<ParamField path="icon" type="string" required>
-  Path to the app icon
-</ParamField>
-
-<ParamField path="url" type="string" required>
-  Website URL to display (must support iFrame) or a self-hosted HTML file
-</ParamField>
-
-<ParamField path="custom_app_id" type="string" required>
-  Unique identifier for your app. Set once and never change it.
-</ParamField>
-
-<ParamField path="darkmode" type="boolean" default="false">
-  Changes header and home button theme
-</ParamField>
-
-<ParamField path="allowJobs" type="array">
-  List of jobs that can access this app
-</ParamField>
-
-<ParamField path="disallowJobs" type="array">
-  List of jobs that cannot access this app
-</ParamField>
-
-<ParamField path="custom_event" type="object">
-  Event configuration with the following properties:
-
-  <Expandable title="Properties">
-    <ParamField path="active" type="boolean" default="false">
-      Send a message to Lua when the app is opened
-    </ParamField>
-
-    <ParamField path="closeWhenOpenApp" type="boolean" default="false">
-      Close the phone when the app is opened
-    </ParamField>
-  </Expandable>
-</ParamField>
-
-## Examples
-
-### Website App
-
-```json
-{
-  "name": "CustomApp",
-  "icon": "/public/img/Apps/custom.jpg",
-  "default": true,
-  "category": "apps",
-  "custom_app_id": "SET_YOUR_OWN_ID_DONT_CHANGE_AFTERWARDS_NO_DOUBLE_ID",
-  "redirect": "custom_app",
-  "url": "https://www.test.com",
-  "darkmode": false,
-  "allowJobs": [],
-  "disallowJobs": [],
-  "custom_event": {
-    "active": false,
-    "closeWhenOpenApp": false
-  }
-}
-```
-
-### Self-Developed App
-
-```json
-{
-  "name": "Template App",
-  "icon": "/public/img/Apps/custom.jpg",
-  "default": true,
-  "category": "apps",
-  "custom_app_id": "TEMPLATE_APP_1",
-  "redirect": "custom_app",
-  "url": "https://cfx-nui-roadphone-app-template/html/static/index.html",
-  "darkmode": true,
-  "allowJobs": [],
-  "disallowJobs": [],
-  "custom_event": {
-    "active": false,
-    "closeWhenOpenApp": false
-  }
-}
-```
-
-<Card title="App Template" icon="github" href="https://github.com/roadtosixx/roadphone-app-template">
-    Get started quickly with our self-development app template on GitHub
-</Card>
-
-## NUI Messaging
-
-<CodeGroup>
-
-```lua Lua Export
--- Send a custom event to your app
-exports['roadphone']:SendMessageNUI({
-  customevent = "yourEvent",
-  data = "yourData"
-})
-```
-
-```javascript JavaScript Handler
-// Handle events in ./public/custom_apps/app.js
-class CustomApp {
-  constructor() {
-    window.addEventListener('message', (event) => {
-      if (!event.data) return
-      const e = event.data
-      if (e.customevent === 'yourEvent') {
-        console.log(e.data)
-      }
-    })
-  }
-}
-
-const customApp = new CustomApp()
-```
-
-</CodeGroup>
-
-## Exports
-
-### Input Focus Control
-
-Control the NUI focus behavior for the phone:
-
-```lua
-exports['roadphone']:inputFocus(boolean) -- true or false
-```
-
-<Info>
-  Use `true` to enable input focus (keyboard/mouse control) and `false` to disable it.
-</Info>
 
 ## Overview
 
-RoadPhone exposes a global `window.roadphone` API that allows developers to build custom applications with full access to phone data, settings, and events.
+RoadPhone can load your own web app inside the phone and exposes a global
+`window.roadphone` API (**v1.3.0**) with access to phone data, native UI,
+storage, permissions, events, and a server RPC bridge.
+
+This page covers the whole lifecycle:
+
+1. [Registering your app](#registering-your-app-config-json) in `config.json`
+2. [How players install it](#installing-apps-as-a-player) via the App Shop
+3. The full [JavaScript API](#quick-start) available to your app
+4. [Talking to Lua](#talking-to-lua-server-rpc) — RPC to your own server scripts
 
 <Info>
-    The API is available globally via `window.roadphone` and can be accessed from any iframe-based custom app.
+  A complete, runnable example resource — **roadphone-customapp-demo** — ships
+  alongside RoadPhone. Every tab in it demonstrates one part of this API.
+  Install it and copy the parts you need.
 </Info>
+
+## Registering Your App (config.json)
+
+Custom apps are declared in `public/static/config/config.json` in the
+`AppStore` section. `AppStore` is an **array** of app entries — add one entry
+per custom app:
+
+```json
+{
+  "AppStore": [
+    {
+      "name": "Weather Pro",
+      "light_icon": "/public/img/Apps/light_mode/custom.webp",
+      "dark_icon": "/public/img/Apps/dark_mode/custom.webp",
+      "default": false,
+      "category": "apps",
+      "custom_app_id": "WEATHER_PRO",
+      "redirect": "custom_app",
+      "url": "https://cfx-nui-my-weather-app/html/index.html",
+      "darkmode": true,
+      "allowJobs": [],
+      "disallowJobs": [],
+      "custom_event": {
+        "active": false,
+        "closeWhenOpenApp": false
+      }
+    }
+  ]
+}
+```
+
+<Expandable title="entry properties">
+  <ParamField path="name" type="string" required>
+    Display name under the icon on the home screen and in the App Shop.
+  </ParamField>
+  <ParamField path="light_icon / dark_icon" type="string" required>
+    Icon paths for the light and dark icon style setting.
+  </ParamField>
+  <ParamField path="default" type="boolean" required>
+    `true` = preinstalled on every phone. `false` = players install it
+    themselves via the App Shop (see below).
+  </ParamField>
+  <ParamField path="category" type="string">
+    `"apps"` or `"games"` — decides which App Shop tab the app appears in.
+  </ParamField>
+  <ParamField path="custom_app_id" type="string" required>
+    Unique ID for this custom app. This is what tells multiple custom apps
+    apart — every custom app entry must have its own `custom_app_id`.
+  </ParamField>
+  <ParamField path="redirect" type="string" required>
+    Must be `"custom_app"` for custom apps.
+  </ParamField>
+  <ParamField path="url" type="string" required>
+    The URL loaded into the iframe. For FiveM resources use
+    `https://cfx-nui-<resource>/…` (see [Setup](#fivem-resource-setup)).
+  </ParamField>
+  <ParamField path="darkmode" type="boolean">
+    Passed to your app via the route; also controls the status bar contrast.
+  </ParamField>
+  <ParamField path="allowJobs / disallowJobs" type="string[]">
+    Job gating. If `allowJobs` is non-empty, only those jobs can open the app;
+    `disallowJobs` blocks specific jobs. Everyone else gets a "job required"
+    notification instead.
+  </ParamField>
+  <ParamField path="custom_event" type="object">
+    Optional. When `active: true`, tapping the icon also fires the
+    `app_custom_event` NUI callback (handled in `lua-code/client/clientAPI.lua`)
+    with the app's `name` — use it to run Lua when your app opens. With
+    `closeWhenOpenApp: true` the phone closes instead of opening an iframe at
+    all, turning the icon into a pure trigger for your own client code.
+  </ParamField>
+</Expandable>
+
+<Tip>
+  You can add **as many custom apps as you want** — one array entry per app,
+  each with a unique `custom_app_id`. The admin menu (App settings tab) can
+  also edit these entries in-game.
+</Tip>
+
+### App Shop listing (AppInfos)
+
+Apps with `default: false` show up in the phone's **App Shop**. The store page
+(description, rating, developer, size…) comes from a matching entry in the
+`AppInfos` section of the same `config.json` — matched by `redirect` and, for
+custom apps, `custom_app_id`:
+
+```json
+{
+  "AppInfos": [
+    {
+      "name": "Weather Pro",
+      "light_icon": "/public/img/Apps/light_mode/custom.webp",
+      "dark_icon": "/public/img/Apps/dark_mode/custom.webp",
+      "description": "Live weather for Los Santos",
+      "stars": 4.7,
+      "age": 17,
+      "chart": 1,
+      "developer": "YourName",
+      "language": "ENG",
+      "size": 12,
+      "custom_app_id": "WEATHER_PRO",
+      "redirect": "custom_app"
+    }
+  ]
+}
+```
+
+## Installing Apps as a Player
+
+Players never touch `config.json` — they install apps entirely in-game,
+exactly like on a real phone:
+
+<Steps>
+  <Step title="Open the App Shop">
+    The **AppShop** app is preinstalled on every phone. It lists every app the
+    server has configured with `default: false`, split into **Apps** and
+    **Games** tabs, with daily-rotating Featured/Top sections and search.
+  </Step>
+  <Step title="Tap GET">
+    Tapping the install button plays a short download animation, then the app
+    appears on the home screen, ready to open.
+  </Step>
+  <Step title="Uninstall anytime">
+    Apps can be removed from the App Shop's manage list or straight from the
+    home screen (long-press → remove). Preinstalled (`default: true`) apps
+    cannot be uninstalled.
+  </Step>
+</Steps>
+
+**Where the install state lives:**
+
+- **Metadata mode** (`Config.UseMetadata = true`): the list of installed apps
+  is stored on the **phone item's metadata** (`installed_apps`, up to 50 apps
+  per phone). Each phone keeps its own apps — trade or steal a phone and its
+  installed apps travel with it.
+- **Non-metadata mode**: installed apps persist in the browser's
+  `localStorage` per client.
+
+An installed app only appears if it still exists in `config.json` — if the
+server removes an entry, it silently disappears from players' phones.
 
 ## Quick Start
 
+Your app runs inside an **iframe** within the phone, so the API lives on the
+parent window:
+
 ```javascript
-// Check if API is available
-if (window.roadphone) {
-  const isDark = window.roadphone.isDarkMode()
-  const playerName = window.roadphone.getPlayerName()
+const rp = window.parent.roadphone
+
+if (rp) {
+  const isDark = rp.isDarkMode()
+  const playerName = rp.getPlayerName()
 
   console.log(`Hello ${playerName}, dark mode is ${isDark ? 'on' : 'off'}`)
 }
 ```
 
-## App Setup
+<Warning>
+  `window.roadphone` is **undefined inside your iframe** — always use
+  `window.parent.roadphone`. (The code samples below say `window.roadphone`
+  for brevity; in a custom app that means the parent reference.)
+</Warning>
 
-Run these calls once when your app boots to declare your identity, isolate your data, and verify the phone supports the features you rely on.
+### Recommended startup (since 1.3.0)
 
-### app.setName(name)
-
-Registers the display name shown in permission and consent dialogs.
-
-<ParamField path="name" type="string" required>
-    The human-readable name of your app
-</ParamField>
-
-```javascript
-window.roadphone.app.setName('My App')
-```
-
-### app.setNamespace(namespace)
-
-Sets a unique namespace that isolates your app's stored data from other apps. Set this once and never change it.
-
-<ParamField path="namespace" type="string" required>
-    A unique identifier for your app's storage
-</ParamField>
+For any non-trivial app, declare your identity, version-gate, and pre-load
+saved state at boot:
 
 ```javascript
-window.roadphone.app.setNamespace('my-app')
-```
+const rp = window.parent.roadphone
 
-### app.getNamespace()
+// 1. Fail loudly on Phones too old to run this app
+rp.minVersion('1.3.0')
+rp.requireFeature('storage')
 
-Returns the currently configured namespace.
+// 2. Identity — used as storage namespace and shown in permission prompts
+rp.app.setName('Weather Pro')
+rp.app.setNamespace('weather-pro')
 
-<ResponseField name="returns" type="string">
-    The active storage namespace
-</ResponseField>
+// 3. Restore last session
+const lastCity = rp.storage.get('city') || 'Berlin'
+renderWeather(lastCity)
 
-```javascript
-const namespace = window.roadphone.app.getNamespace()
-// "my-app"
-```
-
-### minVersion(version)
-
-Validates that the phone meets the minimum required API version. Throws if the installed phone is too old.
-
-<ParamField path="version" type="string" required>
-    The minimum semantic version your app requires (e.g., `"1.3.0"`)
-</ParamField>
-
-```javascript
-roadphone.minVersion('1.3.0') // throws if the phone is older
-```
-
-### requireFeature(feature)
-
-Ensures a given capability is available before your app uses it. Throws if the feature is missing.
-
-<ParamField path="feature" type="string" required>
-    The feature key to require (e.g., `"storage"`)
-</ParamField>
-
-```javascript
-roadphone.requireFeature('storage') // throws if unavailable
-```
-
-### features
-
-An object describing the API capabilities the current phone exposes. Use it to gracefully degrade when a feature is unavailable.
-
-```javascript
-if (window.roadphone.features.storage) {
-  // safe to use the storage API
-}
+// 4. Wire up app-lifecycle listeners
+rp.on('appOpened', ({ app }) => app === 'custom_app:weather-pro' && refresh())
+rp.on('darkModeChanged', applyTheme)
 ```
 
 ## Getter Functions
@@ -251,7 +217,7 @@ if (window.roadphone.features.storage) {
 Returns whether dark mode is currently enabled.
 
 <ResponseField name="returns" type="boolean">
-    `true` if dark mode is enabled, `false` otherwise
+  `true` if dark mode is enabled, `false` otherwise
 </ResponseField>
 
 ```javascript
@@ -264,7 +230,7 @@ const isDark = window.roadphone.isDarkMode()
 Returns the current phone number.
 
 <ResponseField name="returns" type="string">
-    The player's phone number (e.g., `"1234567"`)
+  The player's phone number (e.g., `"1234567"`)
 </ResponseField>
 
 ```javascript
@@ -274,10 +240,10 @@ const phoneNumber = window.roadphone.getPhoneNumber()
 
 ### getPlayerName()
 
-Returns the player's character name.
+Returns the character name of the phone holder, or `null` if not loaded yet.
 
-<ResponseField name="returns" type="string">
-    The player's name (e.g., `"John Doe"`)
+<ResponseField name="returns" type="string | null">
+  The player's name (e.g., `"John Doe"`)
 </ResponseField>
 
 ```javascript
@@ -290,7 +256,7 @@ const name = window.roadphone.getPlayerName()
 Returns the player's current job.
 
 <ResponseField name="returns" type="string">
-    The job identifier (e.g., `"police"`, `"ambulance"`, `"unemployed"`)
+  The job identifier (e.g., `"police"`, `"ambulance"`, `"unemployed"`)
 </ResponseField>
 
 ```javascript
@@ -303,7 +269,7 @@ const job = window.roadphone.getJob()
 Returns the player's unique identifier.
 
 <ResponseField name="returns" type="string">
-    The player identifier (format depends on framework)
+  The player identifier (format depends on framework)
 </ResponseField>
 
 ```javascript
@@ -312,12 +278,18 @@ const identifier = window.roadphone.getIdentifier()
 // QBCore: "citizenid"
 ```
 
+<Warning>
+  Treat this as **display-only**. Anything that matters (money, items,
+  permissions) must be resolved server-side from `source` — never trust an
+  identifier sent up from the UI.
+</Warning>
+
 ### getBrightness()
 
 Returns the current screen brightness level.
 
 <ResponseField name="returns" type="number">
-    Brightness value between `10` and `100`
+  Brightness value between `10` and `100`
 </ResponseField>
 
 ```javascript
@@ -330,7 +302,7 @@ const brightness = window.roadphone.getBrightness()
 Returns whether flight mode is enabled.
 
 <ResponseField name="returns" type="boolean">
-    `true` if flight mode is on, `false` otherwise
+  `true` if flight mode is on, `false` otherwise
 </ResponseField>
 
 ```javascript
@@ -338,25 +310,12 @@ const flightMode = window.roadphone.isFlightMode()
 // false
 ```
 
-### getConfig()
-
-Returns the full phone configuration object.
-
-<ResponseField name="returns" type="object">
-    The complete config.json configuration
-</ResponseField>
-
-```javascript
-const config = window.roadphone.getConfig()
-// { lockscreen: true, ... }
-```
-
 ### getLanguage()
 
-Returns the player's current locale.
+Returns the player's currently selected phone language.
 
 <ResponseField name="returns" type="string">
-    The active language code (e.g., `"de_DE"`, `"en_US"`)
+  Locale code (e.g., `"en_US"`, `"de_DE"`, `"fr_FR"`). Falls back to `"en_US"`.
 </ResponseField>
 
 ```javascript
@@ -364,14 +323,33 @@ const lang = window.roadphone.getLanguage()
 // "de_DE"
 ```
 
+<Tip>
+  Pair with the `languageChanged` event to re-render your UI in the new locale
+  without forcing a reload.
+</Tip>
+
+### getConfig()
+
+Returns the full phone configuration object.
+
+<ResponseField name="returns" type="object">
+  The complete config.json configuration
+</ResponseField>
+
+```javascript
+const config = window.roadphone.getConfig()
+// { lockscreen: true, ... }
+```
+
 ## Utility Functions
 
 ### copyToClipboard(text)
 
-Copies text to the clipboard.
+Copies text to the clipboard (uses a CEF-safe fallback chain internally —
+`navigator.clipboard` alone is blocked in FiveM NUI).
 
 <ParamField path="text" type="string" required>
-    The text to copy
+  The text to copy
 </ParamField>
 
 ```javascript
@@ -380,49 +358,94 @@ window.roadphone.copyToClipboard('Hello World')
 
 ### post(event, data)
 
-Sends data to the Lua backend. Use this to communicate with your server-side scripts.
+Sends data to a RoadPhone NUI callback in the Lua backend and resolves with
+its response. For calling **your own resource's** server code, use the
+[`customAppRpc` bridge](#talking-to-lua-server-rpc) built on top of this.
 
 <ParamField path="event" type="string" required>
-    The event name to trigger
+  The NUI callback name to trigger
 </ParamField>
 
 <ParamField path="data" type="object">
-    Optional data to send with the event
+  Optional data to send with the event
 </ParamField>
 
 ```javascript
-// Send custom event to Lua
-window.roadphone.post('myCustomEvent', {
-  action: 'doSomething',
-  value: 123
-})
+const res = await window.roadphone.post('someEvent', { value: 123 })
+```
+
+<Warning>
+  **Always unwrap the response before reading fields.** When the Lua callback
+  replies with a *table*, the payload lands on `res.data` instead of `res`
+  itself (when it replies with a JSON *string*, `res` IS the payload). Reading
+  `res.ok` off the raw return value is the single most common custom-app bug:
+
+  ```javascript
+  const res = await rp.post('customAppRpc', payload)
+  const data = res && res.data !== undefined ? res.data : res
+  if (data && data.ok) { /* ... */ }
+  ```
+
+  Also stay defensive: in dev mode `post()` returns the string `'ok'`, and on
+  network errors it returns `undefined`.
+</Warning>
+
+### inputFocus(focus)
+
+Toggles NUI keyboard focus. **Required for any text input in a custom app.**
+
+<ParamField path="focus" type="boolean" required>
+  `true` while an input is focused, `false` on blur.
+</ParamField>
+
+The phone opens with `SetNuiFocusKeepInput(true)` so movement keys still reach
+the game while the phone is up. The side effect: **keystrokes do not reach your
+inputs by default**. Until you call `inputFocus(true)`, typing into a field does
+nothing — and the keys drive the player instead.
+
+```javascript
+input.addEventListener('focus', () => window.roadphone.inputFocus(true))
+input.addEventListener('blur',  () => window.roadphone.inputFocus(false))
 ```
 
 <Tip>
-    Make sure to register the corresponding NUI callback in your Lua code to handle the event.
+  Delegate on the document instead of wiring every field — it covers inputs that
+  are rendered later, too:
+
+  ```javascript
+  const isField = (n) => n && (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA')
+  document.addEventListener('focusin',  (e) => isField(e.target) && rp.inputFocus(true))
+  document.addEventListener('focusout', (e) => isField(e.target) && rp.inputFocus(false))
+  ```
 </Tip>
+
+<Warning>
+  Always pair it. Leaving focus on after blur means the player cannot move until
+  they close the phone.
+</Warning>
 
 ### showNotification(options)
 
 Displays a phone notification.
 
 <ParamField path="options" type="object" required>
-    Notification configuration object
+  Notification configuration object
 </ParamField>
 
 <Expandable title="options properties">
-    <ParamField path="appTitle" type="string">
-        The app name shown in the notification (default: `"Custom App"`)
-    </ParamField>
-    <ParamField path="title" type="string">
-        The notification title
-    </ParamField>
-    <ParamField path="message" type="string">
-        The notification message
-    </ParamField>
-    <ParamField path="icon" type="string">
-        Path to the notification icon
-    </ParamField>
+  <ParamField path="appTitle" type="string">
+    The app name shown in the notification. Defaults to the name set via
+    `app.setName()` (or the localized "Custom App" string).
+  </ParamField>
+  <ParamField path="title" type="string">
+    The notification title
+  </ParamField>
+  <ParamField path="message" type="string">
+    The notification message
+  </ParamField>
+  <ParamField path="icon" type="string">
+    Path to the notification icon
+  </ParamField>
 </Expandable>
 
 ```javascript
@@ -434,156 +457,438 @@ window.roadphone.showNotification({
 })
 ```
 
+<Info>
+  Notifications are silently dropped while the player is in a focus mode
+  (Sleep, Work, Personal, Do Not Disturb).
+</Info>
+
+## Native UI
+
+Custom apps can pop the same native iOS-style camera and action sheets that the
+built-in apps use. Both APIs are Promise-based — `await` the result and you'll
+receive what the user picked, or `null` if they backed out.
+
 ### takePhoto(options)
 
-Opens the phone's camera and returns the captured media. Resolves once the player confirms or cancels.
+Opens the phone's camera, waits for the user to take a single shot, then routes
+back to your app and resolves with the captured image URL.
 
 <ParamField path="options" type="object">
-    Capture configuration
-
-    <Expandable title="options properties">
-        <ParamField path="allowVideo" type="boolean" default="false">
-            Allow the player to record a video instead of a photo
-        </ParamField>
-    </Expandable>
+  Optional configuration object
 </ParamField>
 
-<ResponseField name="returns" type="Promise<object>">
-    The captured photo object (or `null` if cancelled)
+<Expandable title="options properties">
+  <ParamField path="allowVideo" type="boolean">
+    Permit `.webm` video capture. When `false` (default), recording a video is
+    rejected and the user is shown a "video not supported" notification.
+  </ParamField>
+</Expandable>
+
+<ResponseField name="returns" type="Promise<{ url: string, isVideo: boolean } | null>">
+  Resolves with an object describing the captured media, or `null` if the user
+  backed out of the camera without taking a shot.
 </ResponseField>
 
 ```javascript
-const photo = await window.roadphone.takePhoto({ allowVideo: false })
+async function changeAvatar() {
+  const photo = await window.roadphone.takePhoto({ allowVideo: false })
+  if (!photo) return // user canceled
+
+  console.log(photo.url, photo.isVideo)
+  document.querySelector('#avatar').src = photo.url
+}
 ```
+
+<Tip>
+  After capture, the phone automatically routes back to your custom app — no
+  manual navigation needed. The returned `url` is a public URL hosted on the
+  configured upload provider (fivemanage by default).
+</Tip>
+
+<Warning>
+  **In a custom app, the awaited Promise never resolves.** Routing to the camera
+  unmounts your iframe, so the realm that called `takePhoto()` is destroyed and
+  your app reboots from scratch when it comes back. Do not `await` it — save the
+  state you'd lose, fire the call, and reclaim the shot on boot with
+  [`claimPhoto()`](#claimphoto).
+</Warning>
+
+### claimPhoto()
+
+Picks up a photo captured via `takePhoto()` after the custom-app iframe was
+reloaded by the camera round-trip. Returns the shot **once** (then clears it).
+
+<ResponseField name="returns" type="{ url: string, isVideo: boolean } | null">
+  The captured media, or `null` if there is nothing to claim.
+</ResponseField>
+
+```javascript
+// Before opening the camera: persist whatever the reload would destroy.
+function shoot() {
+  localStorage.setItem('pending', JSON.stringify({ view: currentView, draft }))
+  rp.takePhoto({ allowVideo: false })   // do NOT await — this realm is torn down
+}
+
+// On app boot, after restoring your saved view state:
+const shot = rp.claimPhoto()
+if (shot) applyPhoto(shot.url)
+```
+
+<Tip>
+  `localStorage` is keyed by origin and survives the iframe teardown, so it's the
+  natural place to stash the in-progress view and any form draft. Stamp it with a
+  timestamp and ignore anything older than a minute or two — otherwise a cancelled
+  camera trip resurrects a stale view on the next open.
+</Tip>
 
 ### showBottomSheet(options)
 
-Displays a native bottom sheet with grouped, selectable actions and resolves with the player's choice.
+Displays an iOS-style action sheet that slides up from the bottom of the phone
+with a backdrop scrim. Resolves with the `key` of the row the user picked, or
+`null` if they dismissed the sheet by tapping the scrim.
 
 <ParamField path="options" type="object" required>
-    Bottom sheet configuration
-
-    <Expandable title="options properties">
-        <ParamField path="groups" type="array" required>
-            An array of action groups to display
-        </ParamField>
-    </Expandable>
+  Sheet configuration object
 </ParamField>
 
-<ResponseField name="returns" type="Promise<object>">
-    The selected option (or `null` if dismissed)
+<Expandable title="options properties">
+  <ParamField path="groups" type="array" required>
+    Array of `{ rows }` groups. Each group is rendered as its own grouped card,
+    iOS-style. Use multiple groups to visually separate destructive/cancel
+    actions from the main choices.
+  </ParamField>
+  <ParamField path="scrimStrong" type="boolean">
+    Use a darker scrim (default `false`). Set to `true` for destructive
+    confirmations to draw more attention.
+  </ParamField>
+  <ParamField path="showHandle" type="boolean">
+    Show the iOS-style drag handle at the top of the sheet (default `true`).
+  </ParamField>
+  <ParamField path="closeOnScrim" type="boolean">
+    Allow tapping the backdrop scrim to dismiss the sheet (default `true`).
+  </ParamField>
+</Expandable>
+
+**Row config (each entry in `group.rows`):**
+
+<Expandable title="row properties">
+  <ParamField path="key" type="string" required>
+    Unique identifier returned by the Promise when this row is picked.
+  </ParamField>
+  <ParamField path="label" type="string" required>
+    The visible text on the row.
+  </ParamField>
+  <ParamField path="icon" type="string">
+    Optional Iconify icon name (e.g., `solar:camera-linear`).
+  </ParamField>
+  <ParamField path="variant" type="string">
+    Visual style: `'default'` (iOS blue, default), `'danger'` (iOS red), or
+    `'plain'` (neutral text color).
+  </ParamField>
+  <ParamField path="strong" type="boolean">
+    Bold weight, typically used for the Cancel row at the bottom of a sheet.
+  </ParamField>
+  <ParamField path="disabled" type="boolean">
+    Non-interactive, dimmed appearance.
+  </ParamField>
+</Expandable>
+
+<ResponseField name="returns" type="Promise<string | null>">
+  Resolves with the picked row's `key`, or `null` if dismissed via scrim.
 </ResponseField>
 
 ```javascript
-const choice = await window.roadphone.showBottomSheet({
-  groups: [
-    {
-      items: [
-        { id: 'edit', label: 'Edit' },
-        { id: 'delete', label: 'Delete' }
-      ]
-    }
-  ]
-})
+async function showOptions() {
+  const choice = await window.roadphone.showBottomSheet({
+    groups: [
+      {
+        rows: [
+          { key: 'edit',   icon: 'solar:pen-2-linear',          label: 'Edit' },
+          { key: 'share',  icon: 'solar:share-linear',          label: 'Share' },
+          { key: 'delete', icon: 'solar:trash-bin-trash-linear',
+                           label: 'Delete', variant: 'danger' },
+        ],
+      },
+      {
+        rows: [{ key: 'cancel', label: 'Cancel', strong: true }],
+      },
+    ],
+  })
+
+  if (choice === 'edit')   openEditor()
+  if (choice === 'share')  shareItem()
+  if (choice === 'delete') confirmDelete()
+  // choice === 'cancel' or null → user dismissed
+}
 ```
+
+<Tip>
+  The sheet auto-adapts to the phone's dark mode — no need to pass theme info.
+  It is also your `confirm()` replacement: `window.alert/confirm/prompt` have
+  no implementation in FiveM's CEF and **crash the game** — never call them.
+</Tip>
 
 ### pickEmoji()
 
-Opens the native emoji picker and resolves with the chosen emoji.
+Opens the system emoji picker (centered floating panel with backdrop scrim)
+and resolves with the user's selection.
 
-<ResponseField name="returns" type="Promise<string>">
-    The selected emoji (or `null` if dismissed)
+<ResponseField name="returns" type="Promise<EmojiObject | null>">
+  Resolves with the picked emoji object, or `null` if the user dismissed via
+  scrim. The emoji object follows emoji-mart's shape: a record with
+  `native`, `name`, `id`, `shortcodes`, `unified`, `keywords` fields —
+  `native` is the Unicode glyph (e.g. `'😀'`).
 </ResponseField>
 
 ```javascript
-const emoji = await window.roadphone.pickEmoji()
-// "😀"
+async function appendEmoji() {
+  const emoji = await window.roadphone.pickEmoji()
+  if (!emoji) return // user dismissed
+
+  document.querySelector('#input').value += emoji.native
+  // Or use other fields: emoji.name, emoji.shortcodes, emoji.id
+}
 ```
 
-## Storage
+<Tip>
+  The picker auto-adapts to the phone's current dark/light theme. No setup
+  needed — just call and await.
+</Tip>
 
-RoadPhone exposes two storage backends scoped to your app's namespace.
+#### Combine both: take photo via action sheet
+
+A common pattern is letting the user choose between camera and gallery:
+
+```javascript
+async function pickProfilePhoto() {
+  const source = await window.roadphone.showBottomSheet({
+    groups: [
+      {
+        rows: [
+          { key: 'camera', icon: 'solar:camera-linear',  label: 'Take Photo' },
+          { key: 'lib',    icon: 'solar:gallery-linear', label: 'Choose Photo' },
+        ],
+      },
+      { rows: [{ key: 'cancel', label: 'Cancel', strong: true }] },
+    ],
+  })
+
+  if (source === 'camera') {
+    const photo = await window.roadphone.takePhoto({ allowVideo: false })
+    if (photo) setAvatar(photo.url)
+  } else if (source === 'lib') {
+    // your own photo-library picker
+  }
+}
+```
+
+## App Identity
 
 <Info>
-    Synchronous storage is backed by `localStorage` and is fast but local to the device. Metadata storage is asynchronous, server-backed, and persists across character and device changes.
+  Available since **API v1.3.0**.
 </Info>
 
-### Synchronous Storage
+Custom apps can declare a stable identity that the Phone uses for two things:
+the **storage namespace** (so two apps can't trample each other's data) and the
+**permission scope** (so the user's "Allow / Deny" decision is remembered per
+app, not globally). Set this once at startup before touching any storage or
+permission API.
 
-Fast, namespace-scoped key/value storage for non-critical data.
+### app.setName(name)
 
-```javascript
-window.roadphone.storage.set('lastTab', 'home')
-const tab = window.roadphone.storage.get('lastTab') // "home"
-window.roadphone.storage.delete('lastTab')
-const keys = window.roadphone.storage.keys()        // ["lastTab", ...]
-window.roadphone.storage.clear()                    // wipes the namespace
-```
+Sets the human-readable name shown in permission prompts and as the default
+notification app title.
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `storage.set(key, value)` | `void` | Store a value |
-| `storage.get(key)` | `any` | Read a value |
-| `storage.delete(key)` | `void` | Remove a value |
-| `storage.keys()` | `string[]` | List all stored keys |
-| `storage.clear()` | `void` | Remove everything in the namespace |
-
-### Metadata Storage
-
-Asynchronous, persistent storage that survives character and device changes. Requires the `storage.metadata` permission.
+<ParamField path="name" type="string" required>
+  Display name (max 64 chars). Used in the user-facing permission prompt:
+  *"{name} wants: …"*.
+</ParamField>
 
 ```javascript
-await window.roadphone.storage.metadata.set('city', 'Berlin')
-const city = await window.roadphone.storage.metadata.get('city') // "Berlin"
-await window.roadphone.storage.metadata.delete('city')
+window.roadphone.app.setName('Weather Pro')
 ```
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `storage.metadata.set(key, value)` | `Promise<void>` | Persist a value |
-| `storage.metadata.get(key)` | `Promise<any>` | Read a persisted value |
-| `storage.metadata.delete(key)` | `Promise<void>` | Remove a persisted value |
+### app.setNamespace(ns)
+
+Sets the storage / permission namespace for this app. Only `[a-z0-9_-]` are
+kept; everything else is replaced with `_`. Max 64 chars.
+
+<ParamField path="ns" type="string" required>
+  Stable identifier — pick something short and unique to your app, like
+  `"weather-pro"` or `"team_radio"`. Once data is stored under one namespace,
+  changing it makes that data unreachable.
+</ParamField>
+
+```javascript
+window.roadphone.app.setNamespace('weather-pro')
+```
+
+### app.getName() / app.getNamespace()
+
+Read back the values you set. `getName()` falls back to the localized "Custom
+App" string when nothing was set.
+
+```javascript
+window.roadphone.app.getName()       // "Weather Pro"
+window.roadphone.app.getNamespace()  // "weather-pro"
+```
+
+## Version & Feature Negotiation
+
+<Info>
+  Available since **API v1.3.0**.
+</Info>
+
+To stay forward-compatible across Phone updates, custom apps can probe the API
+they're running against before calling features that may not exist on older
+Phones.
+
+### version
+
+Current API version string, semver-style.
+
+```javascript
+window.roadphone.version  // "1.3.0"
+```
+
+### features
+
+A flat object of feature flags. Use `hasFeature()` rather than reading this
+directly.
+
+### hasFeature(name)
+
+<ParamField path="name" type="string" required>
+  Feature flag name. See table below.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the feature is supported by this Phone.
+</ResponseField>
+
+```javascript
+if (window.roadphone.hasFeature('storage')) {
+  window.roadphone.storage.set('lastOpen', Date.now())
+}
+```
+
+### requireFeature(name)
+
+Like `hasFeature()` but **throws** if the feature is missing. Use at startup so
+your app crashes loudly rather than silently misbehaving on older Phones.
+
+```javascript
+window.roadphone.requireFeature('contactsRead')
+// throws on Phones < 1.3.0
+```
+
+### minVersion(version)
+
+Throws if the running Phone is older than `version`. Useful as a one-line
+startup gate.
+
+```javascript
+window.roadphone.minVersion('1.3.0')
+```
+
+**Available feature flags:**
+
+| Flag | Since | Description |
+|------|-------|-------------|
+| `notifications` | 1.0.0 | `showNotification()` |
+| `events` | 1.0.0 | `on/off/emit` |
+| `clipboard` | 1.0.0 | `copyToClipboard()` |
+| `bottomSheet` | 1.1.0 | `showBottomSheet()` |
+| `camera` | 1.1.0 | `takePhoto()` |
+| `emojiPicker` | 1.2.0 | `pickEmoji()` |
+| `versionNegotiation` | 1.3.0 | `hasFeature/requireFeature/minVersion` |
+| `appIdentity` | 1.3.0 | `app.setName/setNamespace` |
+| `permissions` | 1.3.0 | `permissions.request/has/revoke` |
+| `storage` | 1.3.0 | `storage.*` (localStorage backend) |
+| `storageMetadata` | 1.3.0 | `storage.metadata.*` (phone-metadata backend) |
+| `contactsRead` | 1.3.0 | `contacts.list/find/count` |
+| `messagesRead` | 1.3.0 | `messages.list/conversations` |
+| `messagesSend` | 1.3.0 | `messages.send` |
+| `bankRead` | 1.3.0 | `bank.getBalance/getIban/getAccounts` |
+| `alarmsAccess` | 1.3.0 | `alarms.list/create/delete` |
+| `lifecycleEvents` | 1.3.0 | `appOpened/appClosed/incomingCall/callEnded/...` |
 
 ## Permissions
 
-Sensitive phone data (contacts, messages, bank, alarms) is gated behind a permission system. Request the scopes you need before calling the corresponding APIs — the player is shown a consent dialog.
+<Info>
+  Available since **API v1.3.0**.
+</Info>
+
+Sensitive APIs (contacts, messages, bank, alarms, metadata storage) are gated
+behind a per-namespace permission. The first time your app calls a gated
+function, an iOS-style action sheet pops up with the prompt:
+
+> **Your App wants: Read contacts**
+> [ Allow ] [ Deny ]
+
+The user's decision is persisted in `localStorage` under
+`roadphone_customapp_perm:{namespace}:{scope}`, so they're prompted exactly
+once per scope per app — even across phone reloads. Only the user can revoke;
+your app can also revoke programmatically (see `revoke()` below).
+
+If the user denies, the gated call **rejects** with
+`Error: Permission '<scope>' denied by user`. Wrap calls in `try/catch`.
+
+### Available scopes
+
+| Scope | Required by |
+|-------|-------------|
+| `contacts.read` | `contacts.list/find/count` |
+| `messages.read` | `messages.list/conversations` |
+| `messages.send` | `messages.send` |
+| `bank.read` | `bank.getBalance/getIban/getAccounts` |
+| `alarms.read` | `alarms.list` |
+| `alarms.write` | `alarms.create/delete` |
+| `storage.metadata` | `storage.metadata.*` |
 
 ### permissions.request(scope)
 
-Requests access to a scope. Resolves to `true` if granted; denied requests reject.
+Explicitly request a permission. Returns immediately if already granted/denied.
 
 <ParamField path="scope" type="string" required>
-    The permission scope to request
+  One of the scopes above.
 </ParamField>
 
 <ResponseField name="returns" type="Promise<boolean>">
-    `true` if the player granted the permission
+  `true` if granted, `false` if denied (or scrim-dismissed).
 </ResponseField>
 
 ```javascript
-const granted = await window.roadphone.permissions.request('contacts.read')
-if (granted) {
+const ok = await window.roadphone.permissions.request('contacts.read')
+if (ok) {
   const contacts = await window.roadphone.contacts.list()
 }
 ```
 
+<Tip>
+  You don't usually need to call this directly — the gated APIs auto-prompt on
+  first use. Call it explicitly only when you want to ask up-front (e.g., on
+  app startup) instead of mid-flow.
+</Tip>
+
 ### permissions.has(scope)
 
-Checks whether a scope has already been granted.
+Synchronously check whether a scope is currently granted.
 
 <ResponseField name="returns" type="boolean">
-    `true` if the permission is currently granted
+  `true` only if explicitly granted. Denied or never-asked → `false`.
 </ResponseField>
 
 ```javascript
-if (window.roadphone.permissions.has('bank.read')) {
-  // already authorized
+if (window.roadphone.permissions.has('contacts.read')) {
+  // safe to call without prompt
 }
 ```
 
 ### permissions.revoke(scope)
 
-Revokes a previously granted scope.
+Forget the user's decision for this scope. The next gated call will prompt
+again.
 
 ```javascript
 window.roadphone.permissions.revoke('contacts.read')
@@ -591,70 +896,191 @@ window.roadphone.permissions.revoke('contacts.read')
 
 ### permissions.list()
 
-Returns all permission decisions made for your app.
-
-<ResponseField name="returns" type="object">
-    A map of scope strings to their granted/denied state
-</ResponseField>
+Returns all stored decisions for this app's namespace.
 
 ```javascript
-const decisions = window.roadphone.permissions.list()
+window.roadphone.permissions.list()
+// { 'contacts.read': 'granted', 'bank.read': 'denied' }
 ```
 
-### Available Scopes
+## Storage
 
-| Scope | Grants access to |
-|-------|------------------|
-| `contacts.read` | Reading the player's contacts |
-| `messages.read` | Reading message threads |
-| `messages.send` | Sending messages |
-| `bank.read` | Reading balance, IBAN, and accounts |
-| `alarms.read` | Reading alarms |
-| `alarms.write` | Creating and deleting alarms |
-| `storage.metadata` | Persistent metadata storage |
+<Info>
+  Available since **API v1.3.0**.
+</Info>
 
-## Phone Data APIs
+Two backends, same shape — pick based on what you want to persist.
 
-These APIs read and write the player's phone data and require the matching permission scope. Each method is asynchronous.
+| Backend | Survives | Sync? | Cap |
+|---------|----------|-------|-----|
+| `storage.*` (localStorage) | Reloads | ✅ Sync | Browser quota (~5 MB total) |
+| `storage.metadata.*` (phone item) | Phone trades / character switches | ❌ Async | 8 KB / value, 64 keys / namespace, 32 namespaces / phone |
+
+Both are **automatically namespaced** by `app.getNamespace()` — two apps with
+different namespaces cannot read each other's keys.
+
+<Warning>
+  Always call `window.roadphone.app.setNamespace('your-app-id')` at startup
+  *before* using storage. Otherwise everything goes into the shared `default`
+  namespace and may collide with other custom apps.
+</Warning>
+
+### storage.set(key, value)
+
+Stores a JSON-serializable value. Returns `true` on success, `false` if it
+couldn't serialize.
+
+```javascript
+window.roadphone.storage.set('user', { name: 'Alex', score: 42 })
+window.roadphone.storage.set('lastOpen', Date.now())
+```
+
+### storage.get(key)
+
+Returns the deserialized value, or `null` if not set.
+
+```javascript
+const user = window.roadphone.storage.get('user')
+// { name: 'Alex', score: 42 }
+```
+
+### storage.delete(key)
+
+Removes a single key.
+
+```javascript
+window.roadphone.storage.delete('user')
+```
+
+### storage.keys()
+
+Returns all keys for this app's namespace (without the namespace prefix).
+
+```javascript
+window.roadphone.storage.keys()
+// ['user', 'lastOpen']
+```
+
+### storage.clear()
+
+Removes all keys for this app's namespace. Other apps' data is untouched.
+
+```javascript
+window.roadphone.storage.clear()
+```
+
+### storage.metadata.\*
+
+Same shape, async, persists on the **phone item's metadata** so the data
+follows the physical phone (phone trading, swapping characters with same
+phone, etc.). Requires the `storage.metadata` permission on first use — the
+user is prompted via the standard permission sheet.
+
+```javascript
+// Async — always await
+await window.roadphone.storage.metadata.set('weatherCity', 'Berlin')
+
+const city = await window.roadphone.storage.metadata.get('weatherCity')
+// "Berlin"
+
+await window.roadphone.storage.metadata.delete('weatherCity')
+```
+
+<Tip>
+  Use `storage.*` for cosmetic/UI state (theme, last-opened tab) and
+  `storage.metadata.*` for data the user *expects* to follow their phone
+  (saved cities, preferences, login tokens for your external service).
+</Tip>
+
+## Phone Data Access
+
+<Info>
+  Available since **API v1.3.0**. All functions in this section require a
+  permission — see [Permissions](#permissions). The first call auto-prompts
+  the user.
+</Info>
 
 ### Contacts
 
-Requires `contacts.read`.
+Read-only access to the player's contact list.
 
 ```javascript
-const contacts = await window.roadphone.contacts.list()       // [{ id, firstname, ... }]
-const contact = await window.roadphone.contacts.find('1234567') // contact object
-const total = await window.roadphone.contacts.count()          // number
+// All contacts (requires contacts.read)
+const contacts = await window.roadphone.contacts.list()
+// [{ id, firstname, lastname, number, picture, ... }, ...]
+
+// Find by phone number
+const c = await window.roadphone.contacts.find('1234567')
+// { id, firstname, ... } | null
+
+// Just the count (still requires contacts.read)
+const n = await window.roadphone.contacts.count()
+// 42
 ```
+
+<ResponseField name="contacts.list()" type="Promise<Contact[]>">
+  Returns a deep clone of the contact list — mutating the result has no effect.
+</ResponseField>
 
 ### Messages
 
-`list` requires `messages.read`; `send` requires `messages.send`.
+Read messages and send new ones.
 
 ```javascript
-await window.roadphone.messages.send('1234567', 'Hi!')
-const thread = await window.roadphone.messages.list('1234567') // message array
+// Send (requires messages.send)
+await window.roadphone.messages.send('1234567', 'Hello!')
+
+// Read all messages (requires messages.read)
+const all = await window.roadphone.messages.list()
+
+// Filter to one conversation
+const chat = await window.roadphone.messages.list('1234567')
+
+// All conversations (alias for list() with no filter)
+const convos = await window.roadphone.messages.conversations()
 ```
+
+<Info>
+  `messages.send` throws when the target is the player's own number — the
+  server drops self-addressed messages, so the API rejects them up-front.
+</Info>
 
 ### Bank
 
-Requires `bank.read`.
+Read-only access to the player's active bank account.
 
 ```javascript
-const balance = await window.roadphone.bank.getBalance()  // number
-const iban = await window.roadphone.bank.getIban()        // "..."
-const accounts = await window.roadphone.bank.getAccounts() // accounts array
+// All bank reads share one permission: bank.read
+const balance = await window.roadphone.bank.getBalance()  // 12500
+const iban    = await window.roadphone.bank.getIban()     // "FR12-…"
+const accounts = await window.roadphone.bank.getAccounts()
+// [{ id, label, balance, iban, ... }, ...]
 ```
 
 ### Alarms
 
-`list` requires `alarms.read`; `create` and `delete` require `alarms.write`.
+Read existing alarms and manage them.
 
 ```javascript
+// Read (requires alarms.read)
 const alarms = await window.roadphone.alarms.list()
-await window.roadphone.alarms.create({ time: '07:30', label: 'Wake up' })
-await window.roadphone.alarms.delete(id)
+// [{ id, time, label, enabled, ... }, ...]
+
+// Create (requires alarms.write)
+const newId = await window.roadphone.alarms.create({
+  time: '07:30',
+  label: 'Wake up',
+  enabled: 1,
+})
+
+// Delete (requires alarms.write)
+await window.roadphone.alarms.delete(newId)
 ```
+
+<Tip>
+  Alarms created by your app get an `id` prefixed with `customapp-{namespace}-`
+  so you can identify them later in `list()`.
+</Tip>
 
 ## Event System
 
@@ -665,11 +1091,11 @@ The API includes a powerful event system that allows your custom app to react to
 Subscribe to an event.
 
 <ParamField path="event" type="string" required>
-    The event name to listen for
+  The event name to listen for
 </ParamField>
 
 <ParamField path="callback" type="function" required>
-    Function to call when the event fires
+  Function to call when the event fires
 </ParamField>
 
 ```javascript
@@ -683,11 +1109,11 @@ window.roadphone.on('darkModeChanged', (isDark) => {
 Unsubscribe from an event.
 
 <ParamField path="event" type="string" required>
-    The event name to unsubscribe from
+  The event name to unsubscribe from
 </ParamField>
 
 <ParamField path="callback" type="function" required>
-    The same function reference used when subscribing
+  The same function reference used when subscribing
 </ParamField>
 
 ```javascript
@@ -703,175 +1129,348 @@ window.roadphone.off('darkModeChanged', handler)
 ## Available Events
 
 <AccordionGroup>
-    <Accordion title="phoneOpened" icon="smartphone">
-        Fired when the phone is opened.
+  <Accordion title="phoneOpened" icon="smartphone">
+    Fired when the phone is opened.
 
-        ```javascript
-        window.roadphone.on('phoneOpened', () => {
-        console.log('Phone opened!')
-        // Initialize your app, fetch data, etc.
+    ```javascript
+    window.roadphone.on('phoneOpened', () => {
+      console.log('Phone opened!')
+      // Initialize your app, fetch data, etc.
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="phoneClosed" icon="smartphone">
-        Fired when the phone is closed.
+  <Accordion title="phoneClosed" icon="smartphone">
+    Fired when the phone is closed.
 
-        ```javascript
-        window.roadphone.on('phoneClosed', () => {
-        console.log('Phone closed!')
-        // Save state, cleanup, etc.
+    ```javascript
+    window.roadphone.on('phoneClosed', () => {
+      console.log('Phone closed!')
+      // Save state, cleanup, etc.
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="darkModeChanged" icon="moon">
-        Fired when dark mode is toggled.
+  <Accordion title="darkModeChanged" icon="moon">
+    Fired when dark mode is toggled.
 
-        **Payload:** `boolean` - `true` if dark mode is now enabled
+    **Payload:** `boolean` - `true` if dark mode is now enabled
 
-        ```javascript
-        window.roadphone.on('darkModeChanged', (isDark) => {
-        if (isDark) {
+    ```javascript
+    window.roadphone.on('darkModeChanged', (isDark) => {
+      if (isDark) {
         document.body.style.background = '#1c1c1e'
         document.body.style.color = '#ffffff'
-    } else {
+      } else {
         document.body.style.background = '#ffffff'
         document.body.style.color = '#000000'
-    }
+      }
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="brightnessChanged" icon="sun">
-        Fired when screen brightness changes.
+  <Accordion title="brightnessChanged" icon="sun">
+    Fired when screen brightness changes.
 
-        **Payload:** `number` - Brightness value (10-100)
+    **Payload:** `number` - Brightness value (10-100)
 
-        ```javascript
-        window.roadphone.on('brightnessChanged', (brightness) => {
-        console.log(`Brightness: ${brightness}%`)
+    ```javascript
+    window.roadphone.on('brightnessChanged', (brightness) => {
+      console.log(`Brightness: ${brightness}%`)
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="flightModeChanged" icon="plane">
-        Fired when flight mode is toggled.
+  <Accordion title="flightModeChanged" icon="plane">
+    Fired when flight mode is toggled.
 
-        **Payload:** `boolean` - `true` if flight mode is now enabled
+    **Payload:** `boolean` - `true` if flight mode is now enabled
 
-        ```javascript
-        window.roadphone.on('flightModeChanged', (isEnabled) => {
-        if (isEnabled) {
+    ```javascript
+    window.roadphone.on('flightModeChanged', (isEnabled) => {
+      if (isEnabled) {
         showOfflineMessage()
-    } else {
+      } else {
         fetchLatestData()
-    }
+      }
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="languageChanged" icon="languages">
-        Fired when the player changes the phone language.
+  <Accordion title="languageChanged" icon="languages">
+    *Since 1.3.0.* Fired when the player switches the phone language.
 
-        **Payload:** `string` - The new locale (e.g., `"en_US"`)
+    **Payload:** `string` - locale code (e.g. `"de_DE"`)
 
-        ```javascript
-        window.roadphone.on('languageChanged', (locale) => {
-        applyTranslations(locale)
+    ```javascript
+    window.roadphone.on('languageChanged', (lang) => {
+      console.log('Phone language is now', lang)
+      rerenderUIIn(lang)
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="appOpened" icon="app-window">
-        Fired when your custom app is opened.
+  <Accordion title="appOpened" icon="layout-grid">
+    *Since 1.3.0.* Fired whenever the user navigates into a top-level app
+    (your custom app included).
 
-        ```javascript
-        window.roadphone.on('appOpened', () => {
-        refreshData()
+    **Payload:** `{ app: string, path: string }`
+
+    - `app` is a stable ID derived from the route (`"messages"`, `"contacts"`,
+      `"custom_app:<url>"` for Custom Apps).
+    - `path` is the full router path.
+
+    ```javascript
+    window.roadphone.on('appOpened', ({ app }) => {
+      if (app === 'custom_app:my-app') {
+        // user just opened YOUR app
+        startPolling()
+      }
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="appClosed" icon="app-window">
-        Fired when your custom app is closed.
+  <Accordion title="appClosed" icon="layout-grid">
+    *Since 1.3.0.* Fired when the user navigates away from an app.
 
-        ```javascript
-        window.roadphone.on('appClosed', () => {
-        saveState()
+    **Payload:** same shape as `appOpened`. Pair the two events to track
+    foreground/background lifecycle.
+
+    ```javascript
+    window.roadphone.on('appClosed', ({ app }) => {
+      if (app === 'custom_app:my-app') stopPolling()
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="incomingCall" icon="phone-incoming">
-        Fired when the player receives a call.
+  <Accordion title="incomingCall" icon="phone">
+    *Since 1.3.0.* Fired when a call rings on the phone.
 
-        **Payload:** `object` - Call details (caller number, etc.)
+    **Payload:** `{ number: string, isAnonym: boolean }`
 
-        ```javascript
-        window.roadphone.on('incomingCall', (call) => {
-        console.log('Incoming call from', call.number)
+    ```javascript
+    window.roadphone.on('incomingCall', ({ number, isAnonym }) => {
+      console.log('Ring ring →', isAnonym ? 'Unknown' : number)
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="callEnded" icon="phone-off">
-        Fired when an active call ends.
+  <Accordion title="callEnded" icon="phone-off">
+    *Since 1.3.0.* Fired when any call (incoming, outgoing, active) ends.
 
-        ```javascript
-        window.roadphone.on('callEnded', () => {
-        console.log('Call ended')
+    **Payload:** `{ number: string | null }`
+
+    ```javascript
+    window.roadphone.on('callEnded', ({ number }) => {
+      console.log('Call with', number, 'ended')
     })
-        ```
-    </Accordion>
+    ```
+  </Accordion>
 
-    <Accordion title="notificationReceived" icon="bell">
-        Fired when the phone receives a notification.
+  <Accordion title="notificationReceived" icon="bell">
+    *Since 1.3.0.* Fired whenever the phone shows a banner notification —
+    including notifications from other apps. Useful for activity dashboards or
+    "do not disturb" widgets.
 
-        **Payload:** `object` - The notification data
+    **Payload:** `{ appTitle: string, title: string, message: string, icon: string | null }`
 
-        ```javascript
-        window.roadphone.on('notificationReceived', (notification) => {
-        console.log('New notification:', notification.title)
+    ```javascript
+    window.roadphone.on('notificationReceived', (notif) => {
+      console.log(`[${notif.appTitle}] ${notif.title}: ${notif.message}`)
     })
-        ```
-    </Accordion>
+    ```
+
+    <Warning>
+      Notifications are silently dropped while the player is in any focus mode
+      (Sleep, Work, Personal, Do Not Disturb), so you won't see them either.
+    </Warning>
+  </Accordion>
 </AccordionGroup>
 
-## Setup
+## Talking to Lua (Server RPC)
 
-Custom Apps are loaded as external URLs inside an iframe within the phone. To set up your custom app:
+<Info>
+  For simple one-way pings you can `post()` to any RoadPhone NUI callback. This
+  section is about the real thing: **calling your own resource's server code
+  and getting a response back**.
+</Info>
 
-<Steps>
-    <Step title="Create your app">
-        Build your custom app as a standalone HTML page and host it on a web server or locally.
-    </Step>
-    <Step title="Configure the URL">
-        Open `public/static/config/config.json` and find the `AppStore` section. Set your CustomApp URL:
+A custom app has **no `ui_page`**, so FiveM does not reliably route
+`https://<your-resource>/…` fetches from inside the phone's iframe — your app
+may not be able to reach its own NUI callbacks. RoadPhone therefore ships a
+generic RPC relay:
 
-        ```json
-        {
-            "AppStore": {
-            "CustomApp": {
-            "url": "https://your-server.com/my-custom-app.html",
-            "darkmode": true
-        }
-        }
-        }
-        ```
-    </Step>
-    <Step title="Access the API">
-        Your app runs inside an iframe and can access `window.parent.roadphone` to use the API.
-    </Step>
-</Steps>
+```
+UI:  await roadphone.post('customAppRpc', { resource, name, data })
+       → RoadPhone client relay
+       → Bridge.TriggerCallback('roadphone:customApp:<resource>', name, data)
+       → YOUR server callback → its reply resolves the UI's await
+```
+
+### 1. UI side
+
+```javascript
+const rp = window.parent.roadphone
+const RESOURCE = 'my-weather-app' // your resource name
+
+async function api(name, data = {}) {
+  const res = await rp.post('customAppRpc', { resource: RESOURCE, name, data })
+  // Unwrap: table replies land on res.data (see the post() warning above)
+  return res && res.data !== undefined ? res.data : res
+}
+
+const who = await api('whoami')
+if (who && who.ok) console.log(who.name, who.job)
+```
+
+### 2. Server side
+
+Register **one** server callback named `roadphone:customApp:<your-resource>`
+in the same framework callback system RoadPhone's bridge uses, and dispatch by
+`name`:
+
+- **ESX:** `ESX.RegisterServerCallback(name, fn)`
+- **QBCore:** `QBCore.Functions.CreateCallback(name, fn)`
+- **Qbox:** `lib.callback.register(name, fn)` (requires `@ox_lib/init.lua`)
+- **Standalone:** RoadPhone's event-based bridge pattern
+
+```lua
+-- server/server.lua (ESX example)
+local CB = 'roadphone:customApp:' .. GetCurrentResourceName()
+
+ESX.RegisterServerCallback(CB, function(src, cb, name, data)
+    -- NEVER trust `data` — it comes from the UI. Validate everything.
+    if name == 'whoami' then
+        local xPlayer = ESX.GetPlayerFromId(src)
+        cb({ ok = true, name = xPlayer.getName(), job = xPlayer.job.name })
+    elseif name == 'echo' then
+        local text = type(data.text) == 'string' and data.text:sub(1, 200) or ''
+        cb({ ok = true, echo = text })
+    else
+        cb({ error = 'unknown_handler' })
+    end
+end)
+```
+
+<Tip>
+  The **roadphone-customapp-demo** resource ships a small framework-agnostic
+  bridge plus a `Handlers` dispatcher with per-handler `reply()`, error
+  pcall-guarding, and thread support for DB queries — copy that instead of
+  hand-rolling it.
+</Tip>
+
+### Pushing from the server to your app
+
+`SendNUIMessage()` from your resource has **no document to deliver to** (no
+`ui_page`) and cannot reach the iframe. Server → player pushes go through
+RoadPhone's own NUI as a notification:
+
+```lua
+TriggerClientEvent('roadphone:sendNotification', src, {
+    apptitle = 'My App',
+    title = 'Heads up',
+    message = 'Something happened!',
+    img = '/public/img/Apps/light_mode/custom.webp',
+})
+```
+
+For live data, have your app **refetch when it becomes visible** — e.g. on the
+`appOpened` event or when the user switches to the relevant tab.
+
+## FiveM Resource Setup
+
+If you want to ship your custom app as a FiveM resource, here's the correct `fxmanifest.lua`:
+
+```lua
+fx_version 'cerulean'
+game 'gta5'
+
+name 'my-custom-app'
+description 'My Custom App for RoadPhone'
+version '1.0.0'
+
+-- IMPORTANT: Do NOT use ui_page!
+-- The HTML is loaded inside RoadPhone's iframe, not as a standalone NUI.
+-- Using ui_page will cause the app to display fullscreen instead of in the phone.
+
+-- Declaring files is what makes them fetchable at https://cfx-nui-<resource>/…
+files {
+    'html/index.html'
+}
+
+-- Optional: Client/Server scripts for the RPC bridge
+client_scripts {
+    'client/client.lua'
+}
+
+server_scripts {
+    'server/server.lua'
+}
+```
+
+Then point the app's `url` in `config.json` at the resource:
+
+```json
+"url": "https://cfx-nui-my-custom-app/html/index.html"
+```
 
 <Warning>
-    Since your custom app runs inside an iframe, you must access the API via `window.parent.roadphone` instead of `window.roadphone`.
+  Use `https://cfx-nui-<resource>/…`, **not** `nui://<resource>/…`. The
+  `nui://` form is the older scheme and will not load in the iframe.
 </Warning>
+
+<Warning>
+  **Never use `ui_page` in your fxmanifest.lua!** This will cause your app to render fullscreen instead of inside the phone. Only use `files`, which is what makes your HTML fetchable at `https://cfx-nui-<resource>/…`.
+</Warning>
+
+Ensure the resource in `server.cfg` **after** roadphone:
+
+```
+ensure roadphone
+ensure my-custom-app
+```
+
+## Common Pitfalls
+
+<AccordionGroup>
+  <Accordion title="Text input does nothing until you call inputFocus" icon="keyboard">
+    The phone keeps game input active while open. Tap a field, type, nothing
+    happens — the keys steer the player instead. See
+    [`inputFocus()`](#inputfocus-focus); delegate `focusin`/`focusout` on the
+    document once and every field works.
+  </Accordion>
+
+  <Accordion title="The API lives on the parent window" icon="app-window">
+    Your app is an iframe *inside* the phone: use `window.parent.roadphone`.
+    `window.roadphone` is undefined in your realm.
+  </Accordion>
+
+  <Accordion title="alert() / confirm() / prompt() crash the game" icon="triangle-alert">
+    FiveM's CEF has no dialog implementation — these calls crash the client.
+    Use an in-app toast and [`showBottomSheet()`](#showbottomsheet-options) as
+    your `confirm()`.
+  </Accordion>
+
+  <Accordion title="Any route change reloads your iframe" icon="refresh-cw">
+    Navigating away from your app (including to the camera via `takePhoto()`)
+    **unmounts the iframe** — all in-memory state is lost and your app boots
+    from scratch on return. Persist view state to `localStorage` (or
+    `storage.*`) and restore it on boot; reclaim camera shots with
+    [`claimPhoto()`](#claimphoto).
+  </Accordion>
+
+  <Accordion title="Size in vh, not px" icon="ruler">
+    RoadPhone scales the phone with CSS `zoom`, so the iframe's viewport grows
+    and shrinks with the player's phone-size setting. A `px` layout doesn't
+    follow — at 150% the text stays small while the screen around it grows.
+    Use `vh`: inside the iframe, `1vh` = 1% of the phone screen, whatever size
+    it currently is.
+  </Accordion>
+</AccordionGroup>
 
 ## Complete Example
 
-Here's a complete example of a custom app that displays player information. This app is designed to fit perfectly within the phone's iframe and uses `vh` units for proper scaling.
+Here's a complete example of a custom app that displays player information. This app is designed to fit perfectly within the phone's iframe.
 
 ```html
 <!DOCTYPE html>
@@ -893,8 +1492,21 @@ Here's a complete example of a custom app that displays player information. This
       overflow: hidden;
     }
 
+    /* Hide scrollbar but keep scrolling */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Size in vh: the phone scales with CSS zoom, so 1vh = 1% of the
+       phone screen at every phone-size setting. px would not scale. */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+      font-size: 1.6vh;
       transition: background-color 0.3s, color 0.3s;
     }
 
@@ -911,25 +1523,26 @@ Here's a complete example of a custom app that displays player information. This
     .app-container {
       width: 100%;
       height: 100%;
-      padding: 1.5vh;
+      padding: 1.4vh;
       padding-top: 5vh; /* Space for phone status bar */
       overflow-y: auto;
     }
 
     .header {
       text-align: center;
-      padding: 2vh 0 3vh;
+      padding: 1vh 0 1.8vh;
     }
 
     .header-title {
-      font-size: 2vh;
+      font-size: 2.2vh;
       font-weight: 700;
     }
 
     .card {
-      border-radius: 1.2vh;
-      padding: 1.5vh;
-      margin-bottom: 1vh;
+      border-radius: 1.4vh;
+      padding: 1.6vh;
+      margin-bottom: 1.2vh;
+      text-align: left;
     }
 
     body.light .card {
@@ -941,7 +1554,7 @@ Here's a complete example of a custom app that displays player information. This
     }
 
     .label {
-      font-size: 0.9vh;
+      font-size: 1.2vh;
       color: #86868b;
       text-transform: uppercase;
       letter-spacing: 0.05vh;
@@ -949,20 +1562,20 @@ Here's a complete example of a custom app that displays player information. This
     }
 
     .value {
-      font-size: 1.4vh;
+      font-size: 1.8vh;
       font-weight: 600;
     }
 
     .button {
       width: 100%;
-      padding: 1.2vh;
+      padding: 1.4vh;
       border: none;
-      border-radius: 1vh;
-      font-size: 1.1vh;
+      border-radius: 1.2vh;
+      font-size: 1.6vh;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      margin-top: 2vh;
+      margin-top: 1.8vh;
       background: #007aff;
       color: #ffffff;
     }
@@ -999,7 +1612,7 @@ Here's a complete example of a custom app that displays player information. This
   </div>
 
   <script>
-    // Access the API from parent window (since we're in an iframe)
+    // Access the API from the parent window (since we're in an iframe)
     const roadphone = window.parent.roadphone
 
     function init() {
@@ -1009,6 +1622,10 @@ Here's a complete example of a custom app that displays player information. This
         document.getElementById('playerName').textContent = 'API not available'
         return
       }
+
+      // Declare identity before storage/permissions
+      roadphone.app.setName('My Custom App')
+      roadphone.app.setNamespace('my-custom-app')
 
       // Load initial data
       document.getElementById('playerName').textContent = roadphone.getPlayerName() || 'Unknown'
@@ -1048,103 +1665,135 @@ Here's a complete example of a custom app that displays player information. This
 </html>
 ```
 
-<Tip>
-    Use `vh` units for sizing (like the rest of RoadPhone) to ensure your app scales correctly on different screen sizes.
-</Tip>
+## Demo Resource
 
-## Lua Backend Integration
+**roadphone-customapp-demo** is a full working tour of this API — every tab is
+a runnable example:
 
-To handle custom events from your app, register NUI callbacks in your Lua code:
+| Tab | Shows |
+|-----|-------|
+| **Phone** | Getters, `isDarkMode`, `getLanguage`, version + feature flags, app identity |
+| **UI** | `inputFocus`, `pickEmoji`, `showBottomSheet`, `takePhoto` + `claimPhoto`, `showNotification`, a server RPC round-trip |
+| **Data** | `contacts.*`, `messages.*`, `bank.*`, `alarms.*` — all permission-gated |
+| **Storage** | `storage.*` vs `storage.metadata.*`, `permissions.*` |
+| **Events** | Every event the API fires, live |
 
-```lua
--- server/custom_app.lua
-RegisterNUICallback('myCustomEvent', function(data, cb)
-    local src = source
-
-    print('Received custom event:', json.encode(data))
-
-    -- Do something with the data
-    if data.action == 'doSomething' then
-        -- Your logic here
-    end
-
-    cb('ok')
-end)
-```
+Install it like any custom app (copy to `resources/`, `ensure` it after
+roadphone, point an `AppStore` entry's `url` at
+`https://cfx-nui-roadphone-customapp-demo/html/index.html`) and use it as the
+starting point for your own app — it's MIT licensed.
 
 ## API Reference
 
-**Core**
+### Getters & utilities
 
 | Function | Returns | Description |
 |----------|---------|-------------|
 | `isDarkMode()` | `boolean` | Check if dark mode is enabled |
 | `getPhoneNumber()` | `string` | Get the phone number |
-| `getPlayerName()` | `string` | Get the player's name |
+| `getPlayerName()` | `string \| null` | Get the player's name |
 | `getJob()` | `string` | Get the player's job |
-| `getIdentifier()` | `string` | Get the player's identifier |
-| `getLanguage()` | `string` | Get the active locale |
+| `getIdentifier()` | `string` | Get the player's identifier (display-only) |
 | `getBrightness()` | `number` | Get brightness (10-100) |
 | `isFlightMode()` | `boolean` | Check if flight mode is on |
+| `getLanguage()` | `string` | *1.3.0* — Active locale code (e.g. `"de_DE"`) |
 | `getConfig()` | `object` | Get the full config |
 | `copyToClipboard(text)` | `void` | Copy text to clipboard |
-| `post(event, data)` | `Promise` | Send data to Lua backend |
+| `post(event, data)` | `Promise` | Send data to Lua backend (unwrap `res.data`!) |
+| `inputFocus(focus)` | `void` | **Required for text input** — toggle NUI keyboard focus |
 | `showNotification(opts)` | `void` | Show a notification |
-| `takePhoto(opts)` | `Promise<object>` | Capture a photo/video |
-| `showBottomSheet(opts)` | `Promise<object>` | Show a native action sheet |
-| `pickEmoji()` | `Promise<string>` | Open the emoji picker |
+| `takePhoto(opts)` | `Promise<{ url, isVideo } \| null>` | Open camera, await capture |
+| `claimPhoto()` | `{ url, isVideo } \| null` | Reclaim a shot after the camera reloaded your iframe |
+| `showBottomSheet(opts)` | `Promise<string \| null>` | Open iOS-style action sheet |
+| `pickEmoji()` | `Promise<EmojiObject \| null>` | Open the system emoji picker |
 | `on(event, callback)` | `void` | Subscribe to an event |
 | `off(event, callback)` | `void` | Unsubscribe from an event |
 
-**App & Compatibility**
+### Version & identity (1.3.0)
 
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `app.setName(name)` | `void` | Set the app display name |
-| `app.setNamespace(ns)` | `void` | Set the storage namespace |
-| `app.getNamespace()` | `string` | Get the storage namespace |
-| `minVersion(version)` | `void` | Require a minimum phone version |
-| `requireFeature(feature)` | `void` | Require a capability |
-| `features` | `object` | Available API capabilities |
+| `version` | `string` | API version of this Phone |
+| `hasFeature(name)` | `boolean` | Probe a feature flag |
+| `requireFeature(name)` | `void` | Throws if feature missing |
+| `minVersion(version)` | `void` | Throws if Phone too old |
+| `app.setName(name)` | `void` | Display name (used in prompts/notifs) |
+| `app.setNamespace(ns)` | `void` | Storage / permission namespace |
+| `app.getName()` | `string` | Localized fallback if not set |
+| `app.getNamespace()` | `string` | Current namespace |
 
-**Storage**
-
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `storage.set/get/delete(key, [value])` | `any` | Synchronous key/value storage |
-| `storage.keys()` | `string[]` | List stored keys |
-| `storage.clear()` | `void` | Clear the namespace |
-| `storage.metadata.set/get/delete(key, [value])` | `Promise` | Persistent metadata storage |
-
-**Permissions & Data** (require the matching scope)
+### Permissions (1.3.0)
 
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `permissions.request(scope)` | `Promise<boolean>` | Request a scope |
-| `permissions.has(scope)` | `boolean` | Check a granted scope |
-| `permissions.revoke(scope)` | `void` | Revoke a scope |
-| `permissions.list()` | `object` | List all decisions |
-| `contacts.list/find/count()` | `Promise` | Read contacts (`contacts.read`) |
-| `messages.send/list()` | `Promise` | Send/read messages (`messages.*`) |
-| `bank.getBalance/getIban/getAccounts()` | `Promise` | Read bank data (`bank.read`) |
-| `alarms.list/create/delete()` | `Promise` | Manage alarms (`alarms.*`) |
+| `permissions.request(scope)` | `Promise<boolean>` | Prompt user for a scope |
+| `permissions.has(scope)` | `boolean` | Check current grant state |
+| `permissions.revoke(scope)` | `void` | Forget the user's decision |
+| `permissions.list()` | `object` | All decisions for this app |
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `phoneOpened` | none | Phone was opened |
-| `phoneClosed` | none | Phone was closed |
-| `darkModeChanged` | `boolean` | Dark mode toggled |
-| `brightnessChanged` | `number` | Brightness changed |
-| `flightModeChanged` | `boolean` | Flight mode toggled |
-| `languageChanged` | `string` | Language changed |
-| `appOpened` | none | Custom app opened |
-| `appClosed` | none | Custom app closed |
-| `incomingCall` | `object` | Incoming call received |
-| `callEnded` | none | Active call ended |
-| `notificationReceived` | `object` | Notification received |
+### Storage (1.3.0)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `storage.get(key)` | `any \| null` | Read a value (sync) |
+| `storage.set(key, value)` | `boolean` | Write a value (sync) |
+| `storage.delete(key)` | `void` | Remove one key |
+| `storage.keys()` | `string[]` | All keys for this app |
+| `storage.clear()` | `void` | Remove all keys for this app |
+| `storage.metadata.get(key)` | `Promise<any>` | Phone-metadata read |
+| `storage.metadata.set(key, value)` | `Promise` | Phone-metadata write |
+| `storage.metadata.delete(key)` | `Promise` | Phone-metadata remove |
+
+### Phone data (1.3.0, permission-gated)
+
+| Function | Returns | Required permission |
+|----------|---------|---------------------|
+| `contacts.list()` | `Promise<Contact[]>` | `contacts.read` |
+| `contacts.find(number)` | `Promise<Contact \| null>` | `contacts.read` |
+| `contacts.count()` | `Promise<number>` | `contacts.read` |
+| `messages.list(number?)` | `Promise<Message[]>` | `messages.read` |
+| `messages.conversations()` | `Promise<Message[]>` | `messages.read` |
+| `messages.send(number, text)` | `Promise` | `messages.send` |
+| `bank.getBalance()` | `Promise<number>` | `bank.read` |
+| `bank.getIban()` | `Promise<string \| null>` | `bank.read` |
+| `bank.getAccounts()` | `Promise<Account[]>` | `bank.read` |
+| `alarms.list()` | `Promise<Alarm[]>` | `alarms.read` |
+| `alarms.create(alarm)` | `Promise<string>` | `alarms.write` |
+| `alarms.delete(id)` | `Promise<boolean>` | `alarms.write` |
+
+### Events
+
+| Event | Payload | Since | Description |
+|-------|---------|-------|-------------|
+| `phoneOpened` | none | 1.0.0 | Phone was opened |
+| `phoneClosed` | none | 1.0.0 | Phone was closed |
+| `darkModeChanged` | `boolean` | 1.0.0 | Dark mode toggled |
+| `brightnessChanged` | `number` | 1.0.0 | Brightness changed |
+| `flightModeChanged` | `boolean` | 1.0.0 | Flight mode toggled |
+| `languageChanged` | `string` | 1.3.0 | Locale changed |
+| `appOpened` | `{ app, path }` | 1.3.0 | Navigated into an app |
+| `appClosed` | `{ app, path }` | 1.3.0 | Navigated away from an app |
+| `incomingCall` | `{ number, isAnonym }` | 1.3.0 | Phone rings |
+| `callEnded` | `{ number }` | 1.3.0 | Any call ends |
+| `notificationReceived` | `{ appTitle, title, message, icon }` | 1.3.0 | Banner shown |
 
 <Card title="Version" icon="tag">
-    Current API Version: **1.3.0**
+  Current API Version: **1.3.0**
 
-    Access via: `window.roadphone.version`
+  Access via: `window.roadphone.version`
+
+  **Changelog**
+
+  - **1.3.0**
+    - Added **Version & feature negotiation**: `version`, `hasFeature`, `requireFeature`, `minVersion`
+    - Added **App identity**: `app.setName/setNamespace/getName/getNamespace`
+    - Added **Permissions**: `permissions.request/has/revoke/list` with iOS-style consent sheet
+    - Added **Storage**: `storage.*` (localStorage) and `storage.metadata.*` (phone-item-backed, survives trades)
+    - Added **Phone data read access**: `contacts.*`, `messages.*`, `bank.*`, `alarms.*` — all permission-gated
+    - Added **Lifecycle events**: `appOpened`, `appClosed`, `incomingCall`, `callEnded`, `notificationReceived`, `languageChanged`
+    - Added `getLanguage()`
+    - Added the **`customAppRpc` server RPC bridge** and the **roadphone-customapp-demo** example resource
+  - **1.2.0** — Added `pickEmoji()` for the system emoji picker
+  - **1.1.0** — Added `takePhoto()` and `showBottomSheet()` for native UI access
+  - **1.0.0** — Initial release
 </Card>
