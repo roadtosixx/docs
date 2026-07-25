@@ -14,21 +14,29 @@ icon: "badge-info"
   Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
 </Accordion>
 
-    <Accordion title="My Music app says the Music Server is offline" icon="music">
-        <Warning>The Music Server requires a valid **Tebex Transaction ID** to authenticate your purchase.</Warning>
+    <Accordion title="How do I give myself or others permission to approve music?" icon="shield-check">
+        Songs that players submit through the Music app have to be approved before they land in the library. The approval permission is handed out in-game with **`/music-verify`**:
 
-        **Solution:**
-        1. Open `API.lua` in your RoadPad resource
-        2. Enter your **TebexTransactionID** in the designated field
-        3. Restart the resource
+        ```bash
+        /music-verify PLAYERID
+        ```
 
-        **Where to find your Transaction ID:**
-        - Check your purchase confirmation email from Tebex
-        - Or log in to view your payment history:
+        - The command **toggles**: no permission → grants it, already has it → revokes it
+        - `PLAYERID` is the **server ID** of the player (visible in the player list / txAdmin)
+        - Only administrators can run the command
+    </Accordion>
 
-        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
-            View and retrieve your transaction ID from past purchases
-        </Card>
+    <Accordion title="My Music Library is empty — what do I do?" icon="music">
+        A fresh library only fills up once songs have been **submitted and approved**. Work through this checklist:
+
+        <Steps>
+            <Step title="Add songs through the Music app">
+                Players submit songs directly in the app. They land in the pending queue first, not in the library.
+            </Step>
+            <Step title="Approve the pending songs">
+                Someone with the music approval permission (see above) has to approve them. Once approved, they show up in the library for everyone.
+            </Step>
+        </Steps>
     </Accordion>
 
 <Accordion title="I don't hear music in the Music app" icon="music">
