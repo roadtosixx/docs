@@ -1,309 +1,1157 @@
 ---
-title: Server API
-description: Server-side exports and events for RoadPhone integration
-icon: "server"
+title: 'Server Exports'
+description: 'Server-side exports for external resource integration'
+icon: 'server'
 ---
 
-## Media Functions
+# Server Exports
 
-### sendAirdrop
+RoadPhone provides several server-side exports that allow other resources to interact with the phone system.
 
-Send an airdrop with media content to a player.
+## Player Information
 
-<ParamField path="data" type="object" required>
-  Airdrop data object
+### getPlayerFromPhone
 
-  <Expandable title="Properties">
-    <ParamField path="picturelink" type="string" required>
-      URL to the picture
-    </ParamField>
-
-    <ParamField path="playerId" type="number" required>
-      Source ID of the player
-    </ParamField>
-
-    <ParamField path="accountId" type="string" required>
-      Cloud account ID
-    </ParamField>
-
-    <ParamField path="roadpad" type="boolean" default="false">
-      Whether this is for roadpad
-    </ParamField>
-  </Expandable>
-</ParamField>
+Get a player's server ID from their phone number.
 
 ```lua
-local data = {
-      picturelink = "YOUR PICTURE LINK",
-      playerId = "SOURCE FROM PLAYER",
-      accountId = "CLOUD Account ID",
-      roadpad = false
-}
-
-exports['roadphone']:sendAirdrop(data)
+local playerId = exports['roadphone']:getPlayerFromPhone(number)
 ```
 
-## Banking Functions
+<ParamField path="number" type="string" required>
+  The phone number to look up.
+</ParamField>
+
+<ResponseField name="returns" type="number | nil">
+  The player's server ID (source), or `nil` if not found or offline.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local source = exports['roadphone']:getPlayerFromPhone("1234567")
+if source then
+    print("Player found with source: " .. source)
+else
+    print("Player not found or offline")
+end
+```
+</CodeGroup>
+
+---
+
+### getNumberFromIdentifier
+
+Get a player's phone number from their identifier.
+
+```lua
+local phoneNumber = exports['roadphone']:getNumberFromIdentifier(identifier)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier (license, citizenid, etc.).
+</ParamField>
+
+<ResponseField name="returns" type="string | nil">
+  The player's phone number, or `nil` if not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local phoneNumber = exports['roadphone']:getNumberFromIdentifier("license:abc123")
+if phoneNumber then
+    print("Phone number: " .. phoneNumber)
+end
+```
+</CodeGroup>
+
+---
+
+## Banking & IBAN
+
+### getPlayerIBAN
+
+Get or create an IBAN for a player.
+
+```lua
+local iban = exports['roadphone']:getPlayerIBAN(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  The player's IBAN. If the player doesn't have one, a new unique IBAN will be generated.
+</ResponseField>
+
+<Note>
+  IBAN format is configurable via `Cfg.BankIBANPrefix` (default: "DE") + 6 random digits.
+</Note>
+
+<CodeGroup>
+```lua Example
+local iban = exports['roadphone']:getPlayerIBAN(source)
+print("Player IBAN: " .. iban) -- e.g., "DE123456"
+```
+</CodeGroup>
+
+---
+
+### getPlayerFromIBAN
+
+Find a player by their IBAN.
+
+```lua
+local player = exports['roadphone']:getPlayerFromIBAN(iban)
+```
+
+<ParamField path="iban" type="string" required>
+  The IBAN to search for.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  The player object (via Bridge.Player.GetPlayerByIdentifier), or `nil` if not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local player = exports['roadphone']:getPlayerFromIBAN("DE123456")
+if player then
+    -- Player found - use based on your framework
+end
+```
+</CodeGroup>
+
+---
 
 ### addBankTransaction
 
-Add a bank transaction record.
-
-<ParamField path="sender" type="string|number" required>
-  Phone number of sender (0 = System)
-</ParamField>
-
-<ParamField path="receiver" type="string|number" required>
-  Phone number of receiver (0 = System)
-</ParamField>
-
-<ParamField path="reason" type="string" required>
-  Transaction description
-</ParamField>
-
-<ParamField path="amount" type="number" required>
-  Transaction amount
-</ParamField>
+Add a bank transaction record to the transaction history.
 
 ```lua
 exports['roadphone']:addBankTransaction(sender, receiver, reason, amount)
 ```
 
-## Player Data Functions
-
-### getPlayerFromPhone
-
-Get player data from phone number.
-
-<ParamField path="number" type="string" required>
-  Phone number
+<ParamField path="sender" type="string" required>
+  The sender's IBAN.
 </ParamField>
 
-<ResponseField name="player" type="object">
-  Player object containing source and other data
-</ResponseField>
-
-```lua
-local player = exports['roadphone']:getPlayerFromPhone(number)
-print(player.source) -- prints player source
-```
-
-### getNumberFromIdentifier
-
-Get phone number from player identifier.
-
-<ParamField path="identifier" type="string" required>
-  Player identifier/citizenid
+<ParamField path="receiver" type="string" required>
+  The receiver's IBAN.
 </ParamField>
 
-<ResponseField name="number" type="string">
-  Player's phone number
-</ResponseField>
-
-```lua
-local number = exports['roadphone']:getNumberFromIdentifier(identifier)
-print(number) -- prints number
-```
-
-## Cryptocurrency Functions
-
-<Info>
-  Available Coin IDs: `Bitcoin`, `Monero`, `Ethereum`, `Cardano`, `Dogecoin`, `Litecoin`, `Tether`, `VeChain`, `BNB`, `Solana`, `XRP`, `Shibu Inu`, `Bitcoin Cash`, `Chainlink`
-</Info>
-
-### removecrypto
-
-Remove cryptocurrency from a player.
-
-<ParamField path="identifier" type="string" required>
-  Player identifier
-</ParamField>
-
-<ParamField path="coinid" type="string" required>
-  Cryptocurrency ID (see list above)
+<ParamField path="reason" type="string" required>
+  The transaction reason/description.
 </ParamField>
 
 <ParamField path="amount" type="number" required>
-  Amount to remove (minimum 0.1)
+  The transaction amount.
 </ParamField>
 
-```lua
-exports['roadphone']:removecrypto(identifier, coinid, amount)
+<CodeGroup>
+```lua Example
+local senderIban = exports['roadphone']:getPlayerIBAN(senderSource)
+local receiverIban = exports['roadphone']:getPlayerIBAN(receiverSource)
+
+exports['roadphone']:addBankTransaction(
+    senderIban,
+    receiverIban,
+    "Vehicle Purchase",
+    50000
+)
 ```
+</CodeGroup>
+
+<Note>
+  This only adds a transaction record - it does not transfer actual money. Handle money transfers with your framework's banking system.
+</Note>
+
+---
+
+## Cryptocurrency
 
 ### addcrypto
 
-Add cryptocurrency to a player.
-
-<ParamField path="identifier" type="string" required>
-  Player identifier
-</ParamField>
-
-<ParamField path="coinid" type="string" required>
-  Cryptocurrency ID (see list above)
-</ParamField>
-
-<ParamField path="amount" type="number" required>
-  Amount to add (minimum 0.1)
-</ParamField>
+Add cryptocurrency to a player's wallet.
 
 ```lua
 exports['roadphone']:addcrypto(identifier, coinid, amount)
 ```
 
-### checkcryptoamount
-
-Check if player has enough cryptocurrency.
-
 <ParamField path="identifier" type="string" required>
-  Player identifier
+  The player's identifier.
 </ParamField>
 
-<ParamField path="coinid" type="string" required>
-  Cryptocurrency ID (see list above)
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID (1 = Bitcoin, 2 = Ethereum, etc.).
 </ParamField>
 
 <ParamField path="amount" type="number" required>
-  Amount to check (minimum 0.1)
+  The amount to add.
 </ParamField>
 
-<ResponseField name="hasEnough" type="boolean">
-  Returns `true` if player has enough or more, `false` if less
+<CodeGroup>
+```lua Example
+-- Add 0.5 Bitcoin to player
+exports['roadphone']:addcrypto("license:abc123", 1, 0.5)
+```
+</CodeGroup>
+
+---
+
+### removecrypto
+
+Remove cryptocurrency from a player's wallet.
+
+```lua
+exports['roadphone']:removecrypto(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to remove.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Remove 0.25 Bitcoin from player
+exports['roadphone']:removecrypto("license:abc123", 1, 0.25)
+```
+</CodeGroup>
+
+---
+
+### checkcryptoamount
+
+Check if a player has at least a certain amount of cryptocurrency.
+
+```lua
+local hasAmount = exports['roadphone']:checkcryptoamount(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to check for.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the player has at least the specified amount, `false` otherwise.
 </ResponseField>
 
+<CodeGroup>
+```lua Example
+if exports['roadphone']:checkcryptoamount("license:abc123", 1, 1.0) then
+    print("Player has at least 1 Bitcoin")
+else
+    print("Insufficient Bitcoin balance")
+end
+```
+</CodeGroup>
+
+---
+
+### getcryptoamount
+
+Get the current cryptocurrency balance for a player.
+
 ```lua
-local hasEnough = exports['roadphone']:checkcryptoamount(identifier, coinid, amount)
-print(hasEnough) -- returns true or false
+local amount = exports['roadphone']:getcryptoamount(identifier, coinid)
 ```
 
-## Event Numbers
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
 
-Configure special event numbers that trigger custom server-side actions.
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
 
-<Warning>
-  Configure event numbers in `config.lua` first before using this event.
-</Warning>
+<ResponseField name="returns" type="number">
+  The player's balance for the specified cryptocurrency.
+</ResponseField>
 
-```lua
-RegisterServerEvent("roadphone:server:call:eventnumber")
-AddEventHandler("roadphone:server:call:eventnumber", function(number)
-    if tostring(number) == "77777" then -- Check which number is called
-        -- Your code here
-    end
-end)
+<CodeGroup>
+```lua Example
+local btcBalance = exports['roadphone']:getcryptoamount("license:abc123", 1)
+print("Bitcoin balance: " .. btcBalance)
 ```
+</CodeGroup>
 
-## Email System
+---
+
+## Communication
 
 ### sendMailOffline
 
-Send an email to an offline player.
-
-<ParamField path="identifier" type="string" required>
-  Player identifier
-</ParamField>
-
-<ParamField path="data" type="object" required>
-  Email data object
-
-  <Expandable title="Properties">
-    <ParamField path="sender" type="string" required>
-      Sender name
-    </ParamField>
-
-    <ParamField path="subject" type="string" required>
-      Email subject
-    </ParamField>
-
-    <ParamField path="message" type="string" required>
-      Email content
-    </ParamField>
-  </Expandable>
-</ParamField>
+Send an email to a player by their identifier (works even if offline).
 
 ```lua
-local data = {
-   sender = 'RoadShop',
-   subject = "RoadShop TEST",
-   message = "Test Message"
-}
-
-exports['roadphone']:sendMailOffline(identifier, data)
+exports['roadphone']:sendMailOffline(identifier, mailData)
 ```
 
-## Dispatch System
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="mailData" type="table" required>
+  The email data object.
+</ParamField>
+
+<Expandable title="mailData structure">
+  <ParamField path="senderMail" type="string" required>
+    The sender's email address.
+  </ParamField>
+  <ParamField path="subject" type="string" required>
+    The email subject line.
+  </ParamField>
+  <ParamField path="message" type="string" required>
+    The email body content.
+  </ParamField>
+  <ParamField path="button" type="table">
+    Optional action button configuration.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "admin@server.com",
+    subject = "Account Verification",
+    message = "Your account has been verified. Welcome to the server!"
+})
+
+-- With action button
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "bank@server.com",
+    subject = "Loan Approved",
+    message = "Your loan of $50,000 has been approved.",
+    button = {
+        text = "Claim Funds",
+        event = "bank:claimLoan",
+        data = { amount = 50000 }
+    }
+})
+```
+</CodeGroup>
+
+---
+
+## Dispatches
 
 ### sendDispatch
 
-Send a dispatch to a specific job with player information.
+Send a dispatch notification to all members of a specific job.
+
+```lua
+exports['roadphone']:sendDispatch(source, message, job, coords, image)
+```
 
 <ParamField path="source" type="number" required>
-  Player source ID
+  The source player ID sending the dispatch.
 </ParamField>
 
 <ParamField path="message" type="string" required>
-  Dispatch message
+  The dispatch message content.
 </ParamField>
 
 <ParamField path="job" type="string" required>
-  Target job name
+  The target job name (e.g., "police", "ambulance").
 </ParamField>
 
-<ParamField path="coords" type="table|nil">
-  Coordinates (nil uses player's current position)
+<ParamField path="coords" type="vector3 | table">
+  Optional coordinates for the dispatch location.
 </ParamField>
 
-<ParamField path="anonym" type="boolean" default="false">
-  Whether dispatch is anonymous
+<ParamField path="image" type="string">
+  Optional image URL for the dispatch.
 </ParamField>
 
-<ParamField path="image" type="string|nil">
-  Optional image URL
-</ParamField>
+<CodeGroup>
+```lua Example
+-- Basic dispatch
+exports['roadphone']:sendDispatch(source, "10-71 Shots Fired", "police")
 
-```lua
-local job = 'police'
-local message = 'Dispatch :)'
-local coords = {x = -1851.1, y = -1248.8, z = 8.6} -- or nil for player coords
-local image = nil
+-- With coordinates
+local playerCoords = GetEntityCoords(GetPlayerPed(source))
+exports['roadphone']:sendDispatch(source, "Medical Emergency", "ambulance", playerCoords)
 
-exports['roadphone']:sendDispatch(source, message, job, coords, false, image)
+-- With image
+exports['roadphone']:sendDispatch(source, "Robbery in Progress", "police", coords, "https://example.com/robbery.jpg")
 ```
+</CodeGroup>
+
+---
 
 ### sendDispatchAnonym
 
-Send an anonymous dispatch without player information.
+Send an anonymous dispatch notification (no sender information).
+
+```lua
+exports['roadphone']:sendDispatchAnonym(job, title, message, coords, image)
+```
 
 <ParamField path="job" type="string" required>
-  Target job name
+  The target job name.
 </ParamField>
 
 <ParamField path="title" type="string" required>
-  Dispatch title (no spaces, use hyphens instead)
+  The dispatch title/sender name shown in the notification.
 </ParamField>
 
 <ParamField path="message" type="string" required>
-  Dispatch message
+  The dispatch message content.
 </ParamField>
 
-<ParamField path="coords" type="table" required>
-  Location coordinates
+<ParamField path="coords" type="vector3 | table" required>
+  The dispatch location coordinates.
 </ParamField>
 
-<ParamField path="image" type="string|nil">
-  Optional image URL
+<ParamField path="image" type="string">
+  Optional image URL for the dispatch.
 </ParamField>
 
-<Warning>
-  Do not use spaces in the title. Use hyphens instead (e.g., `Robbery-1` instead of `Robbery #1`)
-</Warning>
+<CodeGroup>
+```lua Example
+-- Anonymous 911 call
+exports['roadphone']:sendDispatchAnonym(
+    "police",
+    "Anonymous Caller",
+    "There's suspicious activity at the bank",
+    vector3(150.0, -1040.0, 29.0)
+)
+
+-- Store robbery alert (automated system)
+exports['roadphone']:sendDispatchAnonym(
+    "police",
+    "Silent Alarm",
+    "Store robbery triggered at 24/7 Strawberry",
+    storeCoords,
+    "https://example.com/alarm.jpg"
+)
+```
+</CodeGroup>
+
+<Note>
+  Use this for automated systems (store alarms, speed cameras, etc.) where there's no actual player caller.
+</Note>
+
+---
+
+## RoadDrop (AirDrop)
+
+### sendRoadDrop
+
+Send a RoadDrop notification to nearby players.
 
 ```lua
-local job = 'police'
-local title = 'Robbery' -- Use 'Robbery-1' instead of 'Robbery #1'
-local message = 'A robbery is in progress, go go go!'
-local coords = {x = -1851.1, y = -1248.8, z = 8.6}
-local image = nil
-
-exports['roadphone']:sendDispatchAnonym(job, title, message, coords, image)
+exports['roadphone']:sendRoadDrop(data)
 ```
+
+<ParamField path="data" type="table" required>
+  The RoadDrop data object.
+</ParamField>
+
+<Expandable title="data structure">
+  <ParamField path="sender" type="string" required>
+    The sender's name/identifier shown in the notification.
+  </ParamField>
+  <ParamField path="message" type="string">
+    Optional message content.
+  </ParamField>
+  <ParamField path="image" type="string">
+    Optional image URL to send.
+  </ParamField>
+  <ParamField path="targetPlayers" type="table">
+    Array of player server IDs to send to. If not provided, sends to nearby players.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+-- Send to nearby players
+exports['roadphone']:sendRoadDrop({
+    sender = "John Doe",
+    message = "Check this out!",
+    image = "https://example.com/image.jpg"
+})
+
+-- Send to specific players
+exports['roadphone']:sendRoadDrop({
+    sender = "Admin",^
+    message = "Important announcement",
+    targetPlayers = {1, 2, 3}
+})
+```
+</CodeGroup>
+
+<Note>
+  **Deprecated Alias:** `sendAirdrop` - Use `sendRoadDrop` for new implementations.
+</Note>
+
+---
+
+## Advanced Usage Examples
+
+### Complete Dispatch System Integration
+
+```lua
+-- Store robbery script integration
+RegisterServerEvent('store:robbery:started')
+AddEventHandler('store:robbery:started', function(storeId, storeCoords)
+    local src = source
+
+    -- Send silent alarm to police
+    exports['roadphone']:sendDispatchAnonym(
+        "police",
+        "Silent Alarm",
+        "Store robbery in progress - 24/7 #" .. storeId,
+        storeCoords,
+        "https://cdn.example.com/robbery-alert.png"
+    )
+end)
+```
+
+### Banking Integration
+
+```lua
+-- Custom shop purchase with transaction history
+function ProcessPurchase(source, itemPrice, itemName)
+    local playerIban = exports['roadphone']:getPlayerIBAN(source)
+    local shopIban = "DE000001" -- Shop's IBAN
+
+    -- Handle money transfer with your framework
+    -- ...
+
+    -- Add transaction record
+    exports['roadphone']:addBankTransaction(
+        playerIban,
+        shopIban,
+        "Purchase: " .. itemName,
+        itemPrice
+    )
+end
+```
+
+### Crypto Payment System
+
+```lua
+-- Accept cryptocurrency payments
+function AcceptCryptoPayment(identifier, coinId, amount)
+    -- Check if player has enough
+    if exports['roadphone']:checkcryptoamount(identifier, coinId, amount) then
+        -- Remove crypto from player
+        exports['roadphone']:removecrypto(identifier, coinId, amount)
+
+        -- Send confirmation email
+        exports['roadphone']:sendMailOffline(identifier, {
+            senderMail = "crypto@exchange.com",
+            subject = "Payment Confirmed",
+            message = string.format("Your payment of %.4f has been processed.", amount)
+        })
+
+        return true
+    end
+    return false
+end
+```
+
+---
+
+## Messages
+
+### sendMessage
+
+Send an SMS message from one phone number to another. Works for both online and offline players.
+
+```lua
+local success = exports['roadphone']:sendMessage(senderNumber, receiverNumber, message)
+```
+
+<ParamField path="senderNumber" type="string" required>
+  The sender's phone number.
+</ParamField>
+
+<ParamField path="receiverNumber" type="string" required>
+  The recipient's phone number.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The message content (must not be empty).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if validation fails (missing params, empty message, same sender/receiver).
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Send an automated SMS
+local sent = exports['roadphone']:sendMessage("911", "1234567", "Your report has been received.")
+```
+</CodeGroup>
+
+---
+
+## Social Media
+
+### deleteConnectAccount
+
+Delete a Connect (Instagram) account and all associated data (posts, likes, comments, stories).
+
+```lua
+local deleted = exports['roadphone']:deleteConnectAccount(username)
+```
+
+<ParamField path="username" type="string" required>
+  The Connect username to delete.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if account found and deleted, `false` if username not found.
+</ResponseField>
+
+---
+
+### deleteTweetWaveAccount
+
+Delete a TweetWave account and all associated data (tweets, likes, comments).
+
+```lua
+local deleted = exports['roadphone']:deleteTweetWaveAccount(username)
+```
+
+<ParamField path="username" type="string" required>
+  The TweetWave username to delete.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if account found and deleted, `false` if username not found.
+</ResponseField>
+
+---
+
+## Taxi
+
+### saveTaxiTripToHistory
+
+Save a taxi trip record to the database history.
+
+```lua
+exports['roadphone']:saveTaxiTripToHistory(customerPhone, driverPhone, driverName, pickupStreet, destinationStreet, price, vehicleType)
+```
+
+<ParamField path="customerPhone" type="string" required>
+  The customer's phone number.
+</ParamField>
+
+<ParamField path="driverPhone" type="string">
+  The driver's phone number (optional).
+</ParamField>
+
+<ParamField path="driverName" type="string">
+  The driver's name (optional).
+</ParamField>
+
+<ParamField path="pickupStreet" type="string">
+  The pickup street name (optional).
+</ParamField>
+
+<ParamField path="destinationStreet" type="string">
+  The destination street name (optional).
+</ParamField>
+
+<ParamField path="price" type="number">
+  The trip price (default: `0`).
+</ParamField>
+
+<ParamField path="vehicleType" type="string">
+  The vehicle type (default: `'economy'`).
+</ParamField>
+
+---
+
+## Health Tracking
+
+<Note>
+  The health system requires `Config.BatterySystem` or the health addon to be enabled. Server-side exports return data from the in-memory cache, which is updated by client sync events.
+</Note>
+
+### getPlayerHealth
+
+Get all current health data for a player from the server cache.
+
+```lua
+local health = exports['roadphone']:getPlayerHealth(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Health data table, or `nil` if not cached.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local health = exports['roadphone']:getPlayerHealth(source)
+if health then
+    print("Heart Rate: " .. health.heartRate)
+    print("Steps: " .. health.steps)
+    print("Stress: " .. health.stress)
+end
+```
+</CodeGroup>
+
+---
+
+### getPlayerHeartRate
+
+Get a player's current heart rate.
+
+```lua
+local heartRate = exports['roadphone']:getPlayerHeartRate(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Heart rate in bpm (default: `70` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerStress
+
+Get a player's current stress level.
+
+```lua
+local stress = exports['roadphone']:getPlayerStress(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Stress level 0-100 (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerSteps
+
+Get a player's step count for the current session.
+
+```lua
+local steps = exports['roadphone']:getPlayerSteps(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Steps today (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerDailyHealth
+
+Get a player's daily health summary from the database.
+
+```lua
+local summary = exports['roadphone']:getPlayerDailyHealth(source, date)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="date" type="string">
+  Date in `'YYYY-MM-DD'` format (default: today).
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Database row with daily stats (steps, distance, calories, etc.), or `nil` if no data.
+</ResponseField>
+
+---
+
+### getPlayerHealthHistory
+
+Get a player's health history for the last N days.
+
+```lua
+local history = exports['roadphone']:getPlayerHealthHistory(source, days)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="days" type="number">
+  Number of days to retrieve (default: `7`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of daily health records ordered by date DESC.
+</ResponseField>
+
+---
+
+### isPlayerSleeping
+
+Check if a player is currently sleeping.
+
+```lua
+local sleeping = exports['roadphone']:isPlayerSleeping(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if sleeping, `false` otherwise.
+</ResponseField>
+
+---
+
+### addSleepHours
+
+Add sleep hours to a player's daily health record. Useful for bed script integrations.
+
+```lua
+local success = exports['roadphone']:addSleepHours(source, hours)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="hours" type="number" required>
+  Number of sleep hours to add.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Bed script integration
+RegisterCommand('sleep', function(source)
+    exports['roadphone']:addSleepHours(source, 8)
+end)
+```
+</CodeGroup>
+
+---
+
+### setPlayerStress
+
+Set a custom stress level for a player. Updates the server cache and notifies the client.
+
+```lua
+local success = exports['roadphone']:setPlayerStress(source, stressLevel)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="stressLevel" type="number" required>
+  Stress level (automatically clamped to 0-100).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+---
+
+### getPlayerSpO2
+
+Get a player's blood oxygen saturation level.
+
+```lua
+local spo2 = exports['roadphone']:getPlayerSpO2(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  SpO2 percentage (default: `98` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerBloodPressure
+
+Get a player's blood pressure values.
+
+```lua
+local bp = exports['roadphone']:getPlayerBloodPressure(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ systolic = number, diastolic = number }` (default: `{ systolic = 120, diastolic = 80 }`).
+</ResponseField>
+
+---
+
+## DarkChat
+
+### getDarkchatRooms
+
+Get all DarkChat rooms/groups. Results are cached for 60 seconds.
+
+```lua
+local rooms = exports['roadphone']:getDarkchatRooms()
+```
+
+<ResponseField name="returns" type="table">
+  Array of `{ id = number, name = string, members = table }`.
+</ResponseField>
+
+---
+
+### getDarkchatGroupmessages
+
+Get all DarkChat group messages. Results are cached for 60 seconds.
+
+```lua
+local messages = exports['roadphone']:getDarkchatGroupmessages()
+```
+
+<ResponseField name="returns" type="table">
+  Array of `{ id, groupname, sender, message, members, date }`.
+</ResponseField>
+
+---
+
+### getGroupMessages
+
+Get messages for a specific DarkChat group.
+
+```lua
+local messages = exports['roadphone']:getGroupMessages(groupname, limit)
+```
+
+<ParamField path="groupname" type="string" required>
+  The DarkChat group name.
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum messages to return (default: config `MessageLimit` or `80`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of message objects in chronological order.
+</ResponseField>
+
+---
+
+## Music
+
+### getMusicLibrary
+
+Search the music library by title or artist.
+
+```lua
+local songs = exports['roadphone']:getMusicLibrary(search, limit)
+```
+
+<ParamField path="search" type="string">
+  Search term (optional — returns all if nil).
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum results (default: `50`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of `{ id, url_type, title, artist, thumbnail, length }`.
+</ResponseField>
+
+<Note>
+  Requires RoadWatch to be enabled. Returns empty table if disabled.
+</Note>
+
+---
+
+### getPlayerPlaylists
+
+Get a player's playlists and saved songs.
+
+```lua
+local data = exports['roadphone']:getPlayerPlaylists(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ playlists = table, songs = table }`.
+</ResponseField>
+
+---
+
+## Battery
+
+<Note>
+  Battery exports require `Config.BatterySystem = true` and `Config.UseMetadata = true`.
+</Note>
+
+### getBatteryLevel
+
+Get a player's current phone battery level.
+
+```lua
+local level = exports['roadphone']:getBatteryLevel(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Battery level (0-100).
+</ResponseField>
+
+---
+
+### setBatteryLevel
+
+Set a player's battery level. Updates metadata and notifies the client.
+
+```lua
+local newLevel = exports['roadphone']:setBatteryLevel(source, level)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="level" type="number" required>
+  The new battery level (clamped to 0-100).
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The new battery level after clamping.
+</ResponseField>
+
+---
+
+### chargeBattery
+
+Charge a player's battery by a specified amount.
+
+```lua
+local newLevel = exports['roadphone']:chargeBattery(source, amount)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount to charge (e.g., `10` for 10%).
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The new battery level (capped at 100).
+</ResponseField>
+
+---
+
+### isBatteryDead
+
+Check if a player's phone battery is dead.
+
+```lua
+local dead = exports['roadphone']:isBatteryDead(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if battery is at 0, `false` otherwise.
+</ResponseField>
+
+---
+
+### startCharging
+
+Start realistic (gradual) charging for a player's phone.
+
+```lua
+local started = exports['roadphone']:startCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if charging started, `false` if already charging or battery is full.
+</ResponseField>
+
+---
+
+### stopCharging
+
+Stop charging a player's phone.
+
+```lua
+exports['roadphone']:stopCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+---
+
+### isCharging
+
+Check if a player's phone is currently being charged.
+
+```lua
+local charging = exports['roadphone']:isCharging(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if currently charging, `false` otherwise.
+</ResponseField>

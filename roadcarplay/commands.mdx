@@ -1,0 +1,76 @@
+---
+title: Commands
+description: Available commands for RoadCarPlay
+icon: terminal
+---
+
+## Overview
+
+RoadCarPlay provides a command to manage music approval permissions. All commands are executed through the chat interface.
+
+## Music Verify
+
+Grant or revoke music approval permissions for players. Players with this permission can approve or reject songs that other players have submitted through the music app.
+
+<CodeGroup>
+    ```bash
+    /carmusic-verify PLAYERID
+    ```
+</CodeGroup>
+
+<ParamField path="PLAYERID" type="string" required>
+    The server ID of the player to grant or revoke music approval permissions for
+</ParamField>
+
+**Behavior:**
+- If the player **does not have** music approval permissions → Grants the permission
+- If the player **already has** music approval permissions → Revokes the permission
+
+<Warning>
+    Only administrators can execute this command. Unauthorized attempts will be logged.
+</Warning>
+
+### Examples
+
+<CodeGroup>
+    ```bash Grant Music Approval Permission
+    /carmusic-verify 12345
+    ```
+
+    ```bash Revoke Music Approval Permission
+    /carmusic-verify 12345
+    ```
+</CodeGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="Command not recognized">
+        Ensure you're using the correct syntax with the forward slash (/) at the beginning.
+    </Accordion>
+
+    <Accordion title="Verification not working">
+        - Check if you have admin permissions
+        - Verify the player ID is correct and the player is online
+        - Ensure there are no extra spaces in the command
+    </Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card
+        title="Installation"
+        icon="download"
+        href="/roadcarplay/installation"
+    >
+        Step-by-step guide to install and configure RoadCarPlay
+    </Card>
+    <Card
+        title="FAQ"
+        icon="badge-info"
+        href="/roadcarplay/faq"
+    >
+        Common questions and troubleshooting tips
+    </Card>
+</CardGroup>

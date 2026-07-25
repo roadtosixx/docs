@@ -4,7 +4,9 @@
       "WebSearch",
       "WebFetch(domain:lucide.dev)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(awk -F: '{print $3}')",
+      "Bash(echo \"exit=$?\")"
     ],
     "deny": [],
     "ask": []

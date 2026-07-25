@@ -1,12 +1,12 @@
 ---
 title: 'Standalone Mode'
-description: 'Run RoadPhone Pro without ESX, QBCore or Qbox — what works out of the box and what you need to configure in the Bridge'
+description: 'Run RoadPhone without ESX, QBCore or Qbox — what works out of the box and what you need to configure in the Bridge'
 icon: 'box'
 ---
 
 # Standalone Mode
 
-RoadPhone Pro can run without any framework. If neither `es_extended`, `qb-core` nor `qbx_core` is started, the Bridge automatically falls back to **standalone mode** — no configuration flag needed.
+RoadPhone can run without any framework. If neither `es_extended`, `qb-core` nor `qbx_core` is started, the Bridge automatically falls back to **standalone mode** — no configuration flag needed.
 
 ```
 [Bridge] No framework detected - Standalone mode
@@ -222,16 +222,16 @@ If a framework resource is still in the `starting` state, detection retries for 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Installation" icon="download" href="/guides/installation">
+  <Card title="Installation" icon="download" href="/roadphone/installation">
     Full installation walkthrough (database, upload API, voice)
   </Card>
-  <Card title="Metadata System" icon="box-archive" href="/guides/metadata-system">
-    Item-based phone data — works in standalone with ox_inventory
+  <Card title="FAQ" icon="badge-info" href="/roadphone/faq">
+    Common questions and troubleshooting tips
   </Card>
-  <Card title="Server Exports" icon="server" href="/exports/server">
+  <Card title="Server Exports" icon="server" href="/roadphone/api/server">
     Integrate RoadPhone with your own standalone resources
   </Card>
-  <Card title="Client Exports" icon="mobile" href="/exports/client">
+  <Card title="Client Exports" icon="code" href="/roadphone/api/client">
     Client-side integration options
   </Card>
 </CardGroup>

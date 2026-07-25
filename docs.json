@@ -50,8 +50,10 @@
             "pages": [
               "roadphone/installation",
               "roadphone/faq",
-              "roadphone/job-calls",
               "roadphone/commands",
+              "roadphone/admin-menu",
+              "roadphone/gifs",
+              "roadphone/standalone",
               "roadphone/fivemanage"
             ]
           },
@@ -67,7 +69,8 @@
             "group": "RoadCarPlay",
             "pages": [
               "roadcarplay/installation",
-              "roadcarplay/faq"
+              "roadcarplay/faq",
+              "roadcarplay/commands"
             ]
           },
           {
@@ -108,7 +111,10 @@
             "group": "RoadPhone",
             "pages": [
               "roadphone/api/client",
-              "roadphone/api/server"
+              "roadphone/api/server",
+              "roadphone/api/clientevents",
+              "roadphone/api/serverevents",
+              "roadphone/api/callbacks"
             ]
           },
           {
