@@ -100,7 +100,7 @@ The panel is split into a left **sidebar** (navigation + actions) and a right **
   </Accordion>
 
   <Accordion title="Addons" icon="puzzle">
-    Lists every addon under `lua-code/addons/*/config.lua` (mechanic, simcard, valet, etc.). Each addon's config is loaded into a separate sub-section so you can configure them independently without leaving the panel.
+    Lists every addon under `lua-code/addons/*/config.lua` — battery, mechanic, phonebox, roadpods and simcard. Each addon's config is loaded into a separate sub-section so you can configure them independently without leaving the panel.
   </Accordion>
 
   <Accordion title="Locales" icon="globe">
@@ -158,6 +158,10 @@ The server callback `admin:getServerConfig` returned an error. Common causes:
 
 - The resource is starting up — wait a few seconds and retry
 - A `config.lua` syntax error is preventing the file from being parsed (check the server console)
+
+### Save reports success but the files are unchanged
+
+On Linux the FXServer process often runs as a different user than the one that uploaded the resource, leaving it without write permission on the config files. See [Admin Menu File Permissions](/roadphonepro/admin-menu-file-permissions) for the diagnosis and the `chown` fix.
 
 ### Saved but nothing changed in-game
 

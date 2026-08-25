@@ -938,89 +938,88 @@ exports['roadphone']:UpdateRadioChannels(source, {})
 
 ---
 
-## Social Media Accounts
+## Accounts (legacy)
 
-### TweetWave
+<Warning>
+  **Do not build on these.** The RoadID/cloud account and every social account moved to **server-authoritative sessions**: the account row in the database is the content, and a session token on the phone decides who is signed in. These metadata exports only still exist so that backups taken before the change can be restored.
 
-```lua
--- Get account
-local account = exports['roadphone']:GetTweetWaveAccountFromMetadata(source)
+  Read identity through the session instead:
 
--- Set account (on login)
-exports['roadphone']:SetTweetWaveAccountInMetadata(source, {
-    id = 1,
-    username = "johndoe",
-    avatar_url = "/img/user.png",
-    bio = "Hello world",
-    verify = 0
-})
+  ```lua
+  local account = exports['roadphone']:GetCloudAccountForSource(source)  -- RoadID / cloud
+  local src     = exports['roadphone']:GetCloudSource(accountId)         -- who is online with it
+  ```
 
--- Update account fields
-exports['roadphone']:UpdateTweetWaveAccountInMetadata(source, {
-    avatar_url = "/img/newavatar.png",
-    bio = "Updated bio"
-})
+  Nothing writes `phone_account` or `phone_twitter_account` any more; on the next phone open a leftover blob is migrated into a session once and then cleared.
+</Warning>
 
--- Clear account (on logout)
-exports['roadphone']:ClearTweetWaveAccountFromMetadata(source)
-```
+The functions below are listed for completeness — `GetPhoneAccountFromMetadata`, `SetPhoneAccountInMetadata`, `UpdatePhoneAccountInMetadata`, `ClearPhoneAccountFromMetadata` for RoadID, plus `Get/Set/Update/Clear` variants of `TweetWaveAccount`, `TwitterAccount` (old name) and `ConnectAccount`. They all take `source` first and read or write the corresponding metadata field.
+
+---
+
+## Calendar & Reminders
+
+| Export | Signature | Returns | Description |
+|---|---|---|---|
+| `GetCalendarEvents` | `source` | array | Calendar events on the active phone. |
+| `UpdateCalendarEvents` | `source, events` | boolean | Replaces the whole event list. |
+| `AddCalendarEventToMetadata` | `source, event` | boolean | Appends one event. |
+| `UpdateCalendarEventInMetadata` | `source, eventId, updatedEvent` | boolean | Updates one event by id. |
+| `DeleteCalendarEventFromMetadata` | `source, eventId` | boolean | Deletes one event. |
+| `GetReminders` | `source` | array | All reminders. |
+| `UpdateReminders` | `source, reminders` | boolean | Replaces the reminder list. |
+| `AddReminderToMetadata` | `source, reminder` | boolean | Appends a reminder. |
+| `UpdateReminderInMetadata` | `source, reminderId, updatedReminder` | boolean | Updates one reminder. |
+| `DeleteReminderFromMetadata` | `source, reminderId` | boolean | Deletes one reminder. |
+| `GetReminderLists` | `source` | array | The reminder lists (folders). |
+| `AddReminderListToMetadata` | `source, list` | boolean | Adds a list. |
+| `UpdateReminderListInMetadata` | `source, listId, updatedList` | boolean | Renames/recolours a list. |
+| `DeleteReminderListFromMetadata` | `source, listId` | boolean | Deletes a list and its reminders. |
+
+---
+
+## DarkChat & Unread Counters
+
+| Export | Signature | Returns | Description |
+|---|---|---|---|
+| `GetDarkchatRoomsFromMetadata` | `source` | array | Rooms this phone has joined, with their unread counts. |
+| `UpdateDarkchatRoomsInMetadata` | `source, rooms` | boolean | Replaces the room list. |
+| `ClearDarkchatUnreadInMetadata` | `source, roomId` | boolean | Resets the unread badge of one room. |
+| `ClearGroupUnreadInMetadata` | `source, groupid` | boolean | Resets the unread badge of one message group. |
+
+---
+
+## Delivery: Outbox & Cache
+
+The phone a message belongs to is not always the phone in hand — and its owner may be offline. These are the pieces that make delivery land on the right device.
+
+| Export | Signature | Returns | Description |
+|---|---|---|---|
+| `AddMessageToMetadataForNumber` | `source, phoneNumber, message` | boolean | Writes a message onto the player's phone **that owns that number**, not the one in hand. |
+| `FindPhoneSlotByNumber` | `source, phoneNumber` | `itemName, slot, metadata` | Finds which inventory slot holds the phone with that number. |
+| `EnqueuePhoneOutbox` | `phoneNumber, kind, payload` | boolean | Queues data for a phone that is not reachable right now. |
+| `DrainPhoneOutbox` | `source, phoneNumber, metadata` | boolean | Applies everything queued for that number — called when the phone opens. |
+| `PhoneWriteBehind_Flush` | `source` | — | Forces buffered metadata writes for one player to disk. |
+| `PhoneWriteBehind_FlushAll` | — | — | Flushes every buffered write (use before shutting the resource down). |
+| `PhoneSession_InvalidateBankTx` | `source` | — | Drops the cached bank transactions so the next phone open refetches. |
+| `PhoneSession_InvalidateCallHistory` | `source` | — | Same for the call history. |
 
 <Note>
-  **Backwards Compatibility:** The old `*TwitterAccount*` export names still work but are deprecated.
+  Metadata writes are buffered and written behind, which is why a direct inventory read right after a write can still show the old value. Call `PhoneWriteBehind_Flush(source)` first when you must read through another resource.
 </Note>
 
 ---
 
-### Connect
+## Item Helpers
 
-```lua
--- Get account
-local account = exports['roadphone']:GetConnectAccountFromMetadata(source)
+| Export | Signature | Returns | Description |
+|---|---|---|---|
+| `IsPhoneItemName` | `itemName` | boolean | Is this one of the configured phone items? |
+| `OnPhoneItemUsed` | `source, slot, usedItem` | — | The single entry point for "player used a phone item" — inventory scripts call this instead of firing events. |
 
--- Set account (on login)
-exports['roadphone']:SetConnectAccountInMetadata(source, {
-    id = 1,
-    username = "johndoe",
-    firstname = "John",
-    lastname = "Doe",
-    avatar_url = "/img/user.png",
-    verify = 0
-})
-
--- Update account fields
-exports['roadphone']:UpdateConnectAccountInMetadata(source, {
-    avatar_url = "/img/newavatar.png"
-})
-
--- Clear account (on logout)
-exports['roadphone']:ClearConnectAccountFromMetadata(source)
-```
-
----
-
-### RoadID Account
-
-```lua
--- Get account
-local account = exports['roadphone']:GetPhoneAccountFromMetadata(source)
-
--- Set account
-exports['roadphone']:SetPhoneAccountInMetadata(source, {
-    firstname = "John",
-    lastname = "Doe",
-    mail = "john@example.com",
-    birth = "01.01.1990",
-    profile = "/img/user.png"
-})
-
--- Update profile picture
-exports['roadphone']:UpdatePhoneAccountInMetadata(source, {
-    profile = "/img/newprofile.png"
-})
-
--- Clear account (on logout)
-exports['roadphone']:ClearPhoneAccountFromMetadata(source)
-```
+<Note>
+  Number lookups (`isPhoneNumberInUse`, `GetPhoneNumberBySource`, `getSourceFromPhone`) live in the [Server Exports](/roadphonepro/api/server#player-information) reference.
+</Note>
 
 ---
 

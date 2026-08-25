@@ -26,8 +26,8 @@ This guide will walk you through the complete installation process for RoadPhone
         - OneSync enabled
     </Card>
     <Card title="Optional" icon="plus">
-        - ox_inventory / jaksam_inventory (for metadata)
-        - Voice system (pma-voice, mumble-voip, etc.)
+        - An inventory with metadata support — ox_inventory, one_inventory, jaksam, tgiann, qb-inventory, codem or core_inventory
+        - Voice system (pma-voice, mumble-voip, saltychat, yaca)
     </Card>
 </CardGroup>
 
@@ -74,25 +74,39 @@ This guide will walk you through the complete installation process for RoadPhone
 
 ## Step 2: Database Setup
 
-Import the SQL file to create the required database tables.
+**There is nothing to import.** RoadPhone ships an auto-installer: on the first start it creates every table it needs, adds missing columns and indexes to tables from earlier versions, and adds `phone_number` and `phone_bank_iban` to your framework's player table.
 
-<CodeGroup>
-    ```sql Main Tables
-    -- Run the SQL file provided in the resource
-    -- Located at the downloaded folder.
-    -- Run for ESX: roadphone-esx.sql and for QB & QBOX: roadphone-qb.sql
-    ```
-</CodeGroup>
+Watch the console on first boot:
 
-The SQL file creates tables for:
-- Player data and phone numbers
-- Contacts, messages, notes
-- TweetWave posts and accounts
-- Connect posts and accounts
-- Banking transactions
-- And more...
+```
+[RoadPhone] Database: created table `roadshop_contacts`
+[RoadPhone] Database: created column `users`.`phone_number`
+[RoadPhone] Database: all 113 tables present (113 newly created)   <- count grows with new features
+```
 
----
+<Steps>
+    <Step title="Make sure the database connection works">
+        `mysql-async` (default) or `oxmysql` must be running and `mysql_connection_string` set in your `server.cfg`. The installer runs as soon as the database reports ready.
+    </Step>
+    <Step title="Give the database user CREATE rights">
+        The installer issues `CREATE TABLE` and `ALTER TABLE`. A restricted user cannot do that, and you get:
+
+        ```
+        [RoadPhone] Database ERROR: 12 table(s) could not be created: ...
+        ```
+    </Step>
+    <Step title="Start the resource once, then check the console">
+        Every newly created table and column is logged. A second verification pass runs afterwards and reports anything still missing.
+    </Step>
+</Steps>
+
+<Note>
+    The SQL files under `__installation/` (`roadphone-esx.sql`, `roadphone-qb.sql`) are only a **fallback** — import one by hand if your database user is not allowed to create tables, or if you want to review the schema up front. On a normal install you never touch them.
+</Note>
+
+<Warning>
+    Upgrading from an older version? Just start the new build. Migrations are part of the same pass — new columns, new indexes, widened enums. Take a database backup first anyway.
+</Warning>
 
 ## Step 3: Basic Configuration
 
@@ -134,12 +148,16 @@ Config.RegisterKeyMapping = true
 
 -- Default key (players can rebind in FiveM settings)
 Config.OpenKey = 'f1'
+
+-- Used instead when RegisterKeyMapping = false (raw control id, 288 = F1)
+Config.OpenKeyNumber = 288
 ```
 
 ### Language
 
 ```lua config.lua
--- Available: 'en', 'de', 'fr', 'es', 'pt', 'nl', 'pl', 'it', 'tr'
+-- Available: 'en', 'de', 'fr', 'es', 'it', 'pl', 'tr', 'cs', 'el', 'ru', 'zh'
+-- (one file per language in lua-code/locales/, UI strings in public/static/locales/)
 Config.Locale = 'en'
 
 -- Temperature unit
@@ -204,18 +222,25 @@ Config.UseYacaVoice = false    -- yaca
 
 ---
 
-## Step 6: Music Setup
+## Step 6: Livestreams & Video Calls
 
-Set your TebexID to enable the Music App.
+Livestreams, Connect Live and video calls run through RoadShop's streaming backend. Your Tebex transaction ID is what authorises your server against it:
 
 ```lua API.lua
--- In API.lua
-Cfg.TebexTransactionID = "your-tebex-id"
+Cfg.TebexTransactionID = 'your-tebex-transaction-id'
 ```
 
 <Warning>
-    If no tebexid is entered. Music will not work.
+    Without it the backend answers **401 Unauthorized**: video calls fail with a config-error notification, and livestreams cannot start. The server console prints `Unauthorized: Check your TebexTransactionID in API.lua`.
 </Warning>
+
+<Note>
+    You find the transaction ID in your RoadPhone purchase confirmation. It is only sent server-to-server — never to the client.
+</Note>
+
+<Info>
+    The **Music app does not need this key.** It needs `xsound` running, and songs get into the library through player submissions plus approval (`/music-verify`) — or from your own source via the [Custom Music API](/roadphonepro/custom-music-api).
+</Info>
 
 ---
 
@@ -280,7 +305,14 @@ Enable item-based phone data for advanced features:
 
 ```lua config.lua
 Config.UseMetadata = true
-Config.InventorySystem = 'ox_inventory' -- or 'jaksam'
+
+-- 'auto' detects the running inventory. Force one only if detection picks wrong:
+-- 'ox_inventory', 'one_inventory', 'jaksam', 'tgiann', 'qb-inventory', 'codem', 'core_inventory'
+Config.InventorySystem = 'auto'
+
+-- Metadata writes are coalesced instead of hitting the inventory on every change
+Config.PhoneWriteBehind = true
+Config.PhoneWriteBehindMs = 1000
 ```
 
 <Card title="Metadata System Guide" icon="nfc" href="/roadphonepro/metadata">
@@ -296,6 +328,93 @@ Config.UseTarget = true
 Config.TargetSystem = "ox_target" -- or "qb-target"
 ```
 
+### SIM Cards
+
+Numbers move onto SIM cards, calls and messages cost prepaid credits.
+
+```lua config.lua
+Config.SimCardDLC = true   -- requires Config.UseMetadata = true
+```
+
+<Card title="SIM Card System" icon="credit-card" href="/roadphonepro/simcards">
+    Item setup, credits, shop NPCs and the exports for issuing SIMs.
+</Card>
+
+### Battery
+
+The phone drains while it is used and has to be charged.
+
+```lua config.lua
+Config.BatterySystem = true -- requires Config.UseMetadata = true
+```
+
+### Find My
+
+Location sharing between phone numbers, plus last-seen tracking for a lost phone.
+
+```lua config.lua
+Config.FindMy = true
+```
+
+### Housing
+
+```lua config.lua
+Config.HousingEnabled = false
+Config.HousingSystem = 'rtx_housing' -- esx_property, rtx_housing, ps_housing, rx_housing, LNS_Housing, vms_housing, custom
+Config.HousingBillTypes = { 'electricity', 'water', 'gas' }
+```
+
+<Note>
+    With `HousingEnabled = false` the housing scripts are not loaded at all — switching it on needs a resource restart, not just a config reload.
+</Note>
+
+### Loop
+
+The short-video app comes with its own economy. These numbers decide how much money it removes from your server:
+
+```lua config.lua
+Config.Loop = {
+    CoinPrice = 10,           -- price per coin
+    DiamondRatio = 0.5,       -- coins turned into diamonds for the receiver
+    DiamondValue = 10,        -- payout per diamond
+    MinPayout = 50,           -- diamonds needed before a payout
+    PromotePricePerHour = 50,
+    PromoteMaxHours = 24,
+    InvestigatorJobs = { 'police' }, -- may trace a handle back to a phone number
+    MaxClipSeconds = 60,
+    PostRetentionDays = 0,    -- 0 = keep forever
+}
+```
+
+<Tip>
+    Payout ratio = `DiamondRatio * DiamondValue / CoinPrice`. With the defaults, half of everything spent flows back into the economy and half is destroyed.
+</Tip>
+
+### Audible Ringtones
+
+```lua config.lua
+Config.HearableRingtone = true      -- bystanders hear a ringing phone (xsound, or mx-surround with Config.MXSurround)
+Config.UnavailableRingSeconds = 6   -- how long an unreachable number keeps ringing
+Config.Call = { RingTimeoutSec = 30 }
+Config.FaceTime = { RingingTimeoutSec = 30 }
+```
+
+<Tip>
+    Use `/ringtest` in-game to hear how far a ringtone carries before enabling it server-wide.
+</Tip>
+
+### Webhooks & Fees
+
+`API.lua` also holds the optional Discord webhooks (crypto, messages, bank, calls, social apps, exploit detection) and the economy knobs:
+
+```lua API.lua
+Cfg.YellowPageFee = 0
+Cfg.BankPayTax = 0.05          -- 5%
+Cfg.BankIBANPrefix = 'DE'      -- IBAN = prefix + 6 digits
+Cfg.MinimumBankTransfer = 10000 -- transfers below this do not fire a webhook
+Cfg.LivestreamPayTax = 0.05
+```
+
 ### Billing Integration
 
 Connect with your billing system:
@@ -305,8 +424,13 @@ Connect with your billing system:
 Config.myBilling = false
 Config.okokBilling = false
 Config.JaksamBilling = false
-Config.codemBilling = false
-Config.codemBilling2 = false
+Config.bcsCompanyManager = false
+Config.codemBilling = false      -- codem-billing v1
+Config.codemBilling2 = false     -- codem-billing v2
+Config.codemBilling2Folder = "codem-billing"
+Config.rxBilling = false         -- rxscripts
+Config.babloBilling = false      -- bablo scripts
+Config.qfBilling = false         -- qfdevelopers (handles the money itself)
 ```
 
 ### Banking Integration
@@ -323,10 +447,13 @@ Config.rxBanking = false
 Configure emergency services and dispatch:
 
 ```lua config.lua
--- Job to phone number mapping for dispatch
+-- Emergency lines. A LIST of entries — players with a matching job can sign in
+-- as dispatchers and take calls to that number.
 Config.Leitstelle = {
-    ['police'] = 911,
-    ['ambulance'] = 112,
+    { number = 911, needjob = 'police' },
+    { number = 112, needjob = 'ambulance' },
+    -- one number shared by several jobs:
+    -- { number = 555, needjob = { 'police', 'sheriff' } },
 }
 
 -- Jobs that can post news
@@ -334,7 +461,18 @@ Config.NewsAppAccess = {
     'police',
     'ambulance',
 }
+
+-- Service app: who may manage a business, which jobs are always open,
+-- and which ones cannot receive dispatches at all
+Config.ServiceMinGradeToManage = 0
+Config.ServiceBusinessGrades = { ['police'] = 2, ['ambulance'] = 2 }
+Config.ServiceAlwaysOpen = { 'police' }
+Config.ServiceDispatchDisabled = {}
 ```
+
+<Warning>
+    `Config.Leitstelle` must stay a **list** of `{ number, needjob }` entries. The old map form (`['police'] = 911`) is not read any more — dispatch numbers would silently stop working.
+</Warning>
 
 ---
 
@@ -373,6 +511,10 @@ Config.NewsAppAccess = {
 
 ## Troubleshooting
 
+<Tip>
+    Start with **`/rpselftest`** in-game. It prints framework, inventory, metadata support, the phone item it found and its metadata to the server console — that usually names the broken layer straight away.
+</Tip>
+
 <AccordionGroup>
     <Accordion title="Phone doesn't open">
         **Check:**
@@ -398,9 +540,10 @@ Config.NewsAppAccess = {
 
     <Accordion title="Database errors">
         **Check:**
-        - SQL file has been imported
-        - mysql-async or oxmysql is running
-        - Database credentials are correct in server.cfg
+        - `mysql-async` or `oxmysql` starts **before** roadphone
+        - Database credentials in `server.cfg` are correct
+        - The database user may `CREATE TABLE` — otherwise the auto-installer cannot build the schema
+        - The console on boot: it names every table it could not create
     </Accordion>
 
     <Accordion title="Framework not detected">
@@ -425,7 +568,7 @@ Config.NewsAppAccess = {
     <Card title="Client Exports" icon="code" href="/roadphonepro/api/client">
         Client-side integration options
     </Card>
-    <Card title="Commands" icon="terminal" href="/roadphonepro/commands/migrate">
-        Available admin commands
+    <Card title="Commands" icon="terminal" href="/roadphonepro/commands">
+        Admin, repair and diagnostic commands
     </Card>
 </CardGroup>

@@ -80,6 +80,74 @@ exports['roadphone']:togglePhone()
 
 ---
 
+### closePhone
+
+Close the phone UI. Unlike `togglePhone` this never opens it, and it leaves an ongoing call untouched.
+
+```lua
+exports['roadphone']:closePhone()
+```
+
+<Note>
+  The phone stays in hand while a call is running — only the UI closes.
+</Note>
+
+---
+
+### isInPhoneCall
+
+Is the player in **any** phone call — ringing, dialing, connected or in a group call?
+
+```lua
+local busy = exports['roadphone']:isInPhoneCall()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` while any call state is active.
+</ResponseField>
+
+<Note>
+  Broader than `getCallState`, which does not know about group calls. Use this before putting another prop in the player's hand — a phone box handset, for example.
+</Note>
+
+---
+
+### getPhoneProp
+
+The prop model name RoadPhone would use for a phone item, honouring `Config.UsePhoneProps` and the item's colour variant.
+
+```lua
+local model = exports['roadphone']:getPhoneProp(itemName)
+```
+
+<ParamField path="itemName" type="string">
+  Phone item name or colour key (e.g. `'phone'`, `'purple_phone'`, `'silver'`). Falls back to the last used prop.
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  Prop model name, e.g. `'phonesilver'` or the vanilla `'prop_phone_ing_03'` when custom props are disabled.
+</ResponseField>
+
+---
+
+### setPhoneBoxActive
+
+Tell RoadPhone that the player is using a phone box, so the phone's own call path stands down.
+
+```lua
+exports['roadphone']:setPhoneBoxActive(active)
+```
+
+<ParamField path="active" type="boolean" required>
+  `true` while the player holds a phone box handset, `false` when they hang up.
+</ParamField>
+
+<Warning>
+  Only for resources that implement their own phone box. Leaving this on `true` blocks the player's own phone.
+</Warning>
+
+---
+
 ## Phone Information
 
 ### getPhoneNumber
@@ -823,3 +891,278 @@ local steps = exports['roadphone']:getClientSteps()
 <ResponseField name="returns" type="number">
   Total steps walked/run this session.
 </ResponseField>
+
+---
+
+## Live Bar
+
+The pill at the top of the screen — the same surface the phone uses for calls, music and timers. Any resource can push its own live activity into it, and it doubles as a large live card on the lockscreen.
+
+<Frame>
+  Delivery jobs, drug runs, taxi rides, crafting timers: anything with a duration and a progress value belongs here instead of in a chat message.
+</Frame>
+
+### StartIslandActivity
+
+```lua
+local id = exports['roadphone']:StartIslandActivity(data)
+```
+
+<ParamField path="data" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="icon" type="string">
+      [Iconify](https://icon-sets.iconify.design) name (e.g. `'solar:box-bold'`) **or** an image URL (`/public/...` or `https://...`).
+    </ParamField>
+    <ParamField path="label" type="string">
+      Short text in the compact bar. Locale key or raw text.
+    </ParamField>
+    <ParamField path="title" type="string">
+      Headline of the expanded card.
+    </ParamField>
+    <ParamField path="text" type="string">
+      Body text of the expanded card.
+    </ParamField>
+    <ParamField path="color" type="string">
+      Accent colour, e.g. `'#FFD60A'`.
+    </ParamField>
+    <ParamField path="progress" type="number">
+      Progress bar, `0`–`100`.
+    </ParamField>
+    <ParamField path="timeout" type="number">
+      Milliseconds until the activity removes itself. `0` = stays until stopped.
+    </ParamField>
+    <ParamField path="priority" type="number">
+      Higher wins the primary slot; everything else becomes a bubble next to it.
+    </ParamField>
+    <ParamField path="tapApp" type="string">
+      Router name of the app to open when the activity is tapped.
+    </ParamField>
+    <ParamField path="lockscreen" type="boolean">
+      `false` keeps this activity out of the lockscreen cards.
+    </ParamField>
+    <ParamField path="buttons" type="table">
+      Up to two buttons: `{ { id = 'cancel', icon = 'ph:x', color = '#FF3B30' } }`.
+    </ParamField>
+    <ParamField path="id" type="string">
+      Your own ID — otherwise one is generated.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="string | nil">
+  The activity ID (`ext:<resource>:<id>`), or `nil` when `data` was not a table.
+</ResponseField>
+
+---
+
+### UpdateIslandActivity
+
+Patch a running activity. Only the fields you pass change.
+
+```lua
+local ok = exports['roadphone']:UpdateIslandActivity(id, patch)
+```
+
+<ParamField path="id" type="string" required>
+  ID returned by `StartIslandActivity`.
+</ParamField>
+
+<ParamField path="patch" type="table" required>
+  Any subset of the fields above, e.g. `{ progress = 60, label = '300m' }`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `false` when the ID is unknown or the activity has already ended.
+</ResponseField>
+
+---
+
+### StopIslandActivity
+
+```lua
+local ok = exports['roadphone']:StopIslandActivity(id)
+```
+
+<ParamField path="id" type="string" required>
+  ID returned by `StartIslandActivity`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `false` when the activity was already gone.
+</ResponseField>
+
+<Note>
+  Activities of a resource are cleaned up automatically when that resource stops — no `onResourceStop` handler needed on your side.
+</Note>
+
+---
+
+### Button clicks
+
+Buttons report back as a client event:
+
+```lua
+AddEventHandler('roadphone:islandActivityAction', function(activityId, buttonId)
+    if buttonId == 'cancel' then
+        exports['roadphone']:StopIslandActivity(activityId)
+        TriggerServerEvent('mydelivery:cancel')
+    end
+end)
+```
+
+<CodeGroup>
+```lua Delivery run
+local id = exports['roadphone']:StartIslandActivity({
+    icon     = 'solar:box-bold',
+    label    = 'Delivery',
+    title    = 'Package on its way',
+    text     = 'Drop-off: Vespucci Beach',
+    color    = '#FFD60A',
+    progress = 0,
+    tapApp   = 'maps_app',
+    buttons  = { { id = 'cancel', icon = 'ph:x', color = '#FF3B30' } },
+})
+
+-- later, as the player drives
+exports['roadphone']:UpdateIslandActivity(id, { progress = 60, label = '300m' })
+
+-- on arrival
+exports['roadphone']:StopIslandActivity(id)
+```
+</CodeGroup>
+
+---
+
+## Map Pins
+
+One call puts a point on **both** maps: as a pin in the phone's Maps app and as a blip — optionally with a GPS route — on the game map. The server-side equivalents are [`AddMapPinForPlayer` / `RemoveMapPinForPlayer`](/roadphonepro/api/server#map-pins).
+
+### AddMapPin
+
+```lua
+local id = exports['roadphone']:AddMapPin(data)
+```
+
+<ParamField path="data" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="x" type="number" required>
+      World X coordinate.
+    </ParamField>
+    <ParamField path="y" type="number" required>
+      World Y coordinate.
+    </ParamField>
+    <ParamField path="z" type="number">
+      World Z coordinate — used for the game blip.
+    </ParamField>
+    <ParamField path="label" type="string">
+      Pin title in the phone and blip name on the map.
+    </ParamField>
+    <ParamField path="icon" type="string">
+      Emoji, short text or an image path for the phone pin.
+    </ParamField>
+    <ParamField path="color" type="string">
+      Accent colour of the phone pin, e.g. `'#FF3B30'`.
+    </ParamField>
+    <ParamField path="blip" type="table | boolean">
+      `{ sprite, color, scale, short }` for the game blip, or `false` for no blip at all.
+    </ParamField>
+    <ParamField path="route" type="boolean">
+      `true` also sets a GPS route on the minimap.
+    </ParamField>
+    <ParamField path="id" type="string">
+      Your own ID — otherwise one is generated.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="string | nil">
+  The pin ID (`ext:<resource>:<id>`), or `nil` when `data` was not a table.
+</ResponseField>
+
+---
+
+### RemoveMapPin
+
+```lua
+local removed = exports['roadphone']:RemoveMapPin(id)
+```
+
+<ParamField path="id" type="string" required>
+  The ID returned by `AddMapPin`.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `false` when the pin does not exist or belongs to another resource.
+</ResponseField>
+
+---
+
+### RemoveMapPins
+
+Remove every pin this resource placed.
+
+```lua
+local count = exports['roadphone']:RemoveMapPins()
+```
+
+<ResponseField name="returns" type="number">
+  How many pins were removed.
+</ResponseField>
+
+<Note>
+  Pins are namespaced per resource, and a resource can only remove its own. Stopping a resource clears its pins automatically.
+</Note>
+
+<CodeGroup>
+```lua Deal location
+local pin = exports['roadphone']:AddMapPin({
+    label = 'Buyer — Selene',
+    x     = 123.4,
+    y     = -456.7,
+    z     = 30.0,
+    icon  = '💊',
+    color = '#FF3B30',
+    blip  = { sprite = 51, color = 1, scale = 0.9, short = true },
+    route = true,
+})
+
+-- deal done
+exports['roadphone']:RemoveMapPin(pin)
+```
+</CodeGroup>
+
+---
+
+## Valet
+
+Drives the phone's valet flow from outside the UI — used by RoadWatch, and usable by any resource that wants a "bring me my car" button.
+
+### searchCar
+
+Start the valet search for a plate: the car is located and marked for the player.
+
+```lua
+exports['roadphone']:searchCar(plate)
+```
+
+<ParamField path="plate" type="string" required>
+  The vehicle plate.
+</ParamField>
+
+---
+
+### deliverOrMarkCar
+
+Deliver the vehicle to the player, or mark it on the map when delivery is not possible.
+
+```lua
+exports['roadphone']:deliverOrMarkCar(plate)
+```
+
+<ParamField path="plate" type="string" required>
+  The vehicle plate.
+</ParamField>
+
+<Note>
+  Both run the same valet action the phone's own buttons use, including its cost and cooldown rules from `config.lua`.
+</Note>

@@ -157,11 +157,11 @@ Both formats are supported. RoadPhone checks `response.data.url` first, then fal
 
 ## Supported File Types
 
-The `filetype` parameter passed to your endpoint indicates what kind of media is being uploaded:
+Your endpoint receives the media kind as the query parameter `fileType`:
 
 | File Type | Used By | Example MIME Types |
 |-----------|---------|-------------------|
-| `image` | Camera, Snapy, Livestream, Instagram, Control Centre | `image/png`, `image/jpeg`, `image/webp` |
+| `image` | Camera, Glimpse, Livestream, Connect, Loop, Quick Settings | `image/png`, `image/jpeg`, `image/webp` |
 | `video` | Camera (video recording) | `video/webm` |
 | `audio` | Voice Memos, Voice Messages | `audio/webm`, `audio/mpeg` |
 

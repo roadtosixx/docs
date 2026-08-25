@@ -20,6 +20,11 @@ TriggerEvent('roadphone:client:call', "1234567", false)
   Most events below are **internal**: the server pushes data to the phone NUI through them and you should not fire them yourself. The **Integration Events** section lists the entry points designed for external resources; everything else is reference material for understanding data flow.
 </Note>
 
+
+<Note>
+  App names and internal identifiers differ on purpose: Connect events still carry the `instagram` prefix, Glimpse uses `snapy`, TweetWave uses `twitter`. Renaming them would break every existing install, so the identifiers stay as they are.
+</Note>
+
 ---
 
 ## Integration Events
@@ -173,23 +178,13 @@ Opens the phone photo camera / the FaceTime selfie camera. Used by the livestrea
 
 ---
 
-### roadphone:invalidatePhoneCache
-
-Clears the client-side "has phone" cache. Fire it after adding/removing phone items outside normal inventory flows.
-
-```lua
-TriggerClientEvent('roadphone:invalidatePhoneCache', source)
-```
-
----
-
 ## Hooks emitted by RoadPhone (listen with AddEventHandler)
 
 These events are **fired by** RoadPhone on the client for other resources to consume:
 
 | Event | Args | When |
 |---|---|---|
-| `roadphone:islandActivityAction` | `activityId, buttonId` | A Dynamic-Island live-activity button was tapped (pairs with `StartIslandActivity` export). |
+| `roadphone:islandActivityAction` | `activityId, buttonId` | A Live Bar activity button was tapped (pairs with `StartIslandActivity` export). |
 | `roadphone:client:call:eventnumber` | `number` | A configured event number was dialed — add your own handler for custom behavior (template in `clientAPI.lua`). |
 | `roadphone:watch:notification` / `:callStateChanged` / `:incomingCall` / `:callAccepted` / `:callEnded` / `:newMessage` / `:newTransaction` / `:musicStateChanged` | varies | RoadWatch companion bus — mirrors phone state to the smartwatch. |
 | `roadpad:setWeather`, `roadcarplay:setWeather`, `roadwatch:setWeather` | `weather` | Weather fan-out to companion resources. |
@@ -204,7 +199,6 @@ These events are **fired by** RoadPhone on the client for other resources to con
 |---|---|---|
 | `roadphone:use` | — | Opens the phone. |
 | `roadphone:closePhone` | — | Closes the phone if open. |
-| `roadphone:invalidatePhoneCache` | — | Clears the "has phone" cache. |
 | `roadphone:loadPlayerClient` | `needsetup, phone_number, contacts, messages, yellowpages, groupmessages, groups, notes, callhistory, transactions, news, newscategories, blockednumbers, newsappaccess, darkchat_rooms, charname` | Non-metadata mode: full initial data load into NUI. |
 | `roadphone:loadGlobalData` | `yellowpages, groupmessages, groups, news, newscategories, blockednumbers, newsappaccess` | Metadata mode: per-join global data load. |
 | `roadphone:loadPhoneData` | `needsetup, phone_number, contacts, messages, notes, callhistory, transactions` | Metadata mode: per-phone data push. |
@@ -245,6 +239,7 @@ These events are **fired by** RoadPhone on the client for other resources to con
 | `roadphone:client:incomingcall` | `number, isAnonym, targetNumber, isLeitstelleCall` | Incoming-call logic: blocked check, ring UI, multi-phone banner. |
 | `roadphone:client:acceptIncomingCall` | `callchannel` | Transitions to active call, joins the voice channel. |
 | `roadphone:client:endCall` | `number, number2` | Tears down call state, animation, voice. |
+| `roadphone:sendCall:called` | `id, call, targetNumber` | Confirms an outgoing call was placed and carries its call id. |
 | `roadphone:client:addCallHistory` | `call` | Appends to the local call history. |
 | `roadphone:client:setLeitstelleCall` | `source` | Stores the dispatcher source for Leitstelle calls. |
 | `roadphone:call:videoUpgradeRequest` | `callerNumber` | Voice→FaceTime upgrade prompt. |
@@ -355,6 +350,7 @@ All forward their payload to the FaceTime NUI layer:
 
 | Event | Params | Description |
 |---|---|---|
+| `roadphone:music:setApiEnabled` | `enabled` | Tells the UI whether the server-side music API is available. |
 | `roadphone:server:music` | `type, sid, url, coords, volume, loop, timestamp` | Core 3D-audio controller (xSound play/pause/volume/seek per nearby player). |
 | `roadphone:music:setPlaylists` | `playlists` | Playlist list push. |
 | `roadphone:music:setAdmin` | `isAdmin` | Music-admin flag for the UI. |
@@ -386,7 +382,7 @@ All forward their payload to the FaceTime NUI layer:
 
 ---
 
-## Connect (Instagram) — `client/connect.lua`
+## Connect — `client/connect.lua`
 
 | Event | Params | Description |
 |---|---|---|
@@ -437,7 +433,7 @@ DM pushes (`connect_dm_newMessage`, `connect_dm_read`, `connect_dm_reaction`, ty
 | `roadphone:twitter_setFollow` | `targetUserId, isFollowing` | Own follow state. |
 | `roadphone:twitter:addcomment` | `comment` | New comment. |
 
-## Snapy — `client/snapy.lua`
+## Glimpse — `client/snapy.lua`
 
 | Event | Params | Description |
 |---|---|---|
@@ -465,7 +461,7 @@ Each forwards its `payload` table to the DarkChat NUI layer:
 
 `roadphone:darkchat:messagePushed`, `:messageDeleted`, `:roomUpdated`, `:memberJoined`, `:memberLeft`, `:memberKicked`, `:memberUpdated`, `:youWereKicked`, `:resyncRooms`.
 
-## Dating (DateMe) — `client/dating.lua`
+## Dating — `client/dating.lua`
 
 | Event | Params | Description |
 |---|---|---|
@@ -483,6 +479,31 @@ Each forwards its `payload` table to the DarkChat NUI layer:
 | `roadphone:dating_messageHistory` | `matchId, messages` | Chat history. |
 | `roadphone:dating_newMessage` | `message` | New chat message. |
 | `roadphone:dating_messagesRead` | `matchId, messageIds` | Read receipts. |
+
+## Ringtones — `client/ringtone.lua`
+
+Shared ringtones: other players hear the phone that is actually ringing.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:ringtone:play` | `serverId, url, pinned` | Plays another player's ringtone in 3D at their position. |
+| `roadphone:ringtone:stopFor` | `serverId` | Stops that player's ringtone (answered, declined, out of range). |
+| `roadphone:ringtone:test` | `seconds, pinned` | Preview playback while picking a ringtone in Settings. |
+| `roadphone:ringtone:testStop` | — | Stops the preview. |
+
+## Reminders — `client/reminders.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:reminders:newList` | `list` | A new reminder list was created for this player. |
+| `roadphone:reminders:newReminder` | `reminder` | A single new reminder. |
+| `roadphone:reminders:sync` | — | Tells the client to refetch lists and reminders. |
+
+## Loop — `client/loop.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:loop:soundOut` | `playerServerId, action, payload` | Plays a Loop post's audio out loud from another player's phone (start/stop/volume). |
 
 ## Livestream — `client/livestream.lua`
 
@@ -513,8 +534,9 @@ Battery events only register with `Config.BatterySystem` + `Config.UseMetadata`;
 | `roadphone:battery:critical` | Battery | — | Critical-battery notification. |
 | `roadphone:battery:phoneDead` | Battery | — | Battery empty: closes the phone. |
 | `roadphone:simcard:creditsUpdate` | SIM Card | `simIndex, credits` | SIM credit update. |
+| `roadphone:simcard:sync` | SIM Card | `sims, activeSim` | SIM list changed outside the phone UI (exports, admin): refreshes the UI and the active number. |
 | `roadpods:client:connect` | RoadPods | — | Connects RoadPods (ownership check, opens the phone). |
 
 <Note>
-  `clientAPI.lua` and `island.lua` register no networked events — their surfaces are exports and NUI callbacks. The Dynamic-Island Lua API is documented under [Client Exports](/roadphonepro/api/client).
+  `clientAPI.lua` and `island.lua` register no networked events — their surfaces are exports and NUI callbacks. The Live Bar Lua API is documented under [Client Exports](/roadphonepro/api/client).
 </Note>

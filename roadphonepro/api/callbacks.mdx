@@ -30,6 +30,11 @@ end, arg1, arg2)
   As with events, identity is server-authoritative: callbacks resolve the caller's phone number, identifier, job and account sessions from `source`. Client-supplied account IDs are ignored.
 </Warning>
 
+
+<Note>
+  App names and internal identifiers differ on purpose: Connect events still carry the `instagram` prefix, Glimpse uses `snapy`, TweetWave uses `twitter`. Renaming them would break every existing install, so the identifiers stay as they are.
+</Note>
+
 ---
 
 ## Core Phone
@@ -37,6 +42,7 @@ end, arg1, arg2)
 | Callback | Input | Returns | Description |
 |---|---|---|---|
 | `roadphone:getItemAmount` | — | `{ item, metadata }` or `nil` | **The primary phone-open callback.** Verifies the phone item and returns the full per-phone metadata bundle (number, contacts, messages, notes, settings, PIN, alarms, accounts, photos, SIMs, battery, …) used to hydrate the UI. |
+| `roadphone:hasPhoneItem` | — | boolean | Does the caller carry a configured phone item? Used before opening the phone. |
 | `roadphone:switchToPhoneByNumber` | `phoneNumber` | `{ metadata }` or `nil` | Switches the active phone item to the one holding that number (used before an incoming call rings). Metadata mode only; phone must belong to the caller. |
 | `roadphone:getPhoneNumber` | — | `number (string)` | Returns (and creates if needed) the active phone's number. |
 | `roadphone:getPhonePin` | — | `{ pin, pin_needed }` or `nil` | Returns the stored PIN state (metadata mode only). |
@@ -76,6 +82,10 @@ end, arg1, arg2)
 | `roadphone:rxBanking:getCreditCard` | — | card number string | Legacy: RX Banking card number. |
 | `roadphone:getbilling` | — | array of `{ id, label, sender, target, amount }` | The caller's bills. Registered in one of two variants depending on `Config.bcsCompanyManager`. |
 | `roadphone:getRxBilling` | — | array of invoice objects | Normalized RxBilling invoices. |
+| `roadphone:getRxBillingHistory` | — | array of invoice objects | Paid/archived RxBilling invoices. |
+| `roadphone:getQfBilling` | — | array of invoice objects | Open qb-management invoices (`unpaid` only — `request`, `rejected` and `canceled` are workflow states, not bills). |
+| `roadphone:getQfBillingHistory` | — | array of invoice objects | Paid qb-management invoices. |
+| `roadphone:getBillingHistory` | — | array of invoice objects | Paid bills of the active billing system. |
 | `roadphone:getCodeMBilling2` | — | codem unpaid-billing list | Passthrough for codem-billing2. |
 
 ## Housing
@@ -177,6 +187,7 @@ The `management*` callbacks are rate-limited and require management permission (
 | `getOnlineCoworkers` | — | array of `{ source, name, grade }` | Online players sharing the caller's job. |
 | `getActiveDispatches` | — | array of dispatch rows | Open dispatches for the caller's job. |
 | `getDispatchHistory` | — | array of dispatch rows | Finished/declined dispatches. |
+| `getMySentDispatches` | — | array of dispatch rows | Dispatches this player sent themselves. |
 | `getDispatchStats` | — | `{ today, completed, declined }` | Today's dispatch counts. |
 | `getManagementData` | — | `{ success, balance, employees }` | Society balance + full employee roster. |
 | `managementDeposit` | `amount` | `{ success, newBalance }` or error | Deposits into the society account (refund-safe). |
@@ -185,7 +196,7 @@ The `management*` callbacks are rate-limited and require management permission (
 | `managementFire` | `targetIdentifier` | `{ success }` or error | Fires an employee (online or offline). |
 | `managementSetGrade` | `targetIdentifier, newGrade` | `{ success }` or error | Changes a grade (cannot exceed own grade). |
 
-## Taxi / Calendar / Notes / Voice Memos
+## Taxi / Calendar / Notes / Reminders / Voice Memos
 
 | Callback | Input | Returns | Description |
 |---|---|---|---|
@@ -194,6 +205,7 @@ The `management*` callbacks are rate-limited and require management permission (
 | `roadphone:taxi:getfavorites` | — | array of `{ type, name, coords }` | Saved favourite destinations. |
 | `roadphone:calendar:getEvents` | — | array of event rows | Calendar events (max 300). |
 | `roadphone:notes:getNotes` | — | array of note rows | Notes (max 300). |
+| `roadphone:reminders:getAll` | — | `{ lists, reminders }` | All reminder lists and their entries for the caller. |
 | `roadphone:voicememos:get` | — | array of memo rows | Saved voice memos. |
 
 ## Music / Crypto / Health / RoadDrop
@@ -205,6 +217,7 @@ The `management*` callbacks are rate-limited and require management permission (
 | `roadphone:music:isMusicAdmin` | — | boolean | Music-admin status. |
 | `roadphone:music:getSubmissions` | — | array of pending submissions | Admin-only review queue. |
 | `roadphone:music:getLibraryAdmin` | — | array of library songs | Admin-only full library. |
+| `roadphone:crypto:getWallet` | — | wallet address string or `nil` | The caller's wallet address, created on first use. |
 | `roadphone:crypto:getCrypto` | — | map `coinid → amount` | The caller's crypto holdings. |
 | `roadphone:crypto:checkSpam` | — | `1` or `0` | Anti-spam gate for crypto actions. |
 | `roadphone:health:getData` | — | `{ today, history, current }` | Today's totals, 7-day history, live vitals. |
@@ -231,7 +244,7 @@ All rate-limited; every response uses an `{ ok = bool, error? }` envelope (`rate
 
 ---
 
-## Connect (Instagram)
+## Connect
 
 | Callback | Input | Returns | Description |
 |---|---|---|---|
@@ -280,7 +293,7 @@ All rate-limited; every response uses an `{ ok = bool, error? }` envelope (`rate
 | `roadphone:twitter:getBookmarks` | — | array of tweet rows | Bookmarked tweets. |
 | `roadphone:twitter:getcomments` | `postid` | array of comment rows | Comments on a tweet (max 200). |
 
-## Snapy
+## Glimpse
 
 All resolve identity via the server session; the NUI-supplied `accountId` is always overridden.
 
@@ -307,6 +320,146 @@ All resolve identity via the server session; the NUI-supplied `accountId` is alw
 | `roadphone:snapy:getGroupMessages` | `groupId` | array of messages (≤100) | Group chat history (member-only, advances read pointer). |
 | `roadphone:snapy:getMemories` | — | array of memory rows | The memories vault. |
 
+## Loop
+
+The short-video app. Gated by `Config.Loop`; every callback resolves the caller's Loop account from the server-side session — a client-supplied account ID is never trusted.
+
+### Account & profile
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:register` | `handle, password, displayName` | `{ ok }` or `{ ok = false, error }` | Creates a Loop account and opens a session. |
+| `roadphone:loop:login` | `handle, password` | `{ ok, account }` or error | Logs in and mints the session on the phone. |
+| `roadphone:loop:logout` | — | `{ ok }` | Ends the session for this phone. |
+| `roadphone:loop:resume` | — | account object or `nil` | Resumes the stored session when the app opens. |
+| `roadphone:loop:getProfile` | `handleOrId` | profile object | Public profile with counters and relation state. |
+| `roadphone:loop:updateProfile` | `patch` | `{ ok }` or error | Display name, bio, avatar, privacy flags. |
+| `roadphone:loop:getPermissions` | — | permission flags | What this account may do (creator tools, moderation). |
+| `roadphone:loop:linkSocial` | `kind, unlink` | `{ ok }` | Links or unlinks a Connect / TweetWave / Snapy handle. |
+| `roadphone:loop:getStudio` | — | creator dashboard | Analytics overview for the account's own posts. |
+
+### Feed & posts
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:getFeed` | `kind, cursor` | `{ posts, nextCursor }` | Feed page — `kind` selects For You, Following, Nearby … |
+| `roadphone:loop:getPost` | `postId` | post object | Single post incl. author, sound and counters. |
+| `roadphone:loop:createPost` | `payload` | `{ ok, postId }` or error | Publishes a post (video/photo, caption, sound, privacy). |
+| `roadphone:loop:deletePost` | `postId` | `{ ok }` | Deletes an own post. |
+| `roadphone:loop:saveDraft` | `payload` | `{ ok, draftId }` | Stores a draft server-side. |
+| `roadphone:loop:getDrafts` | — | array of drafts | The caller's drafts. |
+| `roadphone:loop:deleteDraft` | `draftId` | `{ ok }` | Deletes a draft. |
+| `roadphone:loop:getUserPosts` | `ownerId, tab, offset` | array of posts | Profile tabs: posts, reposts, liked, saved. |
+| `roadphone:loop:recordViews` | `batch` | `{ ok }` | Batched view counting for the posts just watched. |
+| `roadphone:loop:getPostStats` | `postId` | stats object | Views, likes, shares, watch-through for one post. |
+| `roadphone:loop:pushPreview` | `ref` | `{ ok }` | Pushes a preview of a post to the phone (share flow). |
+
+### Reactions & comments
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:like` | `postId, liked` | `{ ok, likes }` | Likes / unlikes a post. |
+| `roadphone:loop:toggleSave` | `postId, wantSave` | `{ ok }` | Saves a post to the account's collection. |
+| `roadphone:loop:repost` | `postId, wantRepost` | `{ ok }` | Reposts or takes the repost back. |
+| `roadphone:loop:notInterested` | `postId, scope` | `{ ok }` | Feedback signal — `scope` hides the post, the author or the sound. |
+| `roadphone:loop:getComments` | `postId, offset` | array of comments | Paged comments, newest first. |
+| `roadphone:loop:getReplies` | `parentId, offset` | array of comments | Replies to one comment. |
+| `roadphone:loop:addComment` | `postId, text, parentId` | `{ ok, comment }` | Comments, or replies when `parentId` is set. |
+| `roadphone:loop:editComment` | `commentId, text` | `{ ok }` | Edits an own comment. |
+| `roadphone:loop:deleteComment` | `commentId` | `{ ok }` | Deletes an own comment (or any, as post author). |
+| `roadphone:loop:likeComment` | `commentId, liked` | `{ ok, likes }` | Likes a comment. |
+| `roadphone:loop:pinComment` | `commentId, pinned` | `{ ok }` | Post author pins a comment to the top. |
+
+### Social graph & messages
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:follow` | `targetId, wantFollow` | `{ ok, state }` | Follows / unfollows; a private account gets a request instead. |
+| `roadphone:loop:respondFollow` | `requesterId, accept` | `{ ok }` | Accepts or rejects a follow request. |
+| `roadphone:loop:getRelations` | `ownerId, kind` | array of accounts | Followers, following or friends of an account. |
+| `roadphone:loop:block` | `targetId, wantBlock` | `{ ok }` | Blocks or unblocks an account. |
+| `roadphone:loop:getThreads` | — | array of threads | DM overview with last message and unread count. |
+| `roadphone:loop:getMessages` | `threadId, beforeId` | array of messages | Paged messages of one thread. |
+| `roadphone:loop:sendDm` | `targetId, payload` | `{ ok, message }` | Sends a DM — text, post share or sound. |
+| `roadphone:loop:markThreadRead` | `threadId` | `{ ok }` | Marks a thread as read. |
+| `roadphone:loop:getInbox` | `tab, offset` | array of notifications | Activity inbox per tab (all, likes, comments, follows). |
+| `roadphone:loop:markInboxRead` | `notificationId` | `{ ok }` | Marks one notification — or all — as read. |
+| `roadphone:loop:getUnread` | — | `{ inbox, dm }` | Badge counters for the app icon. |
+
+### Sounds & collections
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:getSound` | `soundId` | sound object | One sound with its metadata. |
+| `roadphone:loop:getSoundPosts` | `soundId, offset` | array of posts | Everything made with that sound. |
+| `roadphone:loop:getTrendingSounds` | — | array of sounds | Currently trending sounds. |
+| `roadphone:loop:getSoundLibrary` | `query` | array of tracks | Searches the server's music library for a sound. |
+| `roadphone:loop:useLibrarySound` | `track` | `{ ok, soundId }` | Turns a library track into a usable Loop sound. |
+| `roadphone:loop:getCollections` | — | array of collections | The account's playlists/collections. |
+| `roadphone:loop:createPlaylist` | `name` | `{ ok, collectionId }` | Creates a collection. |
+| `roadphone:loop:getPlaylist` | `collectionId` | collection with posts | One collection. |
+| `roadphone:loop:addToPlaylist` | `collectionId, postId, wantAdd` | `{ ok }` | Adds or removes a post. |
+
+### Discovery & search
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:getDiscover` | — | `{ tags, sounds, creators }` | Discover page content. |
+| `roadphone:loop:search` | `query, kind` | array of results | Searches posts, accounts, sounds or tags. |
+| `roadphone:loop:getTag` | `tag, offset` | array of posts | Hashtag page. |
+| `roadphone:loop:lookup` | `kind, value` | lookup result | Resolves a phone number or handle to a Loop account. |
+| `roadphone:loop:getLookupLog` | — | array of lookups | Who looked this account up — the app's own privacy log. |
+
+### Live
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:getLives` | — | array of live streams | Currently running streams. |
+| `roadphone:loop:startLive` | `title` | `{ ok, liveId }` | Starts a stream. |
+| `roadphone:loop:endLive` | — | `{ ok }` | Ends the caller's stream. |
+| `roadphone:loop:joinLive` | `liveId` | `{ ok, live }` | Joins as a viewer. |
+| `roadphone:loop:leaveLive` | `liveId` | `{ ok }` | Leaves the stream. |
+| `roadphone:loop:liveChat` | `liveId, text` | `{ ok }` | Sends a chat message into the stream. |
+| `roadphone:loop:sendLiveGift` | `liveId, giftKey` | `{ ok, balance }` | Sends a gift to the streamer. |
+| `roadphone:loop:challengeDuel` | `targetLiveId` | `{ ok, duelId }` | Challenges another stream to a duel. |
+| `roadphone:loop:respondDuel` | `duelId, accept` | `{ ok }` | Accepts or declines a duel. |
+
+### Economy
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:getWallet` | — | `{ coins, diamonds }` | The account's balances. |
+| `roadphone:loop:buyCoins` | `packIndex` | `{ ok, coins }` | Buys a coin pack with in-game money. |
+| `roadphone:loop:sendGift` | `postId, giftKey` | `{ ok, balance }` | Gifts a post; the creator earns diamonds. |
+| `roadphone:loop:getPostGifts` | `postId` | array of gifts | Who gifted what on a post. |
+| `roadphone:loop:payout` | `diamonds` | `{ ok, amount }` | Converts diamonds into in-game money. |
+| `roadphone:loop:promote` | `postId, hours` | `{ ok }` | Pays to boost a post's reach for a while. |
+
+### Moderation
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:loop:report` | `targetKind, targetId, reason, note` | `{ ok }` | Reports a post, comment or account. |
+| `roadphone:loop:getReports` | `state` | array of reports | Moderator queue by state. |
+| `roadphone:loop:handleReport` | `reportId, action` | `{ ok }` | Resolves a report (dismiss, remove, ban). |
+| `roadphone:loop:setAccountFlag` | `accountId, flag, value` | `{ ok }` | Sets moderation flags such as verified or shadowban. |
+
+<Note>
+  Moderation callbacks require the moderator permission from `roadphone:loop:getPermissions` — they are not open to every account.
+</Note>
+
+## Find My
+
+Location sharing between phone numbers, gated by `Config.FindMy`. Shares expire on their own; a permanent share is one without a duration.
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:findmy:getData` | — | `{ myNumber, people, myShares, devices }` or `nil` | Full app state: who shares with me, who I share with, my devices. |
+| `roadphone:findmy:getPositions` | — | `{ people, devices }` or `nil` | Poll for live positions — online sharers by ped coords, offline ones by last seen. |
+| `roadphone:findmy:share` | `targetNumber, durationSeconds` | `{ ok }` | Starts or refreshes a share. No duration = permanent, a duration = temporary live location. |
+| `roadphone:findmy:revoke` | `targetNumber` | `{ ok }` | Stops sharing with that number. |
+| `roadphone:findmy:hideFrom` | `ownerNumber` | `{ ok }` | Hides someone else's share from your map without revoking theirs. |
+
 ## Addons
 
 | Callback | Addon | Input | Returns | Description |
@@ -319,6 +472,5 @@ All resolve identity via the server session; the NUI-supplied `accountId` is alw
 | `roadphone:simcard:convertESIM` | SIM Card | `simIndex` | `{ success, sims, activeSim }` or error | Converts a SIM to eSIM. |
 | `roadphone:simcard:buySIM` | SIM Card | — | `{ success, number }` or error | Buys a SIM (charges `SimCard.SIMPrice`, refund-safe). |
 | `roadphone:simcard:topUp` | SIM Card | `packageId` | `{ success, credits }` or error | Tops up credit (refund-safe). |
-| `roadphone:battery:getLevel` | Battery | — | number | Current battery level. |
 | `roadpods:checkItemAmount` | RoadPods | — | item name, `true`, or `nil` | Verifies RoadPods ownership. |
 | `roadphone:mechanic:resetPin` | Mechanic | — | `success, amountOrError` (two values) | Resets the phone PIN at the mechanic NPC (optional payment, refund-safe). |

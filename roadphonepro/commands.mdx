@@ -6,7 +6,22 @@ icon: terminal
 
 ## Overview
 
-RoadPhone-Pro provides various commands to manage verification badges and control phone functionality. All commands are executed through the chat interface.
+RoadPhone-Pro ships a small set of commands: verification badges for the social apps, SIM cards, and a handful of repair and diagnostic tools.
+
+| Command | Who | What it does |
+|---|---|---|
+| `/connectverify`, `/waveverify` | admin | Verification badge for a Connect / TweetWave account |
+| `/music-verify` | admin | Toggles a player's music-approval permission |
+| `/givesim` | ace `command.givesim` | Hands out a SIM card with a chosen number |
+| `/phoneadmin` | ace `roadphone.phoneadmin` | Opens the admin panel |
+| `/ringtest` | ace `roadphone.phoneadmin` | Ringtone range test |
+| `/rpselftest` | anyone | Prints a full phone diagnosis to the console |
+| `loopselftest` | console | Checks the Loop app setup |
+| `/phonemigrate` | console | [Migrates phone data](/roadphonepro/commands/migrate) into metadata |
+| `/fixphone` | anyone | Reloads the caller's phone data |
+| `/fixphoneprop` | anyone | Removes a stuck phone prop |
+| `/stopphone` | anyone | Force-closes the phone UI |
+| `/TogglePhone` | anyone | Opens or closes the phone |
 
 ## Verification Commands
 
@@ -149,6 +164,188 @@ Quick command to open or close the phone interface.
 
 ---
 
+## SIM Cards
+
+Only available with the SIM Card DLC (`Config.SimCardDLC` + `Config.UseMetadata`).
+
+### Give SIM Card
+
+Hands a player a SIM card with a specific number.
+
+<CodeGroup>
+    ```bash
+    /givesim <PlayerID> <Number> [credits]
+    ```
+</CodeGroup>
+
+<ParamField path="PlayerID" type="number" required>
+    Server ID of the player who receives the SIM card
+</ParamField>
+
+<ParamField path="Number" type="string" required>
+    The phone number for this SIM — digits only, and not already in use
+</ParamField>
+
+<ParamField path="credits" type="number">
+    Starting balance. Defaults to `SimCard.Credits.starting_credits`
+</ParamField>
+
+<Note>
+    Requires the ace permission `command.givesim`; the server console is always allowed.
+
+    ```cfg server.cfg
+    add_ace group.admin command.givesim allow
+    ```
+</Note>
+
+#### Examples
+
+<CodeGroup>
+    ```bash Default credits
+    /givesim 12 5551337
+    ```
+
+    ```bash Custom balance
+    /givesim 12 5551337 500
+    ```
+</CodeGroup>
+
+<Tip>
+    For scripted use — job phones, shops, confiscation — use the [SIM Card exports](/roadphonepro/api/simcards) instead of this command.
+</Tip>
+
+---
+
+## Admin & Diagnostics
+
+### Phone Admin Panel
+
+Opens the in-game admin panel: config editing, addon settings, locale files and live phone data.
+
+<CodeGroup>
+    ```bash
+    /phoneadmin
+    ```
+</CodeGroup>
+
+<Note>
+    Everyone can run the command; the panel itself checks the ace permission `roadphone.phoneadmin` and tells the player how to grant it when they lack it.
+
+    ```cfg server.cfg
+    add_ace group.admin roadphone.phoneadmin allow
+    ```
+</Note>
+
+See the [Admin Menu](/roadphonepro/admin-menu) guide for what each tab does.
+
+---
+
+### Self Test
+
+Checks a live phone end to end — framework, inventory, metadata support, the player's phone item and its metadata — and prints the result to the server console.
+
+<CodeGroup>
+    ```bash
+    /rpselftest
+    ```
+</CodeGroup>
+
+<Tip>
+    Run this first whenever phone data behaves oddly after an install or an inventory change. It reports exactly which layer is misconfigured instead of leaving you guessing.
+</Tip>
+
+---
+
+### Loop Self Test
+
+Console-only check of the Loop app: tables, config and account state.
+
+<CodeGroup>
+    ```bash
+    loopselftest
+    ```
+</CodeGroup>
+
+<Note>
+    Server console only — the command ignores in-game callers.
+</Note>
+
+---
+
+### Reload Phone Data
+
+Reloads every piece of phone data for the player who runs it and pushes it back to their phone.
+
+<CodeGroup>
+    ```bash
+    /fixphone
+    ```
+</CodeGroup>
+
+<Tip>
+    The first thing to try when a player reports empty contacts, missing messages or a stale balance after a framework hiccup.
+</Tip>
+
+---
+
+### Remove Stuck Phone Prop
+
+Deletes props still attached to the player's ped — the fix for a phone that stays in hand after a crash or a script error.
+
+<CodeGroup>
+    ```bash
+    /fixphoneprop
+    ```
+</CodeGroup>
+
+<Warning>
+    This removes **every** object attached to the player, not just phones. It is a repair tool, not something to bind to a key.
+</Warning>
+
+---
+
+### Force-Close the Phone
+
+Closes the phone UI and releases NUI focus.
+
+<CodeGroup>
+    ```bash
+    /stopphone
+    ```
+</CodeGroup>
+
+<Tip>
+    Use it when the cursor stays captured after a UI error.
+</Tip>
+
+---
+
+### Ringtone Range Test
+
+Rings your own phone exactly like an incoming call, so you can hear how far a ringtone carries.
+
+<CodeGroup>
+    ```bash
+    /ringtest [seconds]
+    /ringtest pinned [seconds]
+    /ringtest stop
+    ```
+</CodeGroup>
+
+<ParamField path="seconds" type="number">
+    How long to ring. Clamped to a minimum of 5 seconds and the configured maximum.
+</ParamField>
+
+<ParamField path="pinned" type="keyword">
+    Leaves the ring at your current position instead of following you — walk away to find where the range ends.
+</ParamField>
+
+<Note>
+    Requires `roadphone.phoneadmin`. Works even with `Config.HearableRingtone` disabled, so you can preview the effect before switching it on.
+</Note>
+
+---
+
 ## Command Guidelines
 
 <Card title="Best Practices" icon="lightbulb">
@@ -190,14 +387,14 @@ Quick command to open or close the phone interface.
     <Card
         title="Installation"
         icon="download"
-        href="/roadphone/installation"
+        href="/roadphonepro/installation"
     >
         Step-by-step guide to install and configure RoadPhone
     </Card>
     <Card
         title="FAQ"
         icon="book"
-        href="/roadphone/faq"
+        href="/roadphonepro/faq"
     >
         Common questions and troubleshooting tips
     </Card>

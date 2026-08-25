@@ -35,44 +35,52 @@ Open `config.lua` and configure the following options:
 -- Enable the metadata system
 Config.UseMetadata = true
 
--- Choose your inventory system
-Config.InventorySystem = 'ox_inventory' -- Options: 'ox_inventory', 'jaksam'
+-- 'auto' detects the running inventory. Force one only if detection picks wrong.
+Config.InventorySystem = 'auto'
 
--- Enable phone backup system (recommended)
+-- Coalesce metadata writes instead of writing on every change
+Config.PhoneWriteBehind = true
+Config.PhoneWriteBehindMs = 1000
+
+-- Phone backups (recommended)
 Config.BackupEnabled = true
+Config.AutoBackupEnabled = false
+Config.MaxBackupsPerPhone = 5
 ```
 
 ### Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `Config.UseMetadata` | boolean | `false` | Enable/disable the metadata system |
-| `Config.InventorySystem` | string | `'jaksam'` | Your inventory system |
+| `Config.UseMetadata` | boolean | `true` | Enable/disable the metadata system |
+| `Config.InventorySystem` | string | `'auto'` | `auto`, `ox_inventory`, `one_inventory`, `jaksam`, `tgiann`, `qb-inventory`, `codem`, `core_inventory` |
+| `Config.PhoneWriteBehind` | boolean | `true` | Buffer metadata writes instead of writing on every change |
+| `Config.PhoneWriteBehindMs` | number | `1000` | Worst-case delay before a change is persisted |
 | `Config.BackupEnabled` | boolean | `true` | Allow players to backup/restore phone data |
+| `Config.AutoBackupEnabled` | boolean | `false` | Snapshot automatically on disconnect |
+| `Config.MaxBackupsPerPhone` | number | `5` | Backups kept per phone number |
 
 ---
 
 ## Supported Inventory Systems
 
-<AccordionGroup>
-    <Accordion title="ox_inventory" icon="box">
-        Full metadata support with all features. **Requires** a small modification (see below).
+| Inventory | Metadata | Notes |
+|---|---|---|
+| `ox_inventory` | full | Remove its built-in phone item code — see below |
+| `one_inventory` | full | Hooks for trade/give are wired up automatically |
+| `jaksam` | full | Works out of the box; the item is always `phone` |
+| `tgiann` | full | Data lives in `item.info`; handled by the bridge |
+| `qb-inventory` | partial | Uses `item.info` instead of `item.metadata` |
+| `core_inventory` | partial | Basic metadata support |
+| `codem` | limited | Not recommended for multi-phone setups |
 
-        **Compatibility:** ESX, QBCore, Qbox & Standalone
-    </Accordion>
+<Note>
+  Leave `Config.InventorySystem = 'auto'` unless detection picks the wrong one — the bridge checks which inventory resource is actually running.
+</Note>
 
-    <Accordion title="jaksam_inventory" icon="box">
-        Full metadata support out of the box. No modifications required.
-
-        **Compatibility:** ESX, QBCore, Qbox
-    </Accordion>
-</AccordionGroup>
-
-<Warning>
-    Other inventory systems (qb-inventory, codem) have limited metadata support. For the best experience, use ox_inventory or jaksam_inventory. We work on a support to add more Inventorys.
-</Warning>
-
----
+<Tip>
+  Run `/rpselftest` in-game: it prints the detected framework, the detected inventory and whether it reports metadata support.
+</Tip>
 
 ## ox_inventory Setup
 
@@ -129,7 +137,7 @@ When using `ox_inventory`, you need to remove some default code that interferes 
     </Step>
 
     <Step title="Data saving">
-        Any changes (new contacts, messages, settings) are immediately saved back to the item's metadata.
+        Changes are written back to the item — buffered by `Config.PhoneWriteBehindMs` so a burst of edits becomes one write, and flushed when the phone closes.
     </Step>
 </Steps>
 
@@ -145,45 +153,100 @@ When a player has multiple phones in their inventory:
 
 ## Metadata Structure
 
-Each phone item stores the following data in its metadata:
+Everything a phone knows sits on the item. Fields are created on demand — a fresh phone only carries its number and setup flag.
 
 ```lua
 {
-    -- Phone Identity
-    phone_number = "1234567",           -- Unique phone number
-    phone_owner = "John Doe",           -- Original owner name
-    phone_assigned_date = 1234567890,   -- Unix timestamp when assigned
-    phone_setup = 1,                    -- 0 = needs setup, 1 = complete
+    -- Identity
+    phone_number         = "1234567",     -- unique number (ignored with the SIM Card DLC)
+    phone_owner          = "John Doe",    -- who it was first assigned to
+    phone_assigned_date  = 1234567890,    -- unix timestamp
+    phone_setup          = 1,             -- 0 = setup screen, 1 = ready
+    phone_powered_on     = 1,             -- 0 = switched off
 
     -- Security
-    phone_pin = "123456",               -- 6-digit PIN (nil if not set)
-    phone_pin_needed = 1,               -- 0 = no PIN, 1 = PIN required
+    phone_pin            = "123456",      -- nil when no PIN is set
+    phone_pin_needed     = 1,             -- 0 = no PIN required
+    phone_faceid_identifier = "license:…",-- who may unlock it with Face Unlock
 
-    -- Customization
-    phone_background = "/path/to/bg",   -- Custom wallpaper
-    phone_settings = {
-        brightness = 100,               -- 10-100
-        flightmode = 0,                 -- 0 or 1
-        darkmode = 0,                   -- 0 or 1
-        large_app_icons = 0,            -- 0 or 1
-        iconcolor = "light"             -- "light" or "dark"
+    -- Look & settings
+    phone_background     = "/path/to/bg",
+    phone_settings       = {
+        brightness = 100,                 -- 10-100
+        flightmode = 0,
+        darkmode = 0,
+        large_app_icons = 0,
+        iconcolor = "light",              -- "light" or "dark"
+        timeCustomization = nil,          -- lockscreen clock + widget layout
     },
+    phone_apps           = { ... },        -- installed apps + homescreen layout
+    phone_chat_backgrounds = { ... },      -- per-conversation wallpapers
 
-    -- Data
-    phone_contacts = { ... },           -- Array of contacts
-    phone_notes = { ... },              -- Array of notes
-    phone_photos = { ... },             -- Array of photos
-    phone_messages = { ... },           -- Messages structure
-    phone_alarms = { ... },             -- Array of alarms
+    -- Content
+    phone_contacts       = { ... },
+    phone_notes          = { ... },
+    phone_photos         = { ... },
+    phone_albums         = { ... },
+    phone_alarms         = { ... },
+    phone_calendar_events = { ... },
+    phone_reminders      = { ... },
+    phone_reminder_lists = { ... },
+    phone_radio_channels = { ... },        -- saved frequencies
+    phone_radio_recent   = { ... },
+    phone_bank_iban      = "DE123456",
+    phone_bank_favorites = { ... },
+    phone_darkchat       = { ... },        -- joined rooms
+    phone_darkchat_unread = { ... },
+    phone_groups_unread  = { ... },
+    phone_customapp_data = { ... },        -- storage of custom apps
 
-    -- Accounts
-    phone_account = { ... },            -- RoadID account
-    phone_twitter_account = { ... },    -- TweetWave account
-    phone_connect_account = { ... }     -- Connect account
+    -- Sessions: which account this phone is signed in to
+    account_session      = { token = "…", account_id = 12 },  -- RoadID / cloud
+    connect_session      = { ... },
+    tweetwave_session    = { ... },
+    snapy_session        = { ... },
+
+    -- Hardware add-ons
+    phone_sims           = { ... },        -- SIM Card DLC
+    phone_active_sim     = 1,
+    phone_battery        = 87,             -- Battery system
 }
 ```
 
----
+<Warning>
+  `phone_account` and `phone_twitter_account` are **dead fields**. Accounts moved to server-authoritative sessions — the fields are only read once, migrated into a session and then cleared. Never write them.
+</Warning>
+
+### Limits
+
+Arrays are capped so an item's metadata cannot grow without bound (`server/phone_metadata.lua`):
+
+| Field | Limit | Field | Limit |
+|---|---|---|---|
+| messages | 300 | photos | 150 |
+| contacts | 200 | albums | 30 |
+| notes | 150 | installed apps | 100 |
+| alarms | 30 | calendar events | 100 |
+| radio channels | 30 | reminders | 200 |
+| recent radio | 15 | reminder lists | 20 |
+| bank favourites | 20 | chat backgrounds | 60 |
+
+When a limit is reached, the oldest entry is dropped.
+
+### Writes are buffered
+
+Changes are coalesced instead of hitting the inventory on every keystroke:
+
+```lua config.lua
+Config.PhoneWriteBehind = true
+Config.PhoneWriteBehindMs = 1000  -- worst-case persistence delay
+```
+
+That is why another resource reading the item immediately after a change can still see the old value. Force a write first:
+
+```lua
+exports['roadphone']:PhoneWriteBehind_Flush(source)
+```
 
 ## Backup System
 
@@ -194,13 +257,17 @@ With `Config.BackupEnabled = true`, players can backup and restore their phone d
 - **Manual Backups**: Players can create backups anytime
 - **Backup Naming**: Custom names for easy identification
 - **Restore**: Restore any previous backup to current phone
-- **Limit**: Maximum 5 backups per phone number
+- **Limit**: `Config.MaxBackupsPerPhone` per phone number (default 5)
 
 ### Use Cases
 
 - Before giving away a phone, backup the data
 - Restore data to a new phone after losing the old one
 - Keep multiple backup points for important data
+
+<Note>
+  SIM cards (`phone_sims`, `phone_active_sim`) and the battery level are deliberately left out of backups. They are hardware state — restoring them would duplicate SIM cards and hand out free charge.
+</Note>
 
 ---
 
@@ -254,7 +321,7 @@ If you're switching from the non-metadata system to metadata:
 ### Migration Options
 
 1. **Fresh Start**: Simply enable metadata - all phones start fresh
-2. **Manual Migration**: Use the `/phonemigrate` command (see [Phone Migrate](roadphonepro/commands/migrate))
+2. **Manual Migration**: Use the `/phonemigrate` command (see [Phone Migrate](/roadphonepro/commands/migrate))
 3. **Backup First**: Have players backup important data before migration
 
 ---

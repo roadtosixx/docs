@@ -22,6 +22,11 @@ TriggerEvent('roadphone:addBankTransfer', senderIban, receiverIban, reason, amou
 
 Events are grouped below by feature. The **Integration Events** section documents the entry points intended for external resources in detail; the reference tables that follow list every registered event.
 
+
+<Note>
+  App names and internal identifiers differ on purpose: Connect events still carry the `instagram` prefix, Glimpse uses `snapy`, TweetWave uses `twitter`. Renaming them would break every existing install, so the identifiers stay as they are.
+</Note>
+
 ---
 
 ## Integration Events
@@ -171,6 +176,7 @@ RoadPhone itself listens to these third-party events:
 |---|---|---|
 | `billing_ui:onBillCreated` | Jaksam billing_ui | Pushes a billing refresh to the invoiced player (only with `Config.JaksamBilling`). |
 | `ox_inventory:usedItem` | ox_inventory | Phone item-use detection (metadata backup flow). |
+| `one_inventory:onItemAdded` | one_inventory | Re-caches phone numbers after a phone item changed hands. |
 
 ---
 
@@ -267,6 +273,8 @@ RoadPhone itself listens to these third-party events:
 | Event | Params | Description |
 |---|---|---|
 | `roadphone:server:payBill` | `id` | Pays a RoadPhone/BCS bill (society or player payout, race-safe). |
+| `roadphone:server:payBills` | `ids` | Pays several bills in one go. |
+| `roadphone:server:qf:payBill` | `id` | Pays a qb-management invoice. |
 | `roadphone:server:rxBilling:payBill` | `id` | Pays an RxBilling invoice via export. |
 | `roadphone:server:codem:payBill` | `id` | Pays a codem-billing invoice via export. |
 
@@ -283,6 +291,8 @@ RoadPhone itself listens to these third-party events:
 | `roadphone:updateInstalledApps` | `installedApps` | Persists the installed-apps list. |
 | `roadphone:updateHomescreenLayout` | `homescreenData` | Persists the homescreen layout. |
 | `roadphone:server:playerLoaded` | — | Caches the player's phone items for fast number lookups. |
+| `roadphone:saveChatBackgrounds` | `backgrounds` | Persists per-conversation chat wallpapers to phone metadata. |
+| `roadphone:radio:addRecent` | `frequency` | Adds a frequency to the phone's recent-radio list. |
 | `roadphone:customapp:storageSet` | `namespace, key, value` | Writes a key into per-phone custom-app storage. |
 | `roadphone:customapp:storageDelete` | `namespace, key` | Deletes a key from custom-app storage. |
 
@@ -321,6 +331,7 @@ RoadPhone itself listens to these third-party events:
 
 | Event | Params | Description |
 |---|---|---|
+| `roadphone:mail:ClearButtonData` | `mailId` | Clears a received mail's action button once it has been used. |
 | `roadphone:mail:sendmail` | `mailData` (`sender, receivermail, title, message, image`) | Sends a mail; sender address resolved from the Cloud account, spam-tracked. |
 | `roadphone:setMailRead` | `mailid` | Marks a caller-owned mail read. |
 | `roadphone:deleteMail` | `mailid` | Deletes a caller-owned mail. |
@@ -416,13 +427,27 @@ All news events require job-based news access (`hasNewsAccess`).
 | `roadphone:music:rejectSubmission` | `submissionId` | Rejects a submission (music-admin gated). |
 | `roadphone:music:deleteLibrarySong` | `songId` | Deletes a library song (music-admin gated). |
 
-Only relevant with mx-surround (`MXSurround`): `roadphone:mx:play`, `roadphone:mx:attach`, `roadphone:mx:setVolume`, `roadphone:mx:seek`, `roadphone:mx:resume`, `roadphone:mx:stop`, `roadphone:mx:destroy`, `roadphone:mx:streamer` — thin wrappers over the mx-surround positional-audio API.
+### mx-surround playback
+
+Only registered with `MXSurround` — thin wrappers over the mx-surround positional-audio API.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:mx:play` | `url, soundId, volume, invokingResource, customId, playQuietly, coords, customData` | Starts a positional sound. |
+| `roadphone:mx:attach` | `soundId, netId, volume, isInVehicle` | Attaches a running sound to an entity. |
+| `roadphone:mx:setVolume` | `soundId, volume` | Changes the volume. |
+| `roadphone:mx:seek` | `soundId, position` | Seeks within the track. |
+| `roadphone:mx:resume` | `soundId` | Resumes playback. |
+| `roadphone:mx:stop` | `soundId` | Stops playback. |
+| `roadphone:mx:destroy` | `soundId` | Destroys the sound handle. |
+| `roadphone:mx:streamer` | `soundId` | Registers the caller as the streamer for that sound. |
 
 ## Crypto / Health — `server/crypto.lua`, `server/health.lua`
 
 | Event | Params | Description |
 |---|---|---|
 | `roadphone:crypto:buy` | `coinid, amount` | Buys crypto (atomic debit → credit under a per-player lock). |
+| `roadphone:crypto:transfer` | `coinid, amount, address` | Transfers coins to another wallet address. |
 | `roadphone:crypto:sell` | `coinid, amount` | Sells crypto under the same lock. |
 | `roadphone:health:sync` | `data` (`steps, distance, calories, activeMinutes, heartRate, stress, systolicBp, diastolicBp, spo2, isSleeping`) | Updates the health cache (rate-limited to 1/55s). |
 
@@ -432,7 +457,7 @@ Only relevant with mx-surround (`MXSurround`): `roadphone:mx:play`, `roadphone:m
 |---|---|---|
 | `roadphone:roaddrop:receive` | see [Integration Events](#roadphone-roaddrop-receive) | Shares picture/contact/playlist with a nearby player. |
 
-## Dating (DateMe) — `server/dating.lua`
+## Dating — `server/dating.lua`
 
 All handlers resolve the caller's identifier server-side and validate match/ownership.
 
@@ -473,7 +498,7 @@ All handlers resolve the caller's identifier server-side and validate match/owne
 
 ---
 
-## Connect (Instagram) — `server/connect.lua`
+## Connect — `server/connect.lua`
 
 Identity resolves via `GetConnectAccountForSource`; the legacy `username, password` parameters on most events are **ignored** — only login/register actually authenticate by credentials.
 
@@ -518,6 +543,8 @@ Identity resolves via `GetTweetWaveAccountForSource`; `username, password` are i
 
 | Event | Params | Description |
 |---|---|---|
+| `roadphone:twitter_setBio` | `bio` | Updates the signed-in account's bio. |
+| `roadphone:twitter_setBanner` | `bannerUrl` | Updates the profile banner. |
 | `roadphone:twitter_login` | `username, password` | Authenticates by credentials, issues a session. |
 | `roadphone:twitter_createAccount` | `username, password, avatarUrl` | Creates an account + session. |
 | `roadphone:twitter_changePassword` | `username, password, newPassword` | Verifies old credentials, updates the password. |
@@ -534,7 +561,7 @@ Identity resolves via `GetTweetWaveAccountForSource`; `username, password` are i
 | `roadphone:twitter_getUserTweets` | `…` | Returns the session account's own tweets. |
 | `roadphone:twitter_setAvatarUrl` | `…, avatarUrl` | Updates the avatar. |
 
-## Snapy — `server/snapy.lua`
+## Glimpse — `server/snapy.lua`
 
 Identity resolves via `GetSnapyAccountForSource`; all events are rate-limited per `SnapyCfg.RateLimits`.
 
@@ -565,6 +592,69 @@ Identity resolves via `GetSnapyAccountForSource`; all events are rate-limited pe
 | `roadphone:snapy_addMemory` | `data` (`mediaUrl, thumbUrl, blurhash, caption, mediaType, kind`) | Saves a permanent memory. |
 | `roadphone:snapy_deleteMemory` | `data` (`id`) | Deletes a caller-owned memory. |
 
+## Cloud Account (RoadID) — `server/account.lua`
+
+The account behind mail, app purchases and cross-phone identity. The session is minted server-side and stored on the phone; account IDs sent by the client are ignored.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:account:create` | `firstname, lastname, birth, email, password` | Registers a RoadID account and opens a session on this phone. |
+| `roadphone:account:login` | `mail, password` | Logs in and mints the session. |
+| `roadphone:account:logout` | — | Ends the session for this phone only. |
+| `roadphone:account:changeAccountName` | `firstname, lastname` | Renames the signed-in account. |
+| `roadphone:account:changePassword` | `current, newpassword` | Changes the password after verifying the current one. |
+| `roadphone:account:changeProfilePicture` | `picture` | Sets the account avatar. |
+| `roadphone:account:deleteAccount` | — | Deletes the account and clears every session pointing at it. |
+
+<Note>
+  A character can own several accounts, and a phone shows whichever account its session points at — that is what makes a stolen phone show the victim's cloud data. See [Server Callbacks](/roadphonepro/api/callbacks) for `roadphone:account:resume`.
+</Note>
+
+## Reminders — `server/reminders.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:reminders:addList` | `name, color, icon` | Creates a reminder list. |
+| `roadphone:reminders:editList` | `id, name, color, icon` | Edits a caller-owned list. |
+| `roadphone:reminders:deleteList` | `id` | Deletes a list and its reminders. |
+| `roadphone:reminders:add` | `listId, title, notes, dueAt, flagged` | Adds a reminder. |
+| `roadphone:reminders:edit` | `id, listId, title, notes, dueAt, flagged` | Edits a reminder, including moving it to another list. |
+| `roadphone:reminders:toggle` | `id, completed, completedAt` | Ticks a reminder off or reopens it. |
+| `roadphone:reminders:delete` | `id` | Deletes a reminder. |
+
+## Ringtones — `server/ringtone.lua`
+
+Ringtones are audible to bystanders, so the server owns playback and fans it out to everyone nearby.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:ringtone:start` | `url, soundId, test, pinned` | Starts the caller's ringtone for players in range (`test` = preview in Settings). |
+| `roadphone:ringtone:stop` | — | Stops it — answered, declined or preview ended. |
+
+## Notifications — `server/phone_outbox.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:notifications:dismiss` | `notificationId` | Removes one queued notification for the caller's phone. |
+| `roadphone:notifications:dismissAll` | — | Clears the whole queue for that phone. |
+
+## Loop — `server/loop/sounds.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:loop:playSound` | `soundId, startMs` | Plays a post's audio out loud from the caller's phone, for everyone nearby. |
+| `roadphone:loop:stopSound` | — | Stops it. |
+
+<Note>
+  Everything else in Loop is request/response and therefore a callback — see the [Loop callbacks](/roadphonepro/api/callbacks#loop).
+</Note>
+
+## Valet — `server/serverAPI/valet.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:valetCarSetOutside` | `plate` | Marks a caller-owned vehicle as out of the garage after a valet delivery. |
+
 ## Addon: Battery — `addons/battery/server/server.lua`
 
 Only active with `Config.BatterySystem` and `Config.UseMetadata`.
@@ -577,5 +667,5 @@ Only active with `Config.BatterySystem` and `Config.UseMetadata`.
 | `roadphone:battery:activity` | `activity ('flashlight'/'music'/'call'), active` | Sets an activity flag that increases drain. |
 
 <Note>
-  The SIM card, RoadPods and Mechanic addons register **no** networked server events — their APIs are Bridge callbacks and commands.
+  The SIM card, RoadPods and Mechanic addons register **no** networked server events — their APIs are Bridge callbacks, commands and exports. For SIM cards, see [SIM Card Exports](/roadphonepro/api/simcards).
 </Note>

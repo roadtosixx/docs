@@ -1,0 +1,161 @@
+---
+title: 'Admin Menu File Permissions'
+description: 'Why the Admin Menu cannot write config files on Linux servers, and how to fix the ownership'
+icon: 'lock-open'
+---
+
+# Admin Menu File Permissions
+
+The [Admin Menu](/roadphonepro/admin-menu) writes your configuration straight back to disk. On Linux that write can fail even though the panel looks like it worked — the config files stay untouched and your changes are gone after the next restart.
+
+Almost always the cause is ownership: the files belong to a different user than the one the FXServer process runs as.
+
+<Note>
+  This is rarely an issue on Windows, because the server usually runs under the same account that uploaded the files. On Linux those are two different users more often than not.
+</Note>
+
+## Which Files Need To Be Writable
+
+The panel saves through FiveM's `SaveResourceFile`, relative to the RoadPhone-Pro resource folder:
+
+| Path | Written by |
+|---|---|
+| `config.lua` | General / Apps tabs |
+| `addons/battery/config.lua` | Addons tab |
+| `addons/simcard/config.lua` | Addons tab |
+| `addons/mechanic/config.lua` | Addons tab |
+| `addons/roadpods/config.lua` | Addons tab |
+| `locales/<lang>.lua` | Locales tab (backend) |
+| `public/static/config/config.json` | Apps tab |
+| `public/static/locales/<locale>.json` | Locales tab (frontend) |
+
+The server process needs write permission on those **files** and on the **directories** containing them.
+
+## Diagnosing
+
+<Steps>
+  <Step title="Read the error">
+    A failed save reports the reason in the panel and in the server console:
+
+    ```
+    [RoadPhone] config.lua SAVE FAILED: Could not write config.lua - the FXServer
+    process has no write access to the roadphone resource folder
+    ```
+
+    If you see this, continue below. If saving reports success but the values are back after a restart, you simply forgot to `restart roadphone` — see [Admin Menu → Troubleshooting](/roadphonepro/admin-menu#troubleshooting).
+  </Step>
+
+  <Step title="Find out which user runs FXServer">
+    ```bash
+    ps -o pid,user,cmd -p $(pgrep -f FXServer | head -1)
+    ```
+
+    With txAdmin this is whoever started txAdmin. For a systemd service, check the unit:
+
+    ```bash
+    systemctl cat fivem | grep -i user
+    ```
+  </Step>
+
+  <Step title="Locate the resource folder">
+    ```bash
+    find / -name fxmanifest.lua -path '*roadphone*' 2>/dev/null
+    ```
+  </Step>
+
+  <Step title="Confirm it really is a permission problem">
+    Test as the server user instead of guessing — replace `fivem` and the path with your own values:
+
+    ```bash
+    sudo -u fivem test -w /path/to/resources/[roadphone]/roadphone/config.lua \
+      && echo WRITABLE || echo NOT_WRITABLE
+    ```
+
+    `NOT_WRITABLE` confirms it. `WRITABLE` means the permissions are fine and you should jump to [Permissions Look Correct](#permissions-look-correct).
+  </Step>
+</Steps>
+
+## The Fix: Ownership
+
+Give the resource folder to the user the server runs as. Substitute `fivem` and the path:
+
+```bash
+RES=/home/fivem/server/resources/[roadphone]/roadphone
+
+sudo chown -R fivem:fivem "$RES"
+sudo find "$RES" -type d -exec chmod 755 {} +
+sudo find "$RES" -type f -exec chmod 644 {} +
+```
+
+The classic cause: files uploaded over FTP/SFTP as `root`, while the server runs as `fivem`. `644 root:root` leaves `fivem` with read-only access — exactly enough to start the resource, not enough to save from the panel.
+
+### Group write instead of ownership
+
+If you would rather not transfer ownership, group write works too:
+
+```bash
+sudo chgrp -R fivem "$RES"
+sudo find "$RES" -type d -exec chmod 775 {} +
+sudo find "$RES" -type f -exec chmod 664 {} +
+```
+
+<Warning>
+  Do not reach for `chmod -R 777`. It fixes the symptom and makes the folder writable for every user on the machine — on a box hosting several servers or several customers that is a real risk. `chown` to the service user is just as quick and does not open that hole.
+</Warning>
+
+## Docker and txAdmin Containers
+
+Inside a container the permissions are often correct and the mount is read-only anyway. Check what the volume actually allows:
+
+```bash
+docker inspect <container> --format '{{range .Mounts}}{{println .Destination "RW:" .RW "<-" .Source}}{{end}}'
+```
+
+- `RW: false` on the resources mount, or a `:ro` suffix on the resources volume in your `docker-compose.yml`, means no `chmod` will ever help — the `:ro` has to go.
+- The **numeric** UID has to match, not the user name. Compare `docker exec <container> id` against `ls -n` on the host.
+
+## Permissions Look Correct
+
+If the write test passes and saving still fails:
+
+<AccordionGroup>
+  <Accordion title="SELinux (RHEL, AlmaLinux, Rocky)">
+    SELinux can deny the write regardless of the file mode.
+
+    ```bash
+    ls -Z "$RES"
+    sudo setenforce 0   # temporary test only
+    ```
+
+    If saving works with SELinux permissive, set a proper file context for the folder rather than disabling SELinux permanently.
+  </Accordion>
+
+  <Accordion title="Immutable flag">
+    ```bash
+    lsattr "$RES/config.lua"
+    ```
+
+    An `i` in the output means the file is immutable. Clear it with `sudo chattr -i "$RES/config.lua"`.
+  </Accordion>
+
+  <Accordion title="Escrowed resource">
+    An encrypted release build cannot be written to by `SaveResourceFile` at all. This fails on Windows the same way, so it only explains the problem if your Windows test server runs an unprotected build.
+  </Accordion>
+
+  <Accordion title="Read-only or full filesystem">
+    ```bash
+    mount | grep -i " $(df --output=target "$RES" | tail -1) "
+    df -h "$RES"
+    ```
+
+    A `ro` mount option or a full disk both produce the same silent failure.
+  </Accordion>
+</AccordionGroup>
+
+## After Fixing
+
+Configuration is read once at resource startup. Once saving succeeds, restart the resource to apply the values:
+
+```bash
+restart roadphone
+```

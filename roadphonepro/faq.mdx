@@ -64,8 +64,8 @@ icon: "badge-info"
 <Accordion title="Images / Videos are not saved in the Gallery" icon="cloud">
   Make sure you entered your **Fivemanage MEDIA KEY** correctly in `API.lua`.
 
-  <Card title="Fivemanage Setup" href="/roadphone/fivemanage" icon="cloud">
-    See the complete setup guide for Fivemanage configuration
+  <Card title="Upload Setup" href="/roadphonepro/custom-upload" icon="cloud">
+    Fivemanage keys, or your own S3/presigned upload endpoint
   </Card>
 </Accordion>
 
@@ -137,25 +137,25 @@ icon: "badge-info"
   If not, try our **SaltyChat** version.
 </Accordion>
 
-<Accordion title="Car is locked after delivery" icon="key">
-  Edit the **GiveCarKeys** function in <code>clientAPI.lua</code>.
+<Accordion title="Car is locked after valet delivery" icon="key">
+  RoadPhone auto-detects the running key system and hands over the keys itself — qb-vehiclekeys, qbx_vehiclekeys, qs-vehiclekeys, wasabi_carlock, Renewed-Vehiclekeys, fast-vehiclekeys, filo_vehiclekey, is_vehiclekeys, mm_carkeys, MrNewbVehicleKeys, tc_keys and tgiann-hotwire. In that case there is nothing to configure.
 
-  <Tabs>
-    <Tab title="ESX">
-      ```lua GiveCarKeys (ESX) lines
-      function GiveCarKeys(plate, model)
-        TriggerEvent("vehiclekeys:client:SetOwner", plate)
+  Only if your key system is not in that list, add it manually in `clientAPI.lua`:
+
+  ```lua GiveCarKeys
+  function GiveCarKeys(plate, model, vehicle)
+      if Bridge.VehicleKeys.GiveKeys(vehicle or plate, model) then
+          return
       end
-      ```
-    </Tab>
-    <Tab title="QBCore">
-      ```lua GiveCarKeys (QBCore) lines
-      function GiveCarKeys(plate, model)
-        TriggerEvent("qb-vehiclekeys:client:AddKeys", plate)
-      end
-      ```
-    </Tab>
-  </Tabs>
+
+      -- no supported system found — your own event goes here:
+      TriggerEvent("vehiclekeys:client:SetOwner", plate)
+  end
+  ```
+
+  <Tip>
+    `Bridge.VehicleKeys.GetSystem()` tells you which system was detected — `nil` means none.
+  </Tip>
 </Accordion>
 
 <Accordion title="Disable car delivery" icon="car-off">
@@ -189,18 +189,32 @@ icon: "badge-info"
 </Accordion>
 
 <Accordion title="Use a fixed prefix for phone numbers" icon="hash">
-  Edit <code>server/serverAPI.lua</code> function <code>getPhoneRandomNumber</code>. If you change the prefix to more than two digits, also update the <code>string.format</code>.
+  There are two number generators, and which one runs depends on your mode:
 
-  ```lua Phone number prefix lines
-  function getPhoneRandomNumber()
-    local prefix = 49
-    local numBase = math.random(1000000, 9999999) -- 7 digits
-    local num = string.format("%02d%07d", prefix, numBase)
-    return num
-  end
+  <Tabs>
+    <Tab title="Metadata mode (default)">
+      Numbers are created for the phone **item** in `server/phone_metadata.lua` → `GeneratePhoneNumber()`. Keep the collision check and the provider check intact, and only change how the number is composed:
 
-  -- Output example: 497649867
-  ```
+      ```lua
+      local candidate = string.format("49%05d", math.random(10000, 99999))
+      ```
+    </Tab>
+    <Tab title="Without metadata">
+      Numbers come from `server/serverAPI/serverAPI.lua` → `getPhoneRandomNumber()`:
+
+      ```lua
+      function getPhoneRandomNumber()
+        local prefix = 49
+        local numBase = math.random(1000000, 9999999) -- 7 digits
+        return string.format("%02d%07d", prefix, numBase)
+      end
+      ```
+    </Tab>
+  </Tabs>
+
+  <Warning>
+    Keep the total length consistent, and never hand out numbers inside a range that a number provider (phone box, Trap Phone) reserves — those calls would never arrive. With the SIM Card DLC, numbers come from the SIM registry instead.
+  </Warning>
 </Accordion>
 
 <Accordion title="I forgot my phone PIN ( only without metadata )" icon="shield-off">
@@ -222,10 +236,12 @@ icon: "badge-info"
   <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FW9pF5RDbCDN79BfallNi%2F453435t43.png?alt=media&token=238a7cbc-3172-483c-a344-03f05e4a4cac" alt="Iconify example" className="rounded-lg" />
 </Accordion>
 
-<Accordion title="OxInventory snippets ( metadata )" icon="database">
+<Accordion title="ox_inventory with metadata" icon="database">
+  With metadata mode there is nothing to script in the item definition — RoadPhone reads and writes the item itself. Only make sure the phone item is `stack = false` and `close = true`.
 
-    Go to the metadata description.
-    
+  <Card title="Metadata System" href="/roadphonepro/metadata" icon="nfc">
+    Full setup, including the ox_inventory specifics
+  </Card>
 </Accordion>
 
 <Accordion title="OxInventory snippets" icon="database">
@@ -256,7 +272,7 @@ icon: "badge-info"
 	},
 
   ['purple_phone'] = {
-      label = 'Handy',
+      label = 'Phone',
       weight = 190,
       stack = false,
       consume = 0,
@@ -276,7 +292,7 @@ icon: "badge-info"
   },
 
   ['green_phone'] = {
-      label = 'Handy',
+      label = 'Phone',
       weight = 190,
       stack = false,
       consume = 0,
@@ -296,7 +312,7 @@ icon: "badge-info"
   },
 
   ['red_phone'] = {
-      label = 'Handy',
+      label = 'Phone',
       weight = 190,
       stack = false,
       consume = 0,
@@ -317,7 +333,7 @@ icon: "badge-info"
   },
 
   ['blue_phone'] = {
-      label = 'Handy',
+      label = 'Phone',
       weight = 190,
       stack = false,
       consume = 0,
@@ -337,7 +353,7 @@ icon: "badge-info"
   },
 
   ['black_phone'] = {
-      label = 'Handy',
+      label = 'Phone',
       weight = 190,
       stack = false,
       consume = 0,
@@ -356,6 +372,77 @@ icon: "badge-info"
       }
   },
   ```
+</Accordion>
+
+<Accordion title="A player lost their phone data / has the wrong data" icon="database">
+  With `Config.UseMetadata = true` the data lives **on the phone item**, not on the player. So:
+
+  - Data "disappeared" after a trade or a death drop → it is on the phone item, wherever that item now is. Whoever holds it sees it. That is the intended behaviour.
+  - Wrong data after a player used a second phone → each phone item has its own number and its own data.
+  - Nothing at all → run **`/rpselftest`**. It reports whether the item was found, which slot is active and whether the inventory supports metadata.
+
+  Metadata writes are buffered (`Config.PhoneWriteBehind`), so another resource reading the item straight after a change can still see the old value. Flush first:
+
+  ```lua
+  exports['roadphone']:PhoneWriteBehind_Flush(source)
+  ```
+</Accordion>
+
+<Accordion title="Can a player get their data back after losing the phone?" icon="rotate-ccw">
+  Yes, if backups are on:
+
+  ```lua config.lua
+  Config.BackupEnabled = true
+  Config.AutoBackupEnabled = false   -- true = snapshot on every disconnect
+  Config.MaxBackupsPerPhone = 5
+  ```
+
+  Players create and restore snapshots in **Settings → Backup**; they are stored per phone number in `roadshop_backups`.
+
+  <Note>
+    SIM cards, the active SIM and the battery level are deliberately **not** part of a backup — restoring them would duplicate SIM cards and hand out free charge.
+  </Note>
+</Accordion>
+
+<Accordion title="I forgot my phone PIN (with metadata)" icon="shield-off">
+  Clearing the cache does **not** help here — the PIN sits in the item metadata. Two ways out:
+
+  - **In character:** the mechanic NPC resets the PIN (`addons/mechanic/config.lua`, `features.resetPin`, default price $500 — set `requirePayment = false` to make it free).
+  - **As admin:** clear it from the item metadata via `UpdatePhonePin(source, nil, 0)`.
+</Accordion>
+
+<Accordion title="How do calls cost money / how do I bill for a phone?" icon="credit-card">
+  That is the SIM Card DLC: numbers move onto SIM cards, and calls and messages draw from a prepaid balance.
+
+  ```lua config.lua
+  Config.SimCardDLC = true   -- needs Config.UseMetadata = true
+  ```
+
+  <Card title="SIM Card System" href="/roadphonepro/simcards" icon="credit-card">
+    Credits, shop NPCs, eSIM, exports for jobs and shops
+  </Card>
+</Accordion>
+
+<Accordion title="How do I make phones run out of battery?" icon="battery-low">
+  ```lua config.lua
+  Config.BatterySystem = true   -- needs Config.UseMetadata = true
+  ```
+
+  The phone drains while it is in use — extra for calls, music and the flashlight — and dies at 0%. Charging works through the phone's own charging flow; other resources can drive it with `chargeBattery`, `startCharging` and `stopCharging` from the [server exports](/roadphonepro/api/server#battery).
+</Accordion>
+
+<Accordion title="Loop is printing money on my server" icon="chart-no-axes-combined">
+  Loop's payout ratio is decided by exactly three numbers in `config.lua`:
+
+  ```lua
+  Config.Loop = {
+      CoinPrice = 10,      -- what a coin costs the buyer
+      DiamondRatio = 0.5,  -- coins → diamonds for the creator
+      DiamondValue = 10,   -- payout per diamond
+  }
+  ```
+
+  Payout ratio = `DiamondRatio * DiamondValue / CoinPrice`. With the defaults, 50% of everything spent comes back and 50% is destroyed. Lower `DiamondValue` or `DiamondRatio` to remove more money; raise `MinPayout` to slow payouts down. Run `loopselftest` in the server console to check the app's setup.
 </Accordion>
 
 </AccordionGroup>

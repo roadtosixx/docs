@@ -1,0 +1,491 @@
+---
+title: 'SIM Card Exports'
+description: 'Issue, revoke, move and top up SIM cards from any resource'
+icon: 'signal'
+---
+
+# SIM Card Exports
+
+Server exports for the [SIM Card System](/roadphonepro/simcards). They let another resource hand a player a working phone number, take it away, move it between phone and inventory, and charge or refill its prepaid balance.
+
+<Note>
+    These exports exist regardless of `Config.SimCardDLC`. With the DLC disabled every write export answers `{ ok = false, error = 'simcard_disabled' }` and every read export answers empty — your integration never crashes because a server owner turned the DLC off.
+</Note>
+
+<Warning>
+    Call them from a thread — a command handler, an event handler or `CreateThread`. Issuing a number runs a synchronous query.
+</Warning>
+
+## Return shape
+
+Write exports always return a table:
+
+```lua
+{ ok = true,  number = '4821337', … }
+{ ok = false, error = 'inventory_full' }
+```
+
+| Error | Meaning |
+|-------|---------|
+| `simcard_disabled` | `Config.SimCardDLC` or `Config.UseMetadata` is off |
+| `invalid_player` | No player with that server ID is online |
+| `invalid_number` | The requested number is not digits-only |
+| `invalid_amount` | Credit amount missing, zero or negative |
+| `number_in_use` | That number is already claimed by another SIM |
+| `number_reserved` | The number belongs to a number provider's reserved range |
+| `number_generation_failed` | 50 attempts found no free number |
+| `inventory_full` | The SIM item did not fit into the inventory |
+| `sim_not_found` | The player carries no SIM with that number |
+| `no_phone` | The player has no phone item to insert into |
+| `max_sims_reached` | The phone already holds `SimCard.MaxSIMsPerPhone` SIMs |
+| `sim_already_inserted` | That exact SIM is already in the phone |
+| `cannot_eject_esim` | eSIMs are welded to the phone |
+| `no_active_sim` | No SIM is currently active |
+| `not_enough_credits` | Balance lower than the requested deduction |
+
+---
+
+## Issuing
+
+### giveSimCard
+
+Create a SIM card and put it into the player's inventory.
+
+```lua
+local result = exports['roadphone']:giveSimCard(source, options)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="options" type="table">
+    <Expandable title="properties">
+        <ParamField path="number" type="string">
+            Issue this exact number. Omit for a random free one.
+        </ParamField>
+        <ParamField path="credits" type="number">
+            Starting balance. Defaults to `SimCard.Credits.starting_credits`.
+        </ParamField>
+        <ParamField path="insert" type="boolean">
+            Insert the SIM into the player's phone right away instead of leaving it in the inventory.
+        </ParamField>
+    </Expandable>
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, number = string, simId = string, credits = number, inserted = boolean }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+<Note>
+    `inserted = false` on an otherwise successful call means the SIM was created but did not fit into the phone (no phone, or `max_sims_reached`). The card is in the inventory — nothing was lost.
+</Note>
+
+<CodeGroup>
+```lua Random number
+local result = exports['roadphone']:giveSimCard(source, {})
+if result.ok then
+    print(('Player %d got SIM %s'):format(source, result.number))
+end
+```
+
+```lua Company phone, ready to use
+local result = exports['roadphone']:giveSimCard(source, {
+    number  = '5550100',
+    credits = 500.0,
+    insert  = true,
+})
+
+if not result.ok then
+    print('Could not issue SIM: ' .. result.error)
+end
+```
+</CodeGroup>
+
+---
+
+### removeSimCard
+
+Destroy a SIM the player owns — inserted or in the inventory — and release its number.
+
+```lua
+local result = exports['roadphone']:removeSimCard(source, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="simNumber" type="string" required>
+    The SIM's number.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, number = string, from = 'phone' | 'inventory' }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+<Warning>
+    The number goes back into the pool and can be issued again later. To take a SIM away without destroying it, use [`ejectSimCard`](#ejectsimcard) and move the item with your own inventory code.
+</Warning>
+
+<CodeGroup>
+```lua Example
+-- Contract cancelled: the company number is revoked
+local result = exports['roadphone']:removeSimCard(source, '5550100')
+if result.ok then
+    print('SIM removed from the ' .. result.from)
+end
+```
+</CodeGroup>
+
+---
+
+## Moving SIMs
+
+### insertSimCard
+
+Move a SIM from the inventory into the player's phone.
+
+```lua
+local result = exports['roadphone']:insertSimCard(source, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="simNumber" type="string" required>
+    Number of a SIM item the player carries.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, sims = table, activeSim = number }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+---
+
+### ejectSimCard
+
+Take a SIM out of the phone and back into the inventory. The balance travels with it.
+
+```lua
+local result = exports['roadphone']:ejectSimCard(source, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="simNumber" type="string" required>
+    Number of an inserted SIM.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, sims = table, activeSim = number }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Police confiscation: pull the SIM, then move the item into evidence
+local active = exports['roadphone']:getActiveSimNumber(target)
+if active then
+    local result = exports['roadphone']:ejectSimCard(target, active)
+    if result.ok then
+        -- the SIM is now an item in the suspect's inventory
+    end
+end
+```
+</CodeGroup>
+
+---
+
+### setActiveSimCard
+
+Make an inserted SIM the active one. This changes the player's phone number immediately.
+
+```lua
+local result = exports['roadphone']:setActiveSimCard(source, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="simNumber" type="string" required>
+    Number of an inserted SIM.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, number = string, credits = number, simIndex = number }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+---
+
+## Credits
+
+### addSimCredits
+
+Top up a SIM. Works on inserted SIMs and on SIM items in the inventory.
+
+```lua
+local result = exports['roadphone']:addSimCredits(source, amount, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+    Credits to add. Must be greater than zero.
+</ParamField>
+
+<ParamField path="simNumber" type="string">
+    Which SIM to top up. Omit for the active one.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, credits = number, number = string, from = 'phone' | 'inventory' }` or `{ ok = false, error = string }`.
+</ResponseField>
+
+<CodeGroup>
+```lua Top-up shop item
+RegisterServerEvent('myshop:buyCredits')
+AddEventHandler('myshop:buyCredits', function(price, credits)
+    local src = source
+    if not RemovePlayerMoney(src, price) then return end
+
+    local result = exports['roadphone']:addSimCredits(src, credits)
+    if not result.ok then
+        GivePlayerMoney(src, price)
+        return
+    end
+
+    print(('New balance: %.1f credits'):format(result.credits))
+end)
+```
+</CodeGroup>
+
+---
+
+### removeSimCredits
+
+Deduct credits, e.g. for a premium hotline or a paid data service. Fails without changing anything when the balance is too low.
+
+```lua
+local result = exports['roadphone']:removeSimCredits(source, amount, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+    Credits to deduct. Must be greater than zero.
+</ParamField>
+
+<ParamField path="simNumber" type="string">
+    Which SIM to charge. Omit for the active one.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    `{ ok = true, credits = number, number = string, from = 'phone' | 'inventory' }` or `{ ok = false, error = string, credits = number }`.
+</ResponseField>
+
+<CodeGroup>
+```lua Premium service
+local result = exports['roadphone']:removeSimCredits(source, 25.0)
+if not result.ok then
+    if result.error == 'not_enough_credits' then
+        Notify(source, ('Not enough credits (%.1f left)'):format(result.credits))
+    end
+    return
+end
+
+DeliverService(source)
+```
+</CodeGroup>
+
+---
+
+## Reading
+
+### getSimCards
+
+Everything the player carries: SIMs inside the phone, which one is active, and loose SIM items in the inventory.
+
+```lua
+local data = exports['roadphone']:getSimCards(source)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+```lua
+{
+    inserted = {
+        { sim_id = '…', sim_number = '4821337', sim_credits = 87.5,
+          carrier = 'RoadNet', label = 'Personal', is_esim = false },
+    },
+    activeSim = 1,  -- 1-based index into `inserted`, nil when none is active
+    inventory = {
+        { slot = 7, sim_id = '…', sim_number = '9127654', sim_credits = 12.0 },
+    },
+}
+```
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local data = exports['roadphone']:getSimCards(source)
+
+print(('%d SIM(s) in the phone, %d in the pocket'):format(#data.inserted, #data.inventory))
+
+local active = data.activeSim and data.inserted[data.activeSim]
+if active then
+    print(('Active: %s (%.1f credits)'):format(active.sim_number, active.sim_credits))
+end
+```
+</CodeGroup>
+
+---
+
+### getActiveSimNumber
+
+The number the player currently calls and writes from.
+
+```lua
+local number = exports['roadphone']:getActiveSimNumber(source)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="string | nil">
+    The active SIM's number, or `nil` when no SIM is inserted.
+</ResponseField>
+
+<Note>
+    This is the same value the core `getNumberFromSource` returns while the DLC is active — use whichever reads better in your resource.
+</Note>
+
+---
+
+### getSimCredits
+
+Credit balance of one SIM.
+
+```lua
+local credits = exports['roadphone']:getSimCredits(source, simNumber)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="simNumber" type="string">
+    Which SIM to read. Omit for the active one.
+</ParamField>
+
+<ResponseField name="returns" type="number | nil">
+    The balance, or `nil` when the player carries no such SIM.
+</ResponseField>
+
+---
+
+### isSimNumberInUse
+
+Is this number already issued to a SIM card? Covers cards whose owner is offline and cards that are not inserted into any phone.
+
+```lua
+local taken = exports['roadphone']:isSimNumberInUse(simNumber)
+```
+
+<ParamField path="simNumber" type="string" required>
+    The number to check.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+    `true` when the number is claimed in `roadshop_simcards`.
+</ResponseField>
+
+<Note>
+    The core export `isPhoneNumberInUse` only knows online phones and the users table. For SIM numbers, this is the export that answers correctly.
+</Note>
+
+<CodeGroup>
+```lua Vanity numbers
+local wanted = '5551337'
+
+if exports['roadphone']:isSimNumberInUse(wanted) then
+    Notify(source, 'That number is taken.')
+    return
+end
+
+local result = exports['roadphone']:giveSimCard(source, { number = wanted, credits = 250.0 })
+```
+</CodeGroup>
+
+---
+
+## Full example: company phone plan
+
+Issuing a work SIM on hire and revoking it on dismissal, top-ups paid by the employer.
+
+```lua
+local COMPANY_CREDITS = 250.0
+
+RegisterServerEvent('company:hire')
+AddEventHandler('company:hire', function(employeeId)
+    local result = exports['roadphone']:giveSimCard(employeeId, {
+        credits = COMPANY_CREDITS,
+        insert  = true,
+    })
+
+    if not result.ok then
+        print('Could not issue work SIM: ' .. result.error)
+        return
+    end
+
+    SaveEmployeeNumber(employeeId, result.number)
+
+    if not result.inserted then
+        Notify(employeeId, 'Your work SIM is in your pocket — insert it in Settings → SIM Cards.')
+    end
+end)
+
+RegisterServerEvent('company:fire')
+AddEventHandler('company:fire', function(employeeId)
+    local number = LoadEmployeeNumber(employeeId)
+    if not number then return end
+
+    exports['roadphone']:removeSimCard(employeeId, number)
+    ClearEmployeeNumber(employeeId)
+end)
+
+RegisterServerEvent('company:monthlyTopUp')
+AddEventHandler('company:monthlyTopUp', function(employeeId)
+    local number = LoadEmployeeNumber(employeeId)
+    if not number then return end
+
+    local result = exports['roadphone']:addSimCredits(employeeId, COMPANY_CREDITS, number)
+    if result.ok then
+        Notify(employeeId, ('Work SIM topped up: %.1f credits'):format(result.credits))
+    end
+end)
+```
+
+---
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card title="SIM Card System" icon="credit-card" href="/roadphonepro/simcards">
+        Configuration, credits, numbers and the player flow
+    </Card>
+    <Card title="Server Exports" icon="server" href="/roadphonepro/api/server">
+        The core server-side export surface
+    </Card>
+</CardGroup>

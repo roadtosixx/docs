@@ -1,0 +1,292 @@
+---
+title: 'SIM Card System'
+description: 'Item-based phone numbers, prepaid credits and multi-SIM phones'
+icon: 'credit-card'
+---
+
+# SIM Card System
+
+With the SIM Card DLC enabled, a phone item is just hardware. The **number lives on the SIM card**, not on the phone — players buy SIMs, insert them, swap between two of them, and pay per call minute and per SMS from a prepaid credit balance.
+
+<CardGroup cols={2}>
+    <Card title="Number follows the SIM" icon="arrow-right-left">
+        Move a SIM to another phone and the number moves with it. Losing the phone does not mean losing the number.
+    </Card>
+    <Card title="Two numbers, one phone" icon="layers">
+        A phone holds up to `SimCard.MaxSIMsPerPhone` SIMs. Only the active one rings and sends.
+    </Card>
+    <Card title="Prepaid credits" icon="coins">
+        Calls cost per minute, messages cost per message. An empty SIM means no calls and no SMS — emergency calls still work.
+    </Card>
+    <Card title="Burner phones" icon="venetian-mask">
+        A SIM bought with cash, used for one job and thrown away, is a two-minute purchase at an NPC.
+    </Card>
+</CardGroup>
+
+<Warning>
+    When the DLC is active, the SIM is the **only** source of a phone number. A phone without an inserted SIM has no number: it cannot call, cannot be called and cannot send messages. `getNumberFromSource`, `getNumberFromIdentifier` and every internal number lookup return the active SIM's number.
+</Warning>
+
+---
+
+## Requirements
+
+<Steps>
+    <Step title="Enable metadata mode">
+        ```lua config.lua
+        Config.UseMetadata = true
+        Config.SimCardDLC = true
+        ```
+
+        <Note>
+            `Config.SimCardDLC = true` with `Config.UseMetadata = false` is refused at boot: the server prints an error and disables the DLC for that session.
+        </Note>
+    </Step>
+    <Step title="Use an inventory with metadata support">
+        SIM cards store their identity in item metadata. `ox_inventory`, `one_inventory`, `jaksam` and `tgiann` are the safe choices — see the [Metadata System](/roadphonepro/metadata) guide.
+    </Step>
+    <Step title="Add the SIM item">
+        Create an item with the name from `SimCard.SIMItem` (default `simcard`).
+
+        ```lua ox_inventory/data/items.lua
+        ['simcard'] = {
+            label = 'SIM Card',
+            weight = 5,
+            stack = false,
+            close = true,
+            description = 'A prepaid SIM card',
+        },
+        ```
+
+        <Warning>
+            `stack = false` is mandatory. Every SIM carries its own number in metadata — stacking would merge two different SIMs into one item.
+        </Warning>
+    </Step>
+    <Step title="Restart">
+        `ensure roadphone`. The `roadshop_simcards` table is created automatically on boot, and the console prints `SIM Card DLC: enabled`.
+    </Step>
+</Steps>
+
+---
+
+## Configuration
+
+Everything lives in `lua-code/addons/simcard/config.lua`.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `SimCard.SIMItem` | string | `'simcard'` | Inventory item name used for SIM cards |
+| `SimCard.MaxSIMsPerPhone` | number | `2` | How many SIMs fit into one phone |
+| `SimCard.CarrierName` | string | `'RoadNet'` | Carrier label shown in the phone UI |
+| `SimCard.PaymentMethod` | string | `'cash'` | `'cash'` or `'bank'` — used for NPC purchases |
+| `SimCard.Credits.call_per_minute` | number | `1.0` | Charged to the **caller** per minute |
+| `SimCard.Credits.sms_per_message` | number | `0.2` | Charged per outgoing message |
+| `SimCard.Credits.starting_credits` | number | `100.0` | Balance of a freshly issued SIM |
+| `SimCard.SIMPrice` | number | `500` | NPC price for a new SIM |
+| `SimCard.TopUpPackages` | table | 3 entries | `{ id, credits, price }` per package |
+| `SimCard.NPCs` | table | 1 entry | Shop peds — model, coords, heading, distances, blip |
+
+### Shop NPCs
+
+Each entry in `SimCard.NPCs` is an independent shop with its own ped, blip and distances. Add as many as you like:
+
+```lua config.lua
+SimCard.NPCs = {
+    {
+        model = 's_m_m_strvend_01',
+        coords = vector3(128.02, -1034.93, 29.43),
+        heading = 252.0,
+        distance = 30.0,          -- ped spawns within this range
+        interactDistance = 2.0,   -- E prompt appears within this range
+        blip = { active = true, name = 'SIM Shop', sprite = 817, color = 3, scale = 0.8, display = 4 },
+    },
+}
+```
+
+Peds spawn and despawn with the player's distance. With `Config.UseTarget = true` and `ox_target`, the shop is registered as a target zone instead of an `E` prompt.
+
+---
+
+## How numbers are issued
+
+```
+SimCard_ReserveNumber()
+  → random 7-digit number
+  → rejected if a number provider (phone box, Trap Phone) reserves it
+  → INSERT IGNORE INTO roadshop_simcards (sim_id, sim_number)
+  → affected rows > 0 means the number is now claimed
+```
+
+The `sim_number` column is `UNIQUE`, and the claim is a single statement — two players buying a SIM in the same tick can never end up with the same number. If handing out the item fails afterwards (inventory full), the reservation is released again.
+
+`roadshop_simcards` is the registry of **every number ever issued**, independent of who currently owns the card:
+
+```sql
+CREATE TABLE `roadshop_simcards` (
+  `sim_id`     VARCHAR(36) NOT NULL,
+  `sim_number` VARCHAR(20) NOT NULL UNIQUE,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`sim_id`),
+  INDEX `idx_sim_number` (`sim_number`)
+);
+```
+
+<Note>
+    `isPhoneNumberInUse` checks online phones and the users table — it does **not** know about SIM numbers whose owner is offline. Use [`isSimNumberInUse`](/roadphonepro/api/simcards#issimnumberinuse) when you want to test a number before handing it out.
+</Note>
+
+---
+
+## Data model
+
+A SIM exists in exactly one of two places, and it carries the same three fields in both:
+
+<Tabs>
+    <Tab title="In the inventory (item metadata)">
+        ```lua
+        {
+            sim_id      = '3f7c1a90-…',  -- UUID, primary key in roadshop_simcards
+            sim_number  = '4821337',     -- the phone number
+            sim_credits = 87.5,          -- prepaid balance
+        }
+        ```
+    </Tab>
+    <Tab title="Inserted (phone metadata)">
+        ```lua
+        metadata.phone_sims = {
+            {
+                sim_id      = '3f7c1a90-…',
+                sim_number  = '4821337',
+                sim_credits = 87.5,
+                carrier     = 'RoadNet',
+                label       = '',        -- free-text label, set by the player
+                is_esim     = false,     -- eSIMs cannot be ejected
+            },
+        }
+        metadata.phone_active_sim = 1    -- 1-based index into phone_sims
+        ```
+    </Tab>
+</Tabs>
+
+Inserting removes the item and appends the entry; ejecting adds the item back and removes the entry. Both directions write the item **first** and the metadata second, so a full inventory can never destroy a SIM.
+
+<Warning>
+    `phone_sims`, `phone_active_sim` and `phone_battery` are deliberately excluded from phone backups. They are hardware state, not user data — restoring them would duplicate SIM cards (back up → eject → restore leaves the same `sim_id` in the phone *and* in the inventory).
+</Warning>
+
+### Converting to an eSIM
+
+A player can convert an inserted SIM into an eSIM. This is **one-way**: an eSIM is welded to that phone and can no longer be ejected — it only leaves the phone when the SIM is deleted. Use it for phones that should never lose their number.
+
+---
+
+## Player flow
+
+<Steps>
+    <Step title="Buy">
+        Walk up to a shop NPC → *Buy SIM Card* → pays `SimCard.SIMPrice` from `SimCard.PaymentMethod` → a SIM item with a fresh number and `starting_credits` lands in the inventory.
+    </Step>
+    <Step title="Insert">
+        Phone → **Settings → SIM Cards** → *Insert SIM* lists every SIM item in the inventory. Picking one moves it into the phone.
+    </Step>
+    <Step title="Use">
+        The active SIM's number is the player's number. Switching the active SIM changes the number immediately — while the phone is open, without reopening it.
+    </Step>
+    <Step title="Top up">
+        At the NPC, *Top up X credits* charges the active SIM. The balance updates live in the phone UI.
+    </Step>
+    <Step title="Eject">
+        Ejecting hands the SIM back as an item with its current balance intact. eSIMs cannot be ejected.
+    </Step>
+</Steps>
+
+---
+
+## Credits and billing
+
+| Action | Cost | Charged to |
+|--------|------|------------|
+| Outgoing call | `call_per_minute`, per started minute | the **caller** only |
+| Incoming call | free | — |
+| Outgoing message | `sms_per_message` | the sender |
+| Emergency call (dispatch numbers) | free | — |
+
+**Calls.** Billing starts when the callee *accepts*, not when the phone rings. A full minute is deducted every 60 seconds; on hangup the started partial minute is billed pro rata. The meter stops no matter which side hangs up or disconnects. When the balance runs out mid-call, the call is ended for both parties and the caller gets a notification.
+
+**Emergency numbers** (anything registered as a dispatch number) require an inserted SIM but no credits, and are never billed.
+
+**Messages.** The credit check runs *after* every other validation, so a message that would be dropped anyway never costs anything. Without enough credits the message is not sent and the player is notified.
+
+---
+
+## Admin
+
+```bash
+/givesim <PlayerID> <Number> [credits]
+```
+
+Hands a SIM with a **specific** number to a player. Requires the ace permission `command.givesim` (console is always allowed). The number must be digits only, must not be claimed already, and must not fall inside a number provider's reserved space.
+
+```cfg server.cfg
+add_ace group.admin command.givesim allow
+```
+
+For everything scripted, use the [SIM Card exports](/roadphonepro/api/simcards) instead — they cover issuing, revoking, inserting, ejecting, switching and credits.
+
+---
+
+## Integration with number providers
+
+Resources that own a number range (phone boxes, Trap Phone, custom hotlines) register as a number provider and outrank SIMs in `GetPlayerFromPhone`. A SIM inside a reserved range would silently never receive calls, so **both** the NPC shop and `/givesim` refuse such numbers up front. The same check runs for every number issued through the exports.
+
+---
+
+## Events
+
+| Event | Direction | Payload | Description |
+|-------|-----------|---------|-------------|
+| `roadphone:simcard:creditsUpdate` | Server → Client | `simIndex, credits` | New balance for one inserted SIM |
+| `roadphone:simcard:sync` | Server → Client | `sims, activeSim` | Full SIM list changed from outside the phone UI (exports, admin) |
+| `simcardUpdateSIMs` | Client → NUI | `{ sims, activeSim }` | Refreshes the SIM list in the UI |
+| `simcardSwitched` | Client → NUI | `{ newNumber, credits, simIndex }` | Active SIM changed |
+| `simcardCreditsUpdate` | Client → NUI | `{ simIndex, credits }` | Live balance update |
+
+On phone open, the SIM list travels inside the `applyPhoneMetadata` payload (`sims`, `activeSim`, `simCardDLC`, `simCostCall`, `simCostSMS`) — no separate round trip. The UI-facing callbacks are listed under [Callbacks](/roadphonepro/api/callbacks).
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="Player has a phone but cannot call anyone" icon="phone-off">
+        No SIM inserted, or the inserted SIM has no credits. Check with `exports['roadphone']:getSimCards(source)` — an empty `inserted` list means the phone has no number at all.
+    </Accordion>
+    <Accordion title="Calls to a player never arrive" icon="phone-incoming">
+        Only the **active** SIM is reachable. A second SIM sitting in the same phone does not ring — that is intentional. Verify the number with `getActiveSimNumber(source)`.
+    </Accordion>
+    <Accordion title="SIM cards stack in the inventory" icon="layers">
+        The item is defined with `stack = true`. Set `stack = false` and re-issue the affected SIMs — stacked SIMs share one metadata blob and lose their individual numbers.
+    </Accordion>
+    <Accordion title="/givesim says the number already exists" icon="hash">
+        The number is present in `roadshop_simcards`, even if nobody carries that card any more. Pick another number, or delete the stale row.
+    </Accordion>
+    <Accordion title="A SIM number never receives calls" icon="radio-tower">
+        The number falls inside a number provider's reserved range. Providers are asked first in `GetPlayerFromPhone`. Issue a number outside that range.
+    </Accordion>
+    <Accordion title="Number does not change after switching SIMs" icon="rotate-cw">
+        Switching rebuilds the number cache server-side and pushes the new number to the client. If a resource cached the number itself, refresh it on `roadphone:simcard:creditsUpdate` / `roadphone:simcard:sync`, or read it fresh with `getActiveSimNumber`.
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card title="SIM Card Exports" icon="signal" href="/roadphonepro/api/simcards">
+        Issue, revoke, move and top up SIM cards from any resource
+    </Card>
+    <Card title="Metadata System" icon="nfc" href="/roadphonepro/metadata">
+        Item-based phone data — the foundation the SIM system builds on
+    </Card>
+</CardGroup>
