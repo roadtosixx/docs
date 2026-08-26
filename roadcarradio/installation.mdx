@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Step-by-step guide to install RoadCarplay on your server
+description: Step-by-step guide to install RoadCarRadio on your server
 icon: "download"
 ---
 
@@ -8,25 +8,249 @@ icon: "download"
     **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
 </Danger>
 
+## Requirements
+
+<CardGroup cols={2}>
+  <Card title="Server Build 17000+" icon="server">
+    Your FXServer artifact must be **above 17000**, with **OneSync** enabled.
+  </Card>
+  <Card title="A MySQL Wrapper" icon="database">
+    `oxmysql` or `mysql-async`. ESX Legacy, QBCore and Qbox all ship one already.
+  </Card>
+  <Card title="An Audio Resource" icon="volume-2">
+    `xsound` (recommended) or `mx-surround`. Without one, the Music app stays silent.
+  </Card>
+  <Card title="Any Framework" icon="puzzle">
+    ESX Legacy, QBCore, Qbox or Standalone — detected automatically, no bridge resource to install.
+  </Card>
+</CardGroup>
+
+---
+
 ## Installation Steps
 
 <Steps>
-  <Step title="Create Resource Folder">
-    Create a folder in your resource folder called `[carplay]`.
+  <Step title="Create the resource folder">
+    Create a folder in your resources directory called `[road]` (or use one you already have), and extract the download into it.
 
-    Extract all scripts included in the download to this folder.
+    The resource folder itself must be named **`roadcarradio`** — the exports and the NUI page reference that name.
+
+    ```
+    resources/
+      [road]/
+        roadcarradio/
+          fxmanifest.lua
+          config.lua
+          client/  server/  bridge/  locales/  public/
+    ```
   </Step>
 
-  <Step title="Import Database">
-    Import the SQL file `roadcarplay.sql` into your database.
+  <Step title="Start the resource">
+    Add it to your `server.cfg`, **after** your framework and your MySQL resource:
+
+    ```cfg server.cfg
+    ensure oxmysql
+    ensure es_extended      # or qb-core / qbx_core
+    ensure xsound
+    ensure roadcarradio
+    ```
   </Step>
 
-  <Step title="Add Inventory Item">
+  <Step title="Database">
+    Nothing to import. On the first start RoadCarRadio creates every table it needs and prints:
 
-    Add the item `carplay` to your inventory system.
+    ```
+    [RoadCarRadio] Database ready (8 tables checked)
+    ```
+
+    <Note>
+      `roadcarradio.sql` is still included if you prefer to import the schema by hand, but it is not required.
+    </Note>
+  </Step>
+
+  <Step title="Add the inventory item">
+    Only needed if you keep the install system enabled (`Config.NeedInstall = true`). Add these items to your inventory:
+
+    | Item | Purpose |
+    |------|---------|
+    | `carradio` | Installs the radio into the vehicle the player is sitting in |
+    | `removecarradio` | Takes it back out |
+
+    <Tabs>
+      <Tab title="ESX">
+        ```sql
+        INSERT INTO `items` (`name`, `label`, `weight`, `rare`, `can_remove`) VALUES
+          ('carradio', 'Car Radio', 1, 0, 1),
+          ('removecarradio', 'Radio Removal Kit', 1, 0, 1);
+        ```
+      </Tab>
+      <Tab title="QBCore / Qbox">
+        Add to `qb-core/shared/items.lua`:
+        ```lua
+        ['carradio'] = { name = 'carradio', label = 'Car Radio', weight = 1000, type = 'item', image = 'carradio.png', unique = false, useable = true, shouldClose = true, description = 'Installs a radio into a vehicle' },
+        ['removecarradio'] = { name = 'removecarradio', label = 'Radio Removal Kit', weight = 1000, type = 'item', image = 'removecarradio.png', unique = false, useable = true, shouldClose = true, description = 'Removes a radio from a vehicle' },
+        ```
+      </Tab>
+      <Tab title="ox_inventory">
+        Add to `ox_inventory/data/items.lua`:
+        ```lua
+        ['carradio'] = { label = 'Car Radio', weight = 1000, stack = true, close = true },
+        ['removecarradio'] = { label = 'Radio Removal Kit', weight = 1000, stack = true, close = true },
+        ```
+      </Tab>
+    </Tabs>
+
+    <Tip>
+      Want every vehicle to have it without any item? Set `Config.NeedInstall = false` in `config.lua` and skip this step entirely.
+    </Tip>
+  </Step>
+
+  <Step title="Restart and open it">
+    ```
+    refresh
+    ensure roadcarradio
+    ```
+
+    Get into a vehicle and press **M** (configurable via `Config.OpenKey`).
   </Step>
 </Steps>
 
 <Check>
-  Installation complete! Your RoadCarplay system is now ready to use.
+  Installation complete. Head to [Configuration](#configuration) below to tune it to your server.
 </Check>
+
+---
+
+## Configuration
+
+Everything lives in `config.lua`, which is `escrow_ignore` — you can read and edit it freely. The settings you will most likely touch first:
+
+### Access
+
+```lua config.lua
+Config.OpenKey = "M"              -- Key that opens the screen
+Config.OnlyDriver = true          -- false lets every occupant use it
+Config.AllOccupantsCanControl = true
+Config.DamageUse = true           -- Screen stops working on a wrecked car
+Config.MinimumCarHealth = 80      -- ...below this percentage
+```
+
+### Install system
+
+```lua config.lua
+Config.NeedInstall = true         -- false = every vehicle has it
+Config.NeedJob = false            -- true = only the jobs below may install
+Config.Jobs = { "mechanic" }
+Config.RemoveCarRadioAfterInstall = false
+Config.BuildInAnimation = true
+```
+
+### Music
+
+```lua config.lua
+Config.AudioLibrary = 'xsound'    -- 'xsound' or 'mxsurround'
+Config.DefaultMusicValue = 0.5    -- Starting volume
+Config.DefaultMusicRange = 2.0    -- Audible range in metres
+Config.DefaultMusicRangeBrokenWindow = 10   -- ...with the windows broken
+Config.SkipMusicNeedAccept = false -- true auto-approves submitted songs
+Config.DisableRadioMusic = true   -- Mutes the game radio while music plays
+```
+
+<Card title="Custom Music API" icon="music" href="/roadcarradio/custom-music-api">
+  Replace the built-in library entirely and serve songs from your own HTTP server.
+</Card>
+
+### Rear camera
+
+```lua config.lua
+Config.RearCamera = {
+    active = true,
+    autoWhenReversing = true,
+    autoReverseDelay = 1200,      -- ms of continuous reversing before it opens
+    holdToView = false,           -- true = hold the key instead of toggling
+    toggleKey = 21,               -- LEFT SHIFT
+    needCarRadioInstalled = true,
+    vehicleTypes = { "automobile", "bike" }
+}
+```
+
+<Note>
+  `autoReverseDelay` stops the camera flipping up every time someone taps **S** while manoeuvring. Set it to `0` for the old behaviour of switching instantly.
+</Note>
+
+### Autopilot
+
+```lua config.lua
+Config.AutoMaxSpeed = 30.0        -- 30.0 ≈ 108 km/h
+Config.AutoFlagsUsed = 316        -- Driving style flags
+Config.AutopilotNeedAccess = false
+Config.AutopilotAccessCars = { "adder", "zentorno" }
+```
+
+### Diagnostics
+
+```lua config.lua
+Config.Debug = false              -- true registers /rearcamdebug
+```
+
+---
+
+## Updating
+
+<Steps>
+  <Step title="Back up your config.lua">
+    Updates overwrite everything except the files you have edited. Keep a copy of `config.lua`, `MusicAPI.lua` and `locales/` before replacing the folder.
+  </Step>
+  <Step title="Replace the resource folder">
+    Delete the old `roadcarradio` folder and upload the new one, then restore your `config.lua`.
+
+    <Warning>
+      Compare your old `config.lua` against the new one. New releases add keys, and a key that is missing falls back to a built-in default — which may not be the value you want.
+    </Warning>
+  </Step>
+  <Step title="Restart">
+    ```
+    refresh
+    restart roadcarradio
+    ```
+
+    New tables and columns are added automatically on start. There is no SQL file to import for an update.
+  </Step>
+</Steps>
+
+### Coming from RoadCarPlay?
+
+The resource was renamed, and so were the things your other scripts might reference:
+
+| Old | New |
+|-----|-----|
+| Resource folder `roadcarplay` | `roadcarradio` |
+| Item `carplay` / `removecarplay` | `carradio` / `removecarradio` |
+| `exports['roadcarplay']:blockCarPlay()` | `exports['roadcarradio']:blockCarRadio()` |
+| `exports['roadcarplay']:unblockCarPlay()` | `exports['roadcarradio']:unblockCarRadio()` |
+| `getCarsCarplayIsInstalled` | `getCarsCarRadioIsInstalled` |
+| `/openCarplay`, `/fixcarplay` | `/openCarRadio`, `/fixcarradio` |
+| `Config.RemoveCarPlayAfterInstall` | `Config.RemoveCarRadioAfterInstall` |
+
+<Check>
+  **Your installed vehicles migrate themselves.** On the first start the old `roadshop_carplay_cars` table is copied into `roadshop_carradio_cars` and renamed to `roadshop_carplay_cars_migrated`. Nothing to do by hand — you can delete the renamed table once you have checked it went through.
+</Check>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal" href="/roadcarradio/commands">
+    Every command and keybind the resource registers
+  </Card>
+  <Card title="Custom Music API" icon="music" href="/roadcarradio/custom-music-api">
+    Serve your own music library from your own server
+  </Card>
+  <Card title="Client API" icon="code" href="/roadcarradio/api/client">
+    Exports for integrating RoadCarRadio with your own scripts
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadcarradio/faq">
+    Common questions and troubleshooting
+  </Card>
+</CardGroup>

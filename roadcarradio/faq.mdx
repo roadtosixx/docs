@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: All important questions about RoadCarPlay — setup, troubleshooting, and tips
+description: All important questions about RoadCarRadio — setup, troubleshooting, and tips
 icon: "badge-info"
 ---
 
@@ -8,15 +8,45 @@ icon: "badge-info"
     Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
 </Info>
 
-
 <AccordionGroup>
 
     <Accordion title="I found a bug — what should I do?" icon="bug">
-        Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
+        Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and the FiveM server console output if possible. We'll try to fix it as soon as we can.
+    </Accordion>
+
+    <Accordion title="Do I have to import an SQL file?" icon="database">
+        **No.** RoadCarRadio creates every table it needs on start and prints:
+
+        ```
+        [RoadCarRadio] Database ready (8 tables checked)
+        ```
+
+        That applies to updates as well — new tables and new columns are added automatically. `roadcarradio.sql` is still shipped if you prefer to import the schema by hand, but you never need to.
+
+        If you *don't* see that line, check the console for `[RoadCarRadio] Database:` warnings — they name the table that failed.
+    </Accordion>
+
+    <Accordion title="I'm coming from RoadCarPlay — what changes?" icon="arrow-right-left">
+        The resource folder, the items and the exports were all renamed. If another script on your server talks to it, it needs updating:
+
+        | Old | New |
+        |-----|-----|
+        | Folder `roadcarplay` | `roadcarradio` |
+        | Item `carplay` / `removecarplay` | `carradio` / `removecarradio` |
+        | `exports['roadcarplay']:blockCarPlay()` | `exports['roadcarradio']:blockCarRadio()` |
+        | `getCarsCarplayIsInstalled` | `getCarsCarRadioIsInstalled` |
+
+        <Check>
+            **Your installed vehicles migrate themselves.** On the first start the old `roadshop_carplay_cars` table is copied over and renamed to `roadshop_carplay_cars_migrated`. Nothing to do by hand.
+        </Check>
+
+        <Card title="Full migration table" href="/roadcarradio/installation#coming-from-roadcarplay" icon="download">
+            Including commands and config keys
+        </Card>
     </Accordion>
 
     <Accordion title="How do I give myself or others permission to approve music?" icon="shield-check">
-        Songs that players submit through the Music app have to be approved before they land in the library. The approval permission is handed out in-game with **`/carmusic-verify`**:
+        Songs that players submit through the Music app have to be approved before they land in the library. The approval permission is handed out with **`/carmusic-verify`**:
 
         ```bash
         /carmusic-verify PLAYERID
@@ -24,10 +54,14 @@ icon: "badge-info"
 
         - The command **toggles**: no permission → grants it, already has it → revokes it
         - `PLAYERID` is the **server ID** of the player (visible in the player list / txAdmin)
-        - Only administrators can run the command
+        - The command is **ACE-restricted** — run it from the server console, or give yourself the ACE:
 
-        <Card title="All Commands" href="/roadcarplay/commands" icon="terminal">
-            Full command reference for RoadCarPlay
+        ```cfg server.cfg
+        add_ace group.admin command.carmusic-verify allow
+        ```
+
+        <Card title="All Commands" href="/roadcarradio/commands" icon="terminal">
+            Full command reference for RoadCarRadio
         </Card>
     </Accordion>
 
@@ -42,24 +76,78 @@ icon: "badge-info"
                 Someone with the music approval permission (see above) has to approve them. Once approved, they show up in the library for everyone.
             </Step>
         </Steps>
+
+        <Tip>
+            Want to skip the approval step entirely? Set `Config.SkipMusicNeedAccept = true` — submitted songs then go straight into the library.
+
+            Rather bring your own catalog? See the [Custom Music API](/roadcarradio/custom-music-api).
+        </Tip>
     </Accordion>
 
     <Accordion title="I don't hear music in the Music app" icon="music">
-        <Tip>Make sure you're using our **xSound** version and start **xSound before RoadPad**.</Tip>
+        <Tip>Make sure you're using our **xSound** version, and start **xSound before RoadCarRadio** in your `server.cfg`.</Tip>
 
         **Checklist**
-        - Clear your client cache.
-        - Check that **GTA music** is turned on.
-        - Verify your **Windows volume mixer** isn't at 0% (this is independent of FiveM).
+        - Confirm `Config.AudioLibrary` matches what you actually run — `'xsound'` or `'mxsurround'`
+        - Clear your client cache
+        - Check that **GTA music** is turned on
+        - Verify your **Windows volume mixer** isn't at 0% (this is independent of FiveM)
+        - Music is positional: you have to be near the vehicle. `Config.DefaultMusicRange` controls how near
 
         <Warning>If your loading screen uses **YouTube** and you muted it there, the sound is muted everywhere. Unmute the loading screen.</Warning>
+    </Accordion>
 
-        <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Frq0XT7Qriph5lp24JQgJ%2FRod_rtHandy.PNG?alt=media&token=d98cc53a-d68c-4b05-abb3-3834efdd751a" alt="Music troubleshooting screenshot" className="rounded-lg" />
+    <Accordion title="The rear camera keeps popping up while I manoeuvre" icon="camera">
+        It waits for continuous reversing before it opens, so a quick tap of **S** does not trigger it. If it still feels twitchy, raise the delay:
+
+        ```lua config.lua
+        Config.RearCamera.autoReverseDelay = 1800   -- default 1200 ms
+        ```
+
+        Set it to `0` to switch instantly, or turn the automatic off entirely with `autoWhenReversing = false` — the keybind still works.
+    </Accordion>
+
+    <Accordion title="The rear camera doesn't open at all" icon="camera-off">
+        Switch on diagnostics and let the resource tell you why:
+
+        ```lua config.lua
+        Config.Debug = true
+        ```
+
+        Then get into the vehicle and run `/rearcamdebug`. It prints to your own F8 console which condition is blocking — vehicle type, driver seat, install status or first person.
+
+        <Card title="Reading the output" href="/roadcarradio/commands#diagnostics" icon="terminal">
+            What each line means
+        </Card>
     </Accordion>
 
     <Accordion title="How can I disable apps?" icon="circle-minus">
-        Open **/public/static/config/config.json**, search for **AppStore**, and remove the block for the app(s) you want to disable.
+        Open **`/public/static/config/config.json`**, find **`AppStore`**, and remove the block for the app(s) you want gone. The home screen grid re-flows on its own.
 
-        <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FAG0x1YGxObUp0ujtISkD%2Fimage.png?alt=media&token=97c44cae-3598-4dcd-a6de-c90c572273ae" alt="Remove apps from AppStore config" className="rounded-lg" />
+        The same file is where you rename apps and swap their icons — nothing in the app list is hard-coded.
     </Accordion>
+
+    <Accordion title="Can I change the wallpaper?" icon="image">
+        Every vehicle keeps its own background, stored per licence plate. In **Settings → Wallpaper** a player can either pick an included image, paste a link to their own, or build a gradient in the editor — linear, radial or conic, with up to eight colour stops.
+
+        To ship your own images, drop them into `public/img/backgrounds/` and add them to `backgrounds` in `public/static/config/config.json`.
+    </Accordion>
+
+    <Accordion title="Players are playing games while driving" icon="gamepad-2">
+        They are not — every game locks itself as soon as the vehicle moves, and only unlocks once it stops. Coming back from a lock goes to a paused state rather than straight back into play, so nothing starts moving on screen while the driver is still looking at the road.
+    </Accordion>
+
 </AccordionGroup>
+
+---
+
+## Still stuck?
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/roadcarradio/installation">
+    Requirements, setup and every config option
+  </Card>
+  <Card title="Common Issues" icon="triangle-alert" href="/common-issues">
+    Problems that affect all RoadShop resources
+  </Card>
+</CardGroup>

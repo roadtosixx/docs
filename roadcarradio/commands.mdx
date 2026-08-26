@@ -1,76 +1,150 @@
 ---
-title: Commands
-description: Available commands for RoadCarPlay
+title: Commands & Keybinds
+description: Every command and keybind RoadCarRadio registers
 icon: terminal
 ---
 
-## Overview
+## Keybinds
 
-RoadCarPlay provides a command to manage music approval permissions. All commands are executed through the chat interface.
+All keybinds are registered through FiveM's key mapping system, so **every player can rebind them** under `Settings → Key Bindings → FiveM` without touching your config.
 
-## Music Verify
+| Default | Command | What it does |
+|---------|---------|--------------|
+| **M** | `/openCarRadio` | Opens the screen. Configurable via `Config.OpenKey` |
+| **LEFT SHIFT** | `/rearcam` | Toggles the rear camera. Configurable via `Config.RearCamera.toggleKey` |
+| **ESC** | — | Closes the screen |
 
-Grant or revoke music approval permissions for players. Players with this permission can approve or reject songs that other players have submitted through the music app.
+<Note>
+  With `Config.RearCamera.holdToView = true` the camera key becomes hold-to-view (`+rearcam` / `-rearcam`) instead of a toggle. Set `registerKeyMapping = false` if you would rather bind it yourself.
+</Note>
 
-<CodeGroup>
-    ```bash
-    /carmusic-verify PLAYERID
-    ```
-</CodeGroup>
+---
 
-<ParamField path="PLAYERID" type="string" required>
-    The server ID of the player to grant or revoke music approval permissions for
+## Music Approval
+
+Grant or revoke music approval permissions. Players with this permission can approve or reject songs that other players submitted through the Music app.
+
+```bash
+/carmusic-verify PLAYERID
+```
+
+<ParamField path="PLAYERID" type="number" required>
+  The server ID of the player to grant or revoke music approval permissions for
 </ParamField>
 
-**Behavior:**
-- If the player **does not have** music approval permissions → Grants the permission
-- If the player **already has** music approval permissions → Revokes the permission
+**Behaviour:**
+- Player **does not have** the permission → grants it
+- Player **already has** it → revokes it
 
 <Warning>
-    Only administrators can execute this command. Unauthorized attempts will be logged.
+  This command is **ACE-restricted**. It can only be run from the server console or by a player with the `command.carmusic-verify` ACE permission.
+
+  ```cfg server.cfg
+  add_ace group.admin command.carmusic-verify allow
+  ```
 </Warning>
 
 ### Examples
 
 <CodeGroup>
-    ```bash Grant Music Approval Permission
-    /carmusic-verify 12345
-    ```
+```bash From the server console
+carmusic-verify 12
+```
 
-    ```bash Revoke Music Approval Permission
-    /carmusic-verify 12345
-    ```
+```bash In-game as an admin
+/carmusic-verify 12
+```
 </CodeGroup>
+
+---
+
+## Reload Player Data
+
+Re-sends the calling player's data — install status, music admin flag, connected products. Useful after you changed something in the database by hand and do not want to make the player reconnect.
+
+```bash
+/fixcarradio
+```
+
+<Note>
+  Only ever affects the player who runs it. There is no way to target somebody else with this command.
+</Note>
+
+---
+
+## Diagnostics
+
+<Warning>
+  **Off by default.** Set `Config.Debug = true` in `config.lua` to register this command. A diagnostic command has no business sitting in the command list of a production server.
+</Warning>
+
+```bash
+/rearcamdebug
+```
+
+Prints to **your own F8 console** why the rear camera is or is not opening. Without it, a "the camera doesn't work" report cannot be told apart from "this vehicle type is not allowed" or "no radio installed" — every one of those paths ends in a silent return.
+
+Sample output:
+
+```
+[RearCam] ------------------------------
+  active=true  autoWhenReversing=true  holdToView=false  registerKeyMapping=true
+  autoReverseDelay=1200 ms  (how long the vehicle must reverse first)
+  Vehicle=142737  Check=ok
+  Type=automobile (class 4)  allowed=true
+  Plate="46EEK552"  needCarRadioInstalled=true  Config.NeedInstall=false
+  in plate list=false  -> access granted=true
+  engineRunning=true  gear=1  reversing=false
+  First person blocked=false  active=false  Mode=nil
+  Parking sensor: reading=free  last zone=0/4
+[RearCam] ------------------------------
+```
+
+<Info>
+  This runs client-side and prints only to the console of the player who ran it, about their own vehicle. There is nothing sensitive in the output — which is why it is a config switch rather than a permission.
+</Info>
+
+---
 
 ## Troubleshooting
 
 <AccordionGroup>
-    <Accordion title="Command not recognized">
-        Ensure you're using the correct syntax with the forward slash (/) at the beginning.
-    </Accordion>
+  <Accordion title="Command not recognised">
+    - Check the spelling — `/carmusic-verify` has a hyphen, `/fixcarradio` does not
+    - `/rearcamdebug` only exists with `Config.Debug = true`
+    - Make sure the resource actually started: look for `[RoadCarRadio] Database ready` in the server console
+  </Accordion>
 
-    <Accordion title="Verification not working">
-        - Check if you have admin permissions
-        - Verify the player ID is correct and the player is online
-        - Ensure there are no extra spaces in the command
-    </Accordion>
+  <Accordion title="/carmusic-verify does nothing">
+    - The command is ACE-restricted. Without the ACE it is silently refused
+    - Add `add_ace group.admin command.carmusic-verify allow` to your `server.cfg` and restart
+    - Verify the target player ID is correct and the player is online
+  </Accordion>
+
+  <Accordion title="The open key does nothing">
+    - The player may have rebound it under `Settings → Key Bindings → FiveM`
+    - The screen only opens inside a vehicle
+    - With `Config.OnlyDriver = true`, passengers cannot open it
+    - With `Config.DamageUse = true`, a vehicle below `Config.MinimumCarHealth` is refused
+    - With `Config.NeedInstall = true`, the vehicle needs a radio installed first
+  </Accordion>
 </AccordionGroup>
+
+---
 
 ## Related Resources
 
 <CardGroup cols={2}>
-    <Card
-        title="Installation"
-        icon="download"
-        href="/roadcarplay/installation"
-    >
-        Step-by-step guide to install and configure RoadCarPlay
-    </Card>
-    <Card
-        title="FAQ"
-        icon="badge-info"
-        href="/roadcarplay/faq"
-    >
-        Common questions and troubleshooting tips
-    </Card>
+  <Card title="Installation" icon="download" href="/roadcarradio/installation">
+    Requirements, setup and configuration
+  </Card>
+  <Card title="Client API" icon="code" href="/roadcarradio/api/client">
+    Exports for your own scripts
+  </Card>
+  <Card title="Custom Music API" icon="music" href="/roadcarradio/custom-music-api">
+    Serve your own music library
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadcarradio/faq">
+    Common questions and troubleshooting
+  </Card>
 </CardGroup>

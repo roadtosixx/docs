@@ -68,11 +68,12 @@
             ]
           },
           {
-            "group": "RoadCarPlay",
+            "group": "RoadCarRadio",
             "pages": [
-              "roadcarplay/installation",
-              "roadcarplay/faq",
-              "roadcarplay/commands"
+              "roadcarradio/installation",
+              "roadcarradio/commands",
+              "roadcarradio/custom-music-api",
+              "roadcarradio/faq"
             ]
           },
           {
@@ -127,9 +128,9 @@
             ]
           },
           {
-            "group": "RoadCarPlay",
+            "group": "RoadCarRadio",
             "pages": [
-              "roadcarplay/api/client"
+              "roadcarradio/api/client"
             ]
           }
         ]
@@ -173,12 +174,12 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity"
+    ]
   },
   "footer": {
     "socials": {
@@ -193,13 +194,34 @@
             "label": "Shop",
             "href": "https://fivem.roadshop.org"
           },
-            {
-                "label": "Website",
-                "href": "https://roadshop.org"
-            }
+          {
+            "label": "Website",
+            "href": "https://roadshop.org"
+          }
         ]
       }
-
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/roadcarplay/installation",
+      "destination": "/roadcarradio/installation"
+    },
+    {
+      "source": "/roadcarplay/commands",
+      "destination": "/roadcarradio/commands"
+    },
+    {
+      "source": "/roadcarplay/faq",
+      "destination": "/roadcarradio/faq"
+    },
+    {
+      "source": "/roadcarplay/api/client",
+      "destination": "/roadcarradio/api/client"
+    },
+    {
+      "source": "/roadcarplay/:slug*",
+      "destination": "/roadcarradio/:slug*"
+    }
+  ]
 }

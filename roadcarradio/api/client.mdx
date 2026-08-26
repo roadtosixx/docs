@@ -1,35 +1,152 @@
 ---
 title: Client API
-description: Client-side exports for RoadCarplay integration
+description: Client-side exports for integrating RoadCarRadio with your own scripts
 icon: "code"
 ---
 
-## Access Control Functions
+All exports below are client-side and are called on the resource name **`roadcarradio`**.
+
+<Warning>
+  **Renamed in 2.5.0.** The old `roadcarplay` exports (`blockCarPlay`, `unblockCarPlay`) no longer exist. See the [migration table](/roadcarradio/installation#coming-from-roadcarplay) if you are updating an existing integration.
+</Warning>
+
+---
+
+## Access Control
+
+Use these when another script needs the screen out of the way — during a cutscene, in a jail cell, while a minigame is running.
 
 ### isBlocked
 
-Check if CarPlay is currently blocked.
+Check whether the screen is currently blocked.
 
 <ResponseField name="return" type="boolean">
-  Returns `true` if CarPlay is blocked, `false` otherwise
+  `true` if the screen is blocked, `false` otherwise
 </ResponseField>
 
 ```lua
-local blocked = exports['roadcarplay']:isBlocked() -- returns true / false
+local blocked = exports['roadcarradio']:isBlocked()
 ```
 
-### blockCarPlay
+### blockCarRadio
 
-Prevent CarPlay from turning on.
+Prevent the screen from being opened. If it is already open, it stays open until the player closes it — this blocks opening, it does not force a close.
 
 ```lua
-exports['roadcarplay']:blockCarPlay()
+exports['roadcarradio']:blockCarRadio()
 ```
 
-### unblockCarPlay
+### unblockCarRadio
 
-Remove blocked status from CarPlay, allowing users to turn it on again.
+Lift the block and allow the screen to be opened again.
 
 ```lua
-exports['roadcarplay']:unblockCarPlay()
+exports['roadcarradio']:unblockCarRadio()
 ```
+
+<CodeGroup>
+```lua Example: block during a cutscene
+exports['roadcarradio']:blockCarRadio()
+
+-- ... your cutscene ...
+
+exports['roadcarradio']:unblockCarRadio()
+```
+
+```lua Example: block only while jailed
+RegisterNetEvent('myjail:client:jailed', function()
+    exports['roadcarradio']:blockCarRadio()
+end)
+
+RegisterNetEvent('myjail:client:released', function()
+    exports['roadcarradio']:unblockCarRadio()
+end)
+```
+</CodeGroup>
+
+<Note>
+  A block set by your script is not cleared automatically. If your script errors out between blocking and unblocking, the player is left without a radio until the resource restarts — always unblock in the same code path that blocks, including your failure paths.
+</Note>
+
+### useRoadCarRadio
+
+Whether the player may currently use the radio at all — takes the install status, the driver-only rule and the vehicle damage threshold into account.
+
+<ResponseField name="return" type="boolean">
+  `true` if the player can open the screen right now
+</ResponseField>
+
+```lua
+if exports['roadcarradio']:useRoadCarRadio() then
+    -- your integration
+end
+```
+
+---
+
+## Rear Camera
+
+### IsRearCameraActive
+
+Whether the rear camera is on screen right now. Useful if your own script draws to the screen and should get out of the way.
+
+<ResponseField name="return" type="boolean">
+  `true` while the rear camera is rendering
+</ResponseField>
+
+```lua
+local active = exports['roadcarradio']:IsRearCameraActive()
+```
+
+### ToggleRearCamera
+
+Turn the rear camera on or off, exactly as the keybind does. Respects every rule the keybind respects — driver only, allowed vehicle types, and `needCarRadioInstalled`.
+
+<ResponseField name="return" type="boolean">
+  `true` if the camera is on after the call, `false` if it was refused or turned off
+</ResponseField>
+
+```lua
+exports['roadcarradio']:ToggleRearCamera()
+```
+
+<Tip>
+  Returns `false` when the camera could not open — for example on a vehicle type that is not in `Config.RearCamera.vehicleTypes`, or when the player is not the driver. Check the return value instead of assuming it worked.
+</Tip>
+
+---
+
+## Server API
+
+### getCarsCarRadioIsInstalled
+
+Server-side. Returns every licence plate that has a radio installed, straight from the in-memory cache — no database round trip.
+
+<ResponseField name="return" type="table">
+  Array of `{ plate = string }` entries
+</ResponseField>
+
+```lua
+local cars = exports['roadcarradio']:getCarsCarRadioIsInstalled()
+
+for i = 1, #cars do
+    print(cars[i].plate)
+end
+```
+
+<Note>
+  Only meaningful with `Config.NeedInstall = true`. With the install system switched off, no vehicle is ever written to the table and the list stays empty — every vehicle has a radio in that mode.
+</Note>
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal" href="/roadcarradio/commands">
+    Commands and keybinds the resource registers
+  </Card>
+  <Card title="Custom Music API" icon="music" href="/roadcarradio/custom-music-api">
+    Serve your own music library over HTTP
+  </Card>
+</CardGroup>
