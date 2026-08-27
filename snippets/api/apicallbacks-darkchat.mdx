@@ -1,0 +1,69 @@
+## DarkChat
+
+All rate-limited; every response uses an `{ ok = bool, error? }` envelope (`rate_limited`, `no_phone`, `not_member`, `forbidden`, …).
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:darkchat:fetchRooms` | — | `{ ok, rooms }` | The caller's rooms with last-message previews. |
+| `roadphone:darkchat:fetchMessages` | `roomId, beforeId?, limit?` | `{ ok, messages, hasMore, members }` | Paginated room messages + member list (clears unread badge). |
+| `roadphone:darkchat:joinByCode` | `code, alias` | `{ ok, room }` | Joins a room by code. |
+| `roadphone:darkchat:createRoom` | `alias, topic, burnSeconds` | `{ ok, room }` | Creates a room (caller = owner). |
+| `roadphone:darkchat:sendMessage` | `roomId, content, type?` | `{ ok, message_id }` | Sends a message (burn timer, live push, notifications). |
+| `roadphone:darkchat:deleteMessage` | `roomId, messageId` | `{ ok }` | Deletes own message (or any, as owner). |
+| `roadphone:darkchat:leaveRoom` | `roomId` | `{ ok }` | Leaves (ownership transfer / room cleanup). |
+| `roadphone:darkchat:rotateCode` | `roomId` | `{ ok, code }` | Generates a new join code (owner-only). |
+| `roadphone:darkchat:kickMember` | `roomId, targetMemberId` | `{ ok }` | Kicks a member (owner-only). |
+| `roadphone:darkchat:setBurnAfter` | `roomId, seconds` | `{ ok, burn_after }` | Sets the burn timer (owner-only, whitelisted values). |
+| `roadphone:darkchat:setTopic` | `roomId, topic` | `{ ok, topic }` | Sets the topic (owner-only). |
+| `roadphone:darkchat:setAlias` | `roomId, alias` | `{ ok, alias }` | Changes the caller's own alias. |
+
+---
+
+## Connect
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:instagram:resume` | — | account object or `false` | Auto-login resume via the server session. |
+| `roadphone:instagram:getProfile` | `userid` | `{ posts }` | A profile's posts with author fields. |
+| `roadphone:instagram:getPost` | `postid, accountId` | post row or `nil` | Single post (viewer like-state computed). |
+| `roadphone:instagram:getStorys` | — | array of story rows | Active (24h) stories. |
+| `roadphone:instagram:getStoryReactions` | `storyId` | array of reactions | Reactions on a story (max 100). |
+| `roadphone:instagram:getcomments` | `postid, viewerAccountId?` | array of comment rows | Comments incl. replies + like state. |
+| `roadphone:instagram:getUsers` | — | array of profile rows | All accounts (max 500, follower/follows decoded). |
+| `roadphone:instagram:getFollower` | `userid` | array of profile rows | Followers of an account. |
+| `roadphone:instagram:getFollows` | `userid` | array of profile rows | Accounts a user follows. |
+| `roadphone:instagram:getActivity` | `accountId` | `{ likes, comments, followers }` | The activity feed (max 50 each). |
+
+### Connect DMs & Live
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:connect:dm:getThreads` | — | array of thread rows | DM threads with unread counts (session required). |
+| `roadphone:connect:dm:getMessages` | `peerId, beforeId?` | array of message rows | Paginated DMs (≤50, advances read pointer). |
+| `roadphone:connectLiveStart` | `{ title }` | `{ success, streamId, roomName, token, url }` or error | Starts a Connect livestream (LiveKit). |
+| `roadphone:connectLiveStop` | — | `{ success }` or error | Stops the caller's stream. |
+| `roadphone:connectLiveJoin` | `{ streamId }` | `{ success, viewers }` | Joins as viewer. |
+| `roadphone:connectLiveLeave` | `{ streamId }` | `{ success }` | Leaves as viewer. |
+| `roadphone:connectLiveSendMessage` | `{ streamId, message, username }` | `{ success }` | Stream chat message. |
+| `roadphone:connectLiveSendHeart` | `{ streamId }` | `{ success }` | Heart animation. |
+| `roadphone:getConnectLivestreams` | — | `{ success, livestreams }` | Active Connect streams with viewer counts. |
+
+## TweetWave
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:twitter:resume` | — | account object or `false` | Auto-login resume via the server session. |
+| `roadphone:twitter:getStoredAccount` | — | account object or `nil` | Session account. |
+| `roadphone:twitter:getAccountByCredentials` | `username, password` | account object or `nil` | Legacy credential login (mints a session). |
+| `roadphone:twitter:getTweets` | — | `{ ok, tweets }` or `{ ok = false, error = 'no_auth' }` | Home feed (cached, max 130). |
+| `roadphone:twitter:getFollowingTweets` | — | `{ ok, tweets }` or `no_auth` | Following feed. |
+| `roadphone:getTwitterUsers` | — | array of tweet rows | The caller's own tweets (max 30). |
+| `roadphone:getuserveri` | `{ id }` | array of tweet rows | A specific author's tweets. |
+| `roadphone:twitter:getProfile` | `userid, currentAccountId?` | profile row or `nil` | Profile incl. follower counts + follow state. |
+| `roadphone:twitter:getFollowers` | `targetUserId, clientAccountId?` | array of user rows | Followers with `isFollowing` flags. |
+| `roadphone:twitter:getFollowing` | `targetUserId, clientAccountId?` | array of user rows | Followed accounts. |
+| `roadphone:twitter:getUserById` | `userId` | user row or `nil` | Minimal user lookup. |
+| `roadphone:twitter:getUsers` | — | array of `{ authorId, author, authorIcon, verify }` | All accounts (max 500). |
+| `roadphone:server:searchUser` | `username` | array of user rows | Exact-match user search. |
+| `roadphone:twitter:getBookmarks` | — | array of tweet rows | Bookmarked tweets. |
+| `roadphone:twitter:getcomments` | `postid` | array of comment rows | Comments on a tweet (max 200). |

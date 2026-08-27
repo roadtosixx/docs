@@ -1,0 +1,87 @@
+## Core Phone — `server/server.lua`
+
+| Event | Params (after `source`) | Description |
+|---|---|---|
+| `roadphone:playerLoad` | `source` | Loads all global + per-phone data and ships it to the client. |
+| `roadphone:finishSetup` | — | Marks the phone as set up (`phone_setup = 1`). |
+| `roadphone:server:leitstelle:add` | `number` | Registers the caller as dispatcher for an emergency line (job-checked). |
+| `roadphone:server:leitstelle:remove` | — | Removes the caller from the dispatcher registry. |
+| `roadphone:prop:delete` | `netId` | Deletes a phone prop attached to the caller's ped (ownership-checked). |
+| `roadphone:phone:shutdown` | — | Sets `phone_powered_on = 0` in metadata. |
+| `roadphone:phone:poweron` | — | Sets `phone_powered_on = 1` in metadata. |
+
+### Contacts
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:addContact` | `firstname, lastname, number, picture, note, mail, company` | Inserts a contact (DB + metadata), anti-spam guarded. |
+| `roadphone:server:editContact` | `id, firstname, lastname, number, picture, note, mail, company` | Updates a caller-owned contact. |
+| `roadphone:server:deleteContact` | `id` | Deletes a caller-owned contact. |
+| `roadphone:server:setContactFavorite` | `id, favorite (0/1)` | Toggles a contact's favourite flag. |
+| `roadphone:server:GiveContactDetails` | `playerId` | Sends the caller's name + number to another player to add as a contact. |
+
+### Calls
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:server:call` | `selfnumber, targetnumber, isAnonym` | Places a call: SIM/battery checks, Leitstelle routing, rings the target or logs a missed call. |
+| `roadphone:server:acceptIncomingCall` | `number` | Accepts an incoming call: voice channel pairing, SIM billing, battery activity. |
+| `roadphone:server:endCall` | `number, leitstellenSrc?` | Ends/declines a call, stops billing, routes `endCall` to the peer. |
+| `roadphone:call:mute` | `id (legacy), mute (bool)` | Mutes/unmutes the caller via the voice backend. |
+| `roadphone:call:requestVideoUpgrade` | `targetNumber` | Relays a "switch to FaceTime" request. |
+| `roadphone:call:respondVideoUpgrade` | `targetNumber, accepted` | Relays the accept/decline of a video upgrade. |
+| `roadphone:server:startGroupCall` | `groupid, owner, name, members` | Rings all group members with an incoming group call. |
+| `roadphone:server:newGroupChatMember` | `groupid` | Relays "member joined" to the group roster. |
+| `roadphone:server:groupChatMemberLeaved` | `groupid` | Relays "member left" to the group roster. |
+| `roadphone:server:kickFromGroupCall` | `number, groupid` | Tells the target's client to leave the group call. |
+| `roadphone:server:addContactToGroupCall` | `group, number` | Rings a specific number into a running group call. |
+
+### Photos & Albums
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:addPhotoToGallery` | `link` | Saves a photo (DB + metadata). |
+| `roadphone:deletePicture` | `id` | Soft-deletes a photo (`isDeleted = 1`). |
+| `roadphone:deletePicture:confirm` | `id` | Hard-deletes a photo. |
+| `roadphone:recoverPicture` | `id` | Restores a soft-deleted photo. |
+| `roadphone:togglePhotoFavourite` | `id, isFavourite (0/1)` | Toggles a photo's favourite flag. |
+| `roadphone:editPicture` | `id, newUrl, originalUrl` | Points a photo at an edited URL (original preserved). |
+| `roadphone:revertPicture` | `id, originalUrl` | Reverts an edited photo to its original. |
+| `roadphone:createAlbum` | `albumName` | Creates a photo album. |
+| `roadphone:deleteAlbum` | `albumId` | Deletes an album and its photo links. |
+| `roadphone:renameAlbum` | `albumId, newName` | Renames an album. |
+| `roadphone:addPhotoToAlbum` | `albumId, photoId` | Adds a photo to an album. |
+| `roadphone:removePhotoFromAlbum` | `albumId, photoId` | Removes a photo from an album. |
+| `roadphone:addMultiplePhotosToAlbum` | `albumId, photoIds (array)` | Bulk-adds photos to an album. |
+
+### Alarms
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:alarm:add` | `alarmData` (`time, label, enabled, repeatType, days, sound`) | Creates an alarm in metadata. |
+| `roadphone:alarm:update` | `alarmId, updatedAlarm` | Updates an alarm. |
+| `roadphone:alarm:delete` | `alarmId` | Deletes an alarm. |
+| `roadphone:alarm:toggle` | `alarmId, enabled` | Enables/disables an alarm. |
+| `roadphone:alarm:snooze` | `alarmId, snoozeUntil` | Sets an alarm's snooze timestamp. |
+
+---
+
+## Server API — `server/serverAPI/serverAPI.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:sendDispatch` | see [Integration Events](#roadphone-senddispatch) | Creates a dispatch for a job. |
+| `roadphone:server:call:eventnumber` | `number` | Customization stub for dialed event numbers. |
+| `roadphone:server:blocknumber` | `number` | Adds a number to the caller's blocked list. |
+| `roadphone:server:unblocknumber` | `number` | Removes a number from the blocked list. |
+| `roadphone:server:call:saltychat` | `callchannel` | Adds the caller to a SaltyChat/Yaca call channel. |
+| `roadphone:server:call:saltychat:end` | `callchannel` | Removes the caller from a call channel. |
+| `roadphone:server:call:saltychat:speaker` | `boolean` | Toggles phone speaker mode. |
+
+## Bank — `server/serverAPI/bank.lua`, `bank_requests.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:bank:transfer` | `recipient, amount, recipientType ('number' or IBAN)` | Player transfer: validation, tax, history, notifications. Serialized per player. |
+| `roadphone:addBankTransfer` | see [Integration Events](#roadphone-addbanktransfer) | Inserts a transaction row and live-pushes it. |
+| `roadphone:bank:saveFavorites` | `favorites` (array of `type, value, label`) | Stores the caller's bank favourites in metadata. |

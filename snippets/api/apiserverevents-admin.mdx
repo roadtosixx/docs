@@ -1,0 +1,30 @@
+## Admin — `server/admin.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:admin:saveChunk` | `transferId, eventName, index, total, chunk` | ACE-gated (`roadphone.phoneadmin`) chunked upload for admin-panel saves. |
+
+## GPS — `server/gps.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:gps:deleteWaypoint` | `id` | Deletes a caller-owned saved waypoint. |
+
+---
+
+## Messages — `server/messages.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:sendMessage` | `phoneNumber, message, replyto?` | Core SMS send: SIM check, persists both copies, notifies recipient, webhook. |
+| `roadphone:deleteMessage` | `id` | Deletes one message from the caller's own mailbox. |
+| `roadphone:setReadMessage` | `number` | Marks a conversation read; fires read receipts. |
+| `roadphone:messages:deleteConversation` | `otherNumber` | Deletes the caller's copy of a 1:1 conversation. |
+| `roadphone:messages:markGroupRead` | `groupid` | Clears the per-phone unread badge for a group. |
+| `roadphone:messages:createGroup` | `name, image, members, message` | Creates a group chat and sends the first message. |
+| `roadphone:messages:sendGroupMessage` | `groupid, groupname, message, members, number, replyto?` | Sends a group message (membership re-resolved server-side). |
+| `roadphone:messages:leaveGroup` | `groupid, number` | Leave (self) or kick (owner-only). |
+| `roadphone:messages:addGroup` | `groupid, number` | Invites a member (members-only). |
+| `roadphone:messages:setGroupOwner` | `groupid, newOwner` | Transfers ownership (owner-only). |
+| `roadphone:messages:deleteGroup` | `groupid` | Deletes a group + messages (owner-only). |
+| `roadphone:messages:saveGroupSettings` | `groupid, name, picture` | Updates group name/image (members-only). |

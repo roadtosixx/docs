@@ -30,7 +30,7 @@
             ]
           },
           {
-            "group": "RoadPhone-Pro",
+            "group": "RoadPhone Pro",
             "pages": [
               "roadphonepro/installation",
               "roadphonepro/faq",
@@ -100,7 +100,7 @@
             ]
           },
           {
-            "group": "RoadPhone-Pro",
+            "group": "RoadPhone Pro",
             "pages": [
               "roadphonepro/api/client",
               "roadphonepro/api/server",

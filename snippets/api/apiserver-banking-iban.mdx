@@ -1,0 +1,283 @@
+## Banking & IBAN
+
+### getPlayerIBAN
+
+Get or create an IBAN for a player.
+
+```lua
+local iban = exports['roadphone']:getPlayerIBAN(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  The player's IBAN. If the player doesn't have one, a new unique IBAN will be generated.
+</ResponseField>
+
+<Note>
+  IBAN format is configurable via `Cfg.BankIBANPrefix` (default: "DE") + 6 random digits.
+</Note>
+
+<CodeGroup>
+```lua Example
+local iban = exports['roadphone']:getPlayerIBAN(source)
+print("Player IBAN: " .. iban) -- e.g., "DE123456"
+```
+</CodeGroup>
+
+---
+
+### getPlayerFromIBAN
+
+Find a player by their IBAN.
+
+```lua
+local player = exports['roadphone']:getPlayerFromIBAN(iban)
+```
+
+<ParamField path="iban" type="string" required>
+  The IBAN to search for.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  The player object (via Bridge.Player.GetPlayerByIdentifier), or `nil` if not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local player = exports['roadphone']:getPlayerFromIBAN("DE123456")
+if player then
+    -- Player found - use based on your framework
+end
+```
+</CodeGroup>
+
+---
+
+### addBankTransaction
+
+Add a bank transaction record to the transaction history.
+
+```lua
+exports['roadphone']:addBankTransaction(sender, receiver, reason, amount)
+```
+
+<ParamField path="sender" type="string" required>
+  The sender's IBAN.
+</ParamField>
+
+<ParamField path="receiver" type="string" required>
+  The receiver's IBAN.
+</ParamField>
+
+<ParamField path="reason" type="string" required>
+  The transaction reason/description.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The transaction amount.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+local senderIban = exports['roadphone']:getPlayerIBAN(senderSource)
+local receiverIban = exports['roadphone']:getPlayerIBAN(receiverSource)
+
+exports['roadphone']:addBankTransaction(
+    senderIban,
+    receiverIban,
+    "Vehicle Purchase",
+    50000
+)
+```
+</CodeGroup>
+
+<Note>
+  This only adds a transaction record - it does not transfer actual money. Handle money transfers with your framework's banking system.
+</Note>
+
+---
+
+## Cryptocurrency
+
+### addcrypto
+
+Add cryptocurrency to a player's wallet.
+
+```lua
+exports['roadphone']:addcrypto(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID (1 = Bitcoin, 2 = Ethereum, etc.).
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to add.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Add 0.5 Bitcoin to player
+exports['roadphone']:addcrypto("license:abc123", 1, 0.5)
+```
+</CodeGroup>
+
+---
+
+### removecrypto
+
+Remove cryptocurrency from a player's wallet.
+
+```lua
+exports['roadphone']:removecrypto(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to remove.
+</ParamField>
+
+<CodeGroup>
+```lua Example
+-- Remove 0.25 Bitcoin from player
+exports['roadphone']:removecrypto("license:abc123", 1, 0.25)
+```
+</CodeGroup>
+
+---
+
+### checkcryptoamount
+
+Check if a player has at least a certain amount of cryptocurrency.
+
+```lua
+local hasAmount = exports['roadphone']:checkcryptoamount(identifier, coinid, amount)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  The amount to check for.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if the player has at least the specified amount, `false` otherwise.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+if exports['roadphone']:checkcryptoamount("license:abc123", 1, 1.0) then
+    print("Player has at least 1 Bitcoin")
+else
+    print("Insufficient Bitcoin balance")
+end
+```
+</CodeGroup>
+
+---
+
+### getcryptoamount
+
+Get the current cryptocurrency balance for a player.
+
+```lua
+local amount = exports['roadphone']:getcryptoamount(identifier, coinid)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="coinid" type="number" required>
+  The cryptocurrency ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  The player's balance for the specified cryptocurrency.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local btcBalance = exports['roadphone']:getcryptoamount("license:abc123", 1)
+print("Bitcoin balance: " .. btcBalance)
+```
+</CodeGroup>
+
+---
+
+## Communication
+
+### sendMailOffline
+
+Send an email to a player by their identifier (works even if offline).
+
+```lua
+exports['roadphone']:sendMailOffline(identifier, mailData)
+```
+
+<ParamField path="identifier" type="string" required>
+  The player's identifier.
+</ParamField>
+
+<ParamField path="mailData" type="table" required>
+  The email data object.
+</ParamField>
+
+<Expandable title="mailData structure">
+  <ParamField path="senderMail" type="string" required>
+    The sender's email address.
+  </ParamField>
+  <ParamField path="subject" type="string" required>
+    The email subject line.
+  </ParamField>
+  <ParamField path="message" type="string" required>
+    The email body content.
+  </ParamField>
+  <ParamField path="button" type="table">
+    Optional action button configuration.
+  </ParamField>
+</Expandable>
+
+<CodeGroup>
+```lua Example
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "admin@server.com",
+    subject = "Account Verification",
+    message = "Your account has been verified. Welcome to the server!"
+})
+
+-- With action button
+exports['roadphone']:sendMailOffline("license:abc123", {
+    senderMail = "bank@server.com",
+    subject = "Loan Approved",
+    message = "Your loan of $50,000 has been approved.",
+    button = {
+        text = "Claim Funds",
+        event = "bank:claimLoan",
+        data = { amount = 50000 }
+    }
+})
+```
+</CodeGroup>
+
+---

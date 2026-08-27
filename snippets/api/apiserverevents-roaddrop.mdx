@@ -1,0 +1,85 @@
+## RoadDrop — `server/roaddrop.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:roaddrop:receive` | see [Integration Events](#roadphone-roaddrop-receive) | Shares picture/contact/playlist with a nearby player. |
+
+## Dating — `server/dating.lua`
+
+All handlers resolve the caller's identifier server-side and validate match/ownership.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:dating_checkAuth` | — | Returns whether the caller has a profile. |
+| `roadphone:dating_login` | `credentials` (`username, password`) | Logs into a profile and reassigns it to the caller. |
+| `roadphone:dating_register` | `data` (`username, password, name, birthdate, age, gender`) | Creates a profile. |
+| `roadphone:dating_completeSetup` | `profileData` (`bio, photo, interests`) | Finalizes a profile. |
+| `roadphone:dating_getProfile` | — | Sends the caller's own profile. |
+| `roadphone:dating_updateProfile` | `data` (`name, bio, age, gender, photo, interests, active`) | Creates/updates the profile. |
+| `roadphone:dating_getSwipeQueue` | — | Builds a swipe queue (prefs + distance). |
+| `roadphone:dating_swipe` | `targetIdentifier, action ('like'/'pass'/'superlike')` | Records a swipe; creates matches on mutual like. |
+| `roadphone:dating_rewindSwipe` | `targetIdentifier` | Undoes the last swipe. |
+| `roadphone:dating_getMatches` | — | Returns matches with profiles. |
+| `roadphone:dating_unmatch` | `matchId` | Deletes a match + its messages. |
+| `roadphone:dating_getMessages` | `matchId` | Returns messages; marks incoming read. |
+| `roadphone:dating_sendMessage` | `matchId, message, image?` | Sends a text/image message. |
+| `roadphone:dating_markRead` | `matchId` | Marks messages read; echoes receipts. |
+| `roadphone:dating_getLikes` | — | Returns profiles that liked the caller. |
+| `roadphone:dating_updatePreferences` | `prefs` (`pref_gender, pref_age_min, pref_age_max`) | Updates discovery preferences. |
+
+## Livestream — `server/livestream.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:livestream:createAccount` | `username, password` | Creates a livestream account bound to the caller. |
+| `roadphone:livestream:login` | `username, password` | Logs into an account. |
+| `roadphone:livestream:updateProfile` | `oldUsername, password, newUsername, avatarUrl` | Renames/re-avatars (credential-gated). |
+| `roadphone:livestream:start` | `title, preview, username, password` | Starts a stream (LiveKit room + DB row, broadcast). |
+| `roadphone:livestream:stop` | `username, password` | Stops the caller's stream. |
+| `roadphone:livestream:sendMessage` | `data` (`message, username, streamId, color?`) | Sends a stream chat message. |
+| `roadphone:livestream:donation` | `username, streamId, amount` | Donates to a streamer (balance check, tax, transfer). |
+| `livestream:requestJoinStream` | `streamId` | Registers the caller as a viewer. |
+| `livestream:requestLeaveStream` | `streamId` | Removes the caller as a viewer. |
+| `livestream:requestViewerCount` | `streamId` | Returns a stream's viewer count. |
+| `roadphone:requestActiveStreams` | — | Returns the active-streams list. |
+
+---
+
+## Connect — `server/connect.lua`
+
+Identity resolves via `GetConnectAccountForSource`; the legacy `username, password` parameters on most events are **ignored** — only login/register actually authenticate by credentials.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:instagram_login` | `username, password, silent?` | Authenticates by credentials, issues a session. |
+| `roadphone:instagram_createAccount` | `username, password, avatarUrl` | Creates an account + session, broadcasts it. |
+| `roadphone:instagram_logout` | — | Clears the session. |
+| `roadphone:instagram_deleteAccount` | `username, password (ignored)` | Deletes the session account + all content. |
+| `roadphone:instagram_getposts` | `username, password (ignored)` | Returns the home feed. |
+| `roadphone:instagram_post` | `…, message, image (string or array), filters` | Creates a post (carousel-capable), broadcasts it. |
+| `roadphone:connect:editpost` | `…, postId, newMessage` | Edits the caller's own post caption. |
+| `roadphone:connect:deletepost` | `…, postId` | Deletes the caller's own post. |
+| `roadphone:instagram:toggleLike` | `…, inapId` | Toggles a post like. |
+| `roadphone:connect:toggleCommentLike` | `…, commentId` | Toggles a comment like. |
+| `roadphone:instagram:comment` | `…, postid, commentText, parentId?` | Adds a comment or reply. |
+| `roadphone:instagram:follow` | `…, accountid` | Follows an account. |
+| `roadphone:instagram:unfollow` | `…, accountid` | Unfollows an account. |
+| `roadphone:instagram:createStory` | `…, image` | Posts a story. |
+| `roadphone:instagram:reactStory` | `…, storyId, emoji` | Reacts to a story (one reaction per account). |
+| `roadphone:instagram_setProfileInformations` | `…, firstname, lastname, username, password?` | Updates profile info. |
+| `roadphone:instagram_setAvatarUrl` | `…, avatarUrl` | Updates the avatar. |
+
+### Connect DMs — `server/connect_dm.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:connect_dm_send` | `data` (`toAccountId, type ('text'/'image'/'post_share'), body, attachment`) | Sends a DM (rate-limited, media-host allow-list). |
+| `roadphone:connect_dm_markRead` | `data` (`peerId`) | Advances the read pointer; notifies the peer. |
+| `roadphone:connect_dm_react` | `data` (`messageId, emoji`) | Toggles one emoji reaction per user per message. |
+| `roadphone:connect_dm_typing` | `data` (`peerId, isTyping`) | Relays ephemeral typing state. |
+
+### Connect Live — `server/connectlive.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:getConnectLivestreams` | — | Returns active Connect livestreams with viewer counts. |

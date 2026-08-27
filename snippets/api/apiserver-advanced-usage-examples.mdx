@@ -1,0 +1,66 @@
+## Advanced Usage Examples
+
+### Complete Dispatch System Integration
+
+```lua
+-- Store robbery script integration
+RegisterServerEvent('store:robbery:started')
+AddEventHandler('store:robbery:started', function(storeId, storeCoords)
+    local src = source
+
+    -- Send silent alarm to police
+    exports['roadphone']:sendDispatchAnonym(
+        "police",
+        "Silent Alarm",
+        "Store robbery in progress - 24/7 #" .. storeId,
+        storeCoords,
+        "https://cdn.example.com/robbery-alert.png"
+    )
+end)
+```
+
+### Banking Integration
+
+```lua
+-- Custom shop purchase with transaction history
+function ProcessPurchase(source, itemPrice, itemName)
+    local playerIban = exports['roadphone']:getPlayerIBAN(source)
+    local shopIban = "DE000001" -- Shop's IBAN
+
+    -- Handle money transfer with your framework
+    -- ...
+
+    -- Add transaction record
+    exports['roadphone']:addBankTransaction(
+        playerIban,
+        shopIban,
+        "Purchase: " .. itemName,
+        itemPrice
+    )
+end
+```
+
+### Crypto Payment System
+
+```lua
+-- Accept cryptocurrency payments
+function AcceptCryptoPayment(identifier, coinId, amount)
+    -- Check if player has enough
+    if exports['roadphone']:checkcryptoamount(identifier, coinId, amount) then
+        -- Remove crypto from player
+        exports['roadphone']:removecrypto(identifier, coinId, amount)
+
+        -- Send confirmation email
+        exports['roadphone']:sendMailOffline(identifier, {
+            senderMail = "crypto@exchange.com",
+            subject = "Payment Confirmed",
+            message = string.format("Your payment of %.4f has been processed.", amount)
+        })
+
+        return true
+    end
+    return false
+end
+```
+
+---

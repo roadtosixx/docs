@@ -1,8 +1,11 @@
 ---
-title: FAQ
-description: All important questions about RoadCarRadio — setup, troubleshooting, and tips
-icon: "badge-info"
+title: 'FAQ'
+description: 'All important questions about RoadCarRadio — setup, troubleshooting, and tips'
+icon: 'badge-info'
 ---
+
+import MusicLibrary from '/snippets/faq/music-library.mdx';
+import MusicVerifyNotes from '/snippets/faq/music-verify-notes.mdx';
 
 <Info>
     Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
@@ -52,9 +55,9 @@ icon: "badge-info"
         /carmusic-verify PLAYERID
         ```
 
-        - The command **toggles**: no permission → grants it, already has it → revokes it
-        - `PLAYERID` is the **server ID** of the player (visible in the player list / txAdmin)
-        - The command is **ACE-restricted** — run it from the server console, or give yourself the ACE:
+        <MusicVerifyNotes />
+
+        The command is **ACE-restricted** — run it from the server console, or give yourself the ACE:
 
         ```cfg server.cfg
         add_ace group.admin command.carmusic-verify allow
@@ -66,16 +69,7 @@ icon: "badge-info"
     </Accordion>
 
     <Accordion title="My Music Library is empty — what do I do?" icon="music">
-        A fresh library only fills up once songs have been **submitted and approved**. Work through this checklist:
-
-        <Steps>
-            <Step title="Add songs through the Music app">
-                Players submit songs directly in the app. They land in the pending queue first, not in the library.
-            </Step>
-            <Step title="Approve the pending songs">
-                Someone with the music approval permission (see above) has to approve them. Once approved, they show up in the library for everyone.
-            </Step>
-        </Steps>
+        <MusicLibrary />
 
         <Tip>
             Want to skip the approval step entirely? Set `Config.SkipMusicNeedAccept = true` — submitted songs then go straight into the library.

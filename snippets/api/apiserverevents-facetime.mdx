@@ -1,0 +1,70 @@
+## FaceTime — `server/facetime.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:facetime:start` | `targetNumber, isAnonym` | Starts a LiveKit video call (blocked/DnD checks, room, ring timeout). |
+| `roadphone:facetime:accept` | `callId` | Accepts (invite validated), mints join token, voice setup. |
+| `roadphone:facetime:decline` | `callId` | Declines/leaves ringing. |
+| `roadphone:facetime:end` | `callId` | Ends/leaves an active call. |
+| `roadphone:facetime:addParticipant` | `callId, targetNumber` | Group-call invite (max 5, blocked check). |
+| `roadphone:facetime:reaction` | `emoji` | Broadcasts a mid-call emoji reaction. |
+
+## Service (Dispatch & Business) — `server/service.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:service:deleteDispatch` | `id` | Deletes a dispatch (job-scoped). |
+| `roadphone:service:dispatchFinish` | `id` | Marks a dispatch finished. |
+| `roadphone:service:declineDispatch` | `id` | Marks a dispatch declined. |
+| `roadphone:service:declineDispatchWithReason` | `id, reason` | Declines with a reason. |
+| `roadphone:service:updateDispatchStatus` | `id, status` | Updates status (`accepted/enroute/onscene/finished`, atomic accept guard). |
+| `roadphone:service:forwardDispatch` | `dispatchId, targetSource` | Reassigns a dispatch to a same-job coworker. |
+| `roadphone:service:requestShareLocation` | `dispatchId, targetNumber` | Worker offers live location to the dispatch sender. |
+| `roadphone:service:acceptLocationSharing` | `dispatchId` | Sender accepts; opens a live-location session. |
+| `roadphone:service:updateLiveLocation` | `dispatchId, x, y` | Pushes coordinates into the session. |
+| `roadphone:service:stopLiveLocation` | `dispatchId` | Ends a live-location session. |
+| `roadphone:setBusinessStatus` | `data` (`job, isOpen`) | Opens/closes a business (job + grade gated). |
+| `roadphone:postBusinessNews` | `data` (`job, title, message`) | Posts a business news item (job + grade gated). |
+
+## Taxi — `server/taxi.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:taxi:call` | `profile, price, loca, curloca, phone, gps, GPStogo, distance, csrc, vehicleType` | Customer requests a taxi (driver availability + balance check). |
+| `roadphone:taxi:accept` | `phone, profile` | Driver accepts (server-authoritative driver gate). |
+| `roadphone:taxi:pickedup:check` | `phone, gpstogo, vehicle, customersrc` | Driver asks the customer to confirm pickup. |
+| `roadphone:taxi:pickedup` | `phone, Gps, taxiplate, myplate, taxisource` | Customer confirms pickup (plate match required). |
+| `roadphone:taxi:arrived` | `phone` | Completes trip: server-authoritative price, payment, history, rating prompt. |
+| `roadphone:taxi:cancel` | `phone` | Cancels a job (customer or assigned driver only). |
+| `roadphone:taxi:savefavorite` | `favoriteType ('home'/'work'), name, coords` | Saves a favourite location. |
+| `roadphone:taxi:deletefavorite` | `favoriteType` | Deletes a favourite. |
+| `roadphone:taxi:rating` | `driverPhone, rating (1-5), tip, comment, tripId` | Post-ride rating + optional tip. |
+
+## Calendar / Notes / Voice Memos / Yellow Pages
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:calendar:add` | `title, location, notes, allDay, startAt, endAt` | Adds a calendar event. |
+| `roadphone:calendar:edit` | `id, title, location, notes, allDay, startAt, endAt` | Edits a caller-owned event. |
+| `roadphone:calendar:delete` | `id` | Deletes a caller-owned event. |
+| `roadphone:notes:add` | `title, message` | Creates a note. |
+| `roadphone:notes:edit` | `id, title, message` | Edits a caller-owned note. |
+| `roadphone:notes:delete` | `id` | Deletes a caller-owned note. |
+| `roadphone:notes:pin` | `id, isPinned` | Pins/unpins a note. |
+| `roadphone:voicemail:add` | `memo` | Saves a voice memo. |
+| `roadphone:voicemail:delete` | `id` | Deletes a caller-owned voice memo. |
+| `roadphone:yellowpages:addPost` | `title, text, picture` | Creates an ad (charges `Cfg.YellowPageFee`). |
+| `roadphone:yellowpages:deletePost` | `id` | Deletes a caller-owned ad. |
+
+## News — `server/news.lua`
+
+All news events require job-based news access (`hasNewsAccess`).
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:news:addPost` | `title, text, picture, categoryId, isBreaking, breakingDuration` | Publishes an article + global notification. |
+| `roadphone:news:editPost` | `id, title, text, picture, categoryId, isBreaking, breakingDuration` | Edits a post. |
+| `roadphone:news:deletePost` | `id` | Deletes a post. |
+| `roadphone:news:createCategory` | `name, color` | Creates a category. |
+| `roadphone:news:deleteCategory` | `id` | Deletes a category (posts keep existing, category nulled). |
+| `roadphone:news:toggleBreaking` | `postId, isBreaking, durationMinutes` | Toggles the breaking-news flag + broadcast. |

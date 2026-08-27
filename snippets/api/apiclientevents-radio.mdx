@@ -1,0 +1,87 @@
+## Radio — `client/client.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:client:joinradio` | `frz` | Joins a radio frequency (item + access checks). |
+| `roadphone:client:leaveradio` | — | Leaves the radio channel. |
+
+## Messages & Groups — `client/client.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:receiveMessage` | `message, isOwner (0/1), phoneNumber, targetPhoneNumber` | New SMS: blocked/multi-phone checks, NUI push, sound, RoadWatch mirror. |
+| `roadphone:messages:setAllMessages` | `allmessages` | Replaces the local message cache. |
+| `roadphone:messagesRead` | `readerNumber` | Marks own sent messages as read (read receipts). |
+| `roadphone:messages:group:receive` | `message` | New group message. |
+| `roadphone:messages:groupCreated` | `group, name` | Added to a new group. |
+| `roadphone:messages:groupCreated:owner` | `group` | Confirms own group creation. |
+| `roadphone:messages:groupOwnerChanged` | `groupid, newOwner` | Ownership transfer. |
+| `roadphone:messages:groupDeleted` | `groupid` | Group removed. |
+| `roadphone:messages:groupSettingsChanged` | `groupid, name, picture` | Group renamed/re-imaged. |
+| `roadphone:messages:groupMembersChanged` | `groupid, members` | Member list updated. |
+
+## Bank, Crypto & Account — `client/client.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:bank:addTransaction` | `transaction` | Appends a bank transaction (NUI + RoadWatch). |
+| `roadphone:bank:requestUpdate` | `payload` | Payment-request update. |
+| `roadphone:crypto:set` | `data` | Crypto market data. |
+| `roadphone:client:crypto:setcrypto` | `crypto` | The player's crypto holdings. |
+| `roadphone:loginAccount` | `id, firstname, lastname, mail, profile, birth` | Cloud/RoadID account login push. |
+
+## Gallery & Weather — `client/client.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:addPicture` | `picture` | Adds a photo to the gallery UI. |
+| `roadphone:albumCreated` | `album` | Confirms a created album. |
+| `roadphone:checkWeather` | — | Refreshes weather from game state. |
+| `roadphone:setWeather` | `weather` | Pushes weather data (fans out to companions). |
+
+## Camera — `client/camera.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `camera:phone` | — | Opens the photo camera (prop + cell cam). |
+| `camera:facetime:menu` | — | Opens the FaceTime selfie camera. |
+| `camera:videophone` | — | Sets up the live video-call camera. |
+| `roadphone:livestream:camera` | — | Opens the camera in livestream mode (registered in both `client.lua` and `camera.lua`). |
+
+## Admin / Billing / Jobs / Taxi / RoadDrop / Yellow Pages
+
+| Event | File | Params | Description |
+|---|---|---|---|
+| `roadphone:admin:open` | admin.lua | — | Opens the admin config panel (server ACE-gates recipients). |
+| `roadphone:admin:chunkResult` | admin.lua | `transferId, result` | Resolves a pending chunked admin save. |
+| `roadphone:updatebilling` | billing.lua | — | Refreshes the invoice list. |
+| `roadphone:jobs:gigAdded` | jobs.lua | `gig` | New gig on the gig board. |
+| `roadphone:jobs:gigRemoved` | jobs.lua | `id` | Gig removed. |
+| `roadphone:taxi:update` | taxi.lua | `taxijob` | Driver-side job list update. |
+| `roadphone:taxi:update:customer` | taxi.lua | `taxijob` | Customer-side job update. |
+| `roadphone:taxi:pickedup:check:client` | taxi.lua | `phone, gpstogo, vehicle2, source` | Reads the driver's plate and confirms pickup with the server. |
+| `roadphone:taxi:setWaypoint` | taxi.lua | `GPStogo` | Sets a map waypoint. |
+| `roadphone:taxi:showRating` | taxi.lua | `tripData` | Shows the post-ride rating UI. |
+| `roadphone:roaddrop:receive:picture` | roaddrop.lua | `picturelink, sender` | Incoming RoadDrop image. |
+| `roadphone:roaddrop:receive:contact` | roaddrop.lua | `contact, sender` | Incoming RoadDrop contact. |
+| `roadphone:roaddrop:receive:playlist` | roaddrop.lua | `playlist, sender` | Incoming RoadDrop playlist. |
+| `roadphone:yellowpages:newpost` | advertising.lua | `post` | New yellow-pages ad (+ optional notification). |
+| `roadphone:yellowpages:delete` | advertising.lua | `id` | Ad removed. |
+
+## Service (Dispatch & Business) — `client/service.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:service:newDispatch` | `dispatch` | New dispatch: NUI push + dispatch sound. |
+| `roadphone:service:deleteDispatch` | `id` | Dispatch deleted. |
+| `roadphone:service:finishDispatch` | `id` | Dispatch finished. |
+| `roadphone:service:declineDispatch` | `id` | Dispatch declined. |
+| `roadphone:service:statusUpdate` | `data` (`id, status, assignedTo, assignedToName`) | Dispatch status change. |
+| `roadphone:service:dispatchForwarded` | `data` (`dispatchId, forwardedTo`) | Dispatch reassigned. |
+| `roadphone:service:locationRequest` | `data` (`dispatchId, dispatcherName`) | Live-location share offer. |
+| `roadphone:service:locationSharingAccepted` | `data` (`dispatchId`) | Share accepted. |
+| `roadphone:service:liveLocationUpdate` | `data` (`dispatchId, x, y, dispatcherName`) | Live coordinates. |
+| `roadphone:service:locationSharingStopped` | `data` (`dispatchId`) | Share ended. |
+| `roadphone:businessStatusUpdate` | `job, status` | Business open/closed state. |
+| `roadphone:newBusinessNews` | `newsItem` | New business news item. |
+| `roadphone:managementDataUpdate` | `data` (`balance, employees`) | Business management data. |

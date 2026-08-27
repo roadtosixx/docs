@@ -1,0 +1,12 @@
+## Hooks emitted by RoadPhone (listen with AddEventHandler)
+
+These events are **fired by** RoadPhone on the client for other resources to consume:
+
+| Event | Args | When |
+|---|---|---|
+| `roadphone:islandActivityAction` | `activityId, buttonId` | A Live Bar activity button was tapped (pairs with `StartIslandActivity` export). |
+| `roadphone:client:call:eventnumber` | `number` | A configured event number was dialed — add your own handler for custom behavior (template in `clientAPI.lua`). |
+| `roadphone:watch:notification` / `:callStateChanged` / `:incomingCall` / `:callAccepted` / `:callEnded` / `:newMessage` / `:newTransaction` / `:musicStateChanged` | varies | RoadWatch companion bus — mirrors phone state to the smartwatch. |
+| `roadpad:setWeather`, `roadcarplay:setWeather`, `roadwatch:setWeather` | `weather` | Weather fan-out to companion resources. |
+| `roadphonebox:acceptcall`, `roadphonebox:endCall` | varies | Phonebox companion signaling. |
+| `roadtv:playVideoYT` | video data | RoadTV companion playback. |

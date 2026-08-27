@@ -1,0 +1,15 @@
+## Livestream — `client/livestream.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:receiveActiveStreams` | `streams` | Active-streams list. |
+| `livestream:startStream` | `data` (`streamId, …`) | Own stream started. |
+| `livestream:stopStream` | — | Own stream stopped. |
+| `livestream:streamEnded` | `streamId` | Watched stream ended. |
+| `livestream:updateViewerCount` | `streamId, viewerCount` | Viewer count. |
+| `roadphone:livestream:streamAdded` | `stream` | New stream in the list. |
+| `roadphone:livestream:streamRemoved` | `streamId` | Stream removed. |
+| `roadphone:livestream:newStream` | `username` | "X went live" notification. |
+| `roadphone:livestream:setaccount` | `username, password, avatar` | Account push. |
+| `roadphone:livestream:profileUpdated` | `username, avatarUrl` | Profile change. |
+| `roadphone:livestream:receiveMessage` | `data` | Stream chat message. |

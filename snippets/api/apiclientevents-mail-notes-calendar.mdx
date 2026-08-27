@@ -1,0 +1,124 @@
+## Mail / Notes / Calendar / Voice Memos / News
+
+| Event | File | Params | Description |
+|---|---|---|---|
+| `roadphone:mail:updatemails` | mail.lua | `mails, sendermails` | Mailbox refresh. |
+| `roadphone:notes:new` | notes.lua | `note` | New note push. |
+| `roadphone:notes:sync` | notes.lua | — | Triggers a notes refetch. |
+| `roadphone:calendar:new` | calendar.lua | `event` | New calendar event push. |
+| `roadphone:calendar:sync` | calendar.lua | — | Triggers a calendar refetch. |
+| `roadphone:voicemail:newpost` | voicememos.lua | `post` | New voice memo. |
+| `roadphone:voicemail:delete` | voicememos.lua | `id` | Voice memo deleted. |
+| `roadphone:news:newpost` | news.lua | `post` | New article (+ optional notification). |
+| `roadphone:news:postUpdated` | news.lua | `postData` | Article edited. |
+| `roadphone:news:delete` | news.lua | `id` | Article deleted. |
+| `roadphone:news:categoryCreated` | news.lua | `category` | Category created. |
+| `roadphone:news:categoryDeleted` | news.lua | `id` | Category deleted. |
+| `roadphone:news:breakingToggled` | news.lua | `data` (`id, is_breaking, breaking_until`) | Breaking flag toggled. |
+| `roadphone:news:breaking` | news.lua | `post` | Breaking-news alert broadcast. |
+
+## Health — `client/health.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:health:stressUpdate` | `stressLevel` | Injects a stress value (see [Integration Events](#roadphone-health-stressupdate)). |
+
+---
+
+## Connect — `client/connect.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:instagram_setAccount` | `id, firstname, lastname, username, password, avatarUrl, verify` | Session account push. |
+| `roadphone:instagram_setposts` | `posts` | Feed data. |
+| `roadphone:instagram_newpost` | `inap` | New post (+ optional notification). |
+| `roadphone:instagram_addAccount` | `account` | New account broadcast. |
+| `roadphone:insto_createAccount` | `account` | Account-created confirmation. |
+| `roadphone:instagram:logout` | — | Logout push. |
+| `roadphone:insto_updateinapLikes` | `inapId, likes` | Post like count. |
+| `roadphone:updatepostIsLiked` | `inapId, isLikes` | Own like state. |
+| `roadphone:instagram:addcomment` | `comment` | New comment. |
+| `roadphone:connect:commentLikeUpdated` | `payload` (`commentId, likes`) | Comment like count. |
+| `roadphone:connect:commentLikeSelf` | `payload` (`commentId, isLiked`) | Own comment-like state. |
+| `roadphone:connect:postUpdated` | `post` | Post edited. |
+| `roadphone:connect_delete` | `postId` | Post deleted. |
+| `roadphone:instagram:addstory` | `story` | New story. |
+| `roadshop:instagram:follow:client` | `selfUser, username` | Follow notification fired by the roadshop resource. |
+
+### Connect DMs & Live — `client/connect.lua`, `client/connectlive.lua`
+
+DM pushes (`connect_dm_newMessage`, `connect_dm_read`, `connect_dm_reaction`, typing) arrive via the generic `roadphone:nui` passthrough. Connect Live registers:
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:setConnectLivestreams` | `streams` | Active Connect livestreams. |
+| `roadphone:connectLive:viewerUpdate` | `data` | Viewer count update. |
+| `roadphone:connectLive:ended` | `data` (`streamId`) | Stream ended. |
+| `roadphone:nui` | `data` (with `.event`) | Generic NUI passthrough (see [Integration Events](#roadphone-nui)). |
+
+## TweetWave — `client/tweetwave.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:twitter_setAccount` | `username, password, avatarUrl, verify, date, accountId` | Session account push. |
+| `roadphone:twitter_createAccount` | `account` | Account-created confirmation. |
+| `roadphone:twitter_loggedOut` / `roadphone:twitter:logout` | — | Logout pushes. |
+| `roadphone:twitter_deleteTwitter` | `username, password` | Account deleted; refreshes users. |
+| `roadphone:twitter_newpost` | `tweet` | New tweet notification. |
+| `roadphone:twitter_newTweet` | `tweet` | New tweet data. |
+| `roadphone:twitter_getUserTweets` | `tweets` | Own tweets push. |
+| `roadphone:twitter_updateTweetLikes` | `tweetId, likes` | Like count. |
+| `roadphone:twitter_setTweetLikes` | `tweetId, isLikes` | Own like state. |
+| `roadphone:twitter_updateTweetReposts` | `tweetId, count` | Repost count. |
+| `roadphone:twitter_setTweetRepost` | `tweetId, isReposted` | Own repost state. |
+| `roadphone:twitter_updateQuoteCount` | `tweetId, count` | Quote count. |
+| `roadphone:twitter_setBookmark` | `tweetId, isBookmarked` | Own bookmark state. |
+| `roadphone:twitter_setFollow` | `targetUserId, isFollowing` | Own follow state. |
+| `roadphone:twitter:addcomment` | `comment` | New comment. |
+
+## Glimpse — `client/snapy.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:snapy_setAccount` | `account` | Session account push. |
+| `roadphone:snapy_loginError` / `roadphone:snapy_registerError` | — / `reason` | Auth errors. |
+| `roadphone:snapy_newSnap` | `snapData` | Incoming snap (+ gated notification). |
+| `roadphone:snapy_newStory` | `storyData` | New story. |
+| `roadphone:snapy_newMessage` | `message` | New chat message (+ gated notification). |
+| `roadphone:snapy_newGroup` | `group` | Added to a group. |
+| `roadphone:snapy_friendRequest` | `request` | Incoming friend request. |
+| `roadphone:snapy_friendAccepted` | `payload` | Request accepted. |
+| `roadphone:snapy_friendIgnored` | `requestId` | Request ignored. |
+| `roadphone:snapy_friendRemoved` | `data` | Friendship removed. |
+| `roadphone:snapy_typing` | `payload` (`from, name, group_id`) | Typing indicator. |
+| `roadphone:snapy_messageRead` | `payload` (`by`) | Read receipt. |
+| `roadphone:snapy_messageReaction` | `data` | Message reaction. |
+| `roadphone:snapy_snapSaved` | `data` | Snap saved to chat. |
+| `roadphone:snapy_screenshotted` | `data` | Screenshot alert. |
+| `roadphone:snapy_profileUpdated` | `data` | Profile change. |
+| `roadphone:snapy_memoryAdded` | `memory` | Memory saved. |
+
+## DarkChat — `client/darkchat.lua`
+
+Each forwards its `payload` table to the DarkChat NUI layer:
+
+`roadphone:darkchat:messagePushed`, `:messageDeleted`, `:roomUpdated`, `:memberJoined`, `:memberLeft`, `:memberKicked`, `:memberUpdated`, `:youWereKicked`, `:resyncRooms`.
+
+## Dating — `client/dating.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:dating_authCheckResult` | `exists, profile, hasProfile, profileComplete` | Auth check response. |
+| `roadphone:dating_loginResult` | `success, profile, hasProfile, profileComplete` | Login response. |
+| `roadphone:dating_registerResult` | `success, profile` | Registration response. |
+| `roadphone:dating_setupComplete` | `success` | Setup finished. |
+| `roadphone:dating_profileData` | `profile` | Own profile push. |
+| `roadphone:dating_profileUpdated` | `success` | Profile update confirmation. |
+| `roadphone:dating_swipeQueue` | `profiles` | Swipe queue. |
+| `roadphone:dating_newMatch` | `matchId, profile` | New match (+ phone notification). |
+| `roadphone:dating_matchesList` | `matches` | Matches list. |
+| `roadphone:dating_likesList` | `profiles` | Who liked you. |
+| `roadphone:dating_matchRemoved` | `matchId` | Unmatched. |
+| `roadphone:dating_messageHistory` | `matchId, messages` | Chat history. |
+| `roadphone:dating_newMessage` | `message` | New chat message. |
+| `roadphone:dating_messagesRead` | `matchId, messageIds` | Read receipts. |

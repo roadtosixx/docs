@@ -4,6 +4,12 @@ description: 'All client-side events registered by RoadPhone'
 icon: 'smartphone'
 ---
 
+import ApiClienteventsHooks from '/snippets/api/apiclientevents-hooks.mdx';
+
+import ApiClienteventsRadio from '/snippets/api/apiclientevents-radio.mdx';
+import ApiClienteventsMailNotesCalendar from '/snippets/api/apiclientevents-mail-notes-calendar.mdx';
+import ApiClienteventsLivestream from '/snippets/api/apiclientevents-livestream.mdx';
+
 # Client Events
 
 This page documents every networked client event RoadPhone registers, plus the client-side hooks it emits for other resources.
@@ -183,18 +189,7 @@ TriggerClientEvent('roadphone:invalidatePhoneCache', source)
 
 ---
 
-## Hooks emitted by RoadPhone (listen with AddEventHandler)
-
-These events are **fired by** RoadPhone on the client for other resources to consume:
-
-| Event | Args | When |
-|---|---|---|
-| `roadphone:islandActivityAction` | `activityId, buttonId` | A Dynamic-Island live-activity button was tapped (pairs with `StartIslandActivity` export). |
-| `roadphone:client:call:eventnumber` | `number` | A configured event number was dialed — add your own handler for custom behavior (template in `clientAPI.lua`). |
-| `roadphone:watch:notification` / `:callStateChanged` / `:incomingCall` / `:callAccepted` / `:callEnded` / `:newMessage` / `:newTransaction` / `:musicStateChanged` | varies | RoadWatch companion bus — mirrors phone state to the smartwatch. |
-| `roadpad:setWeather`, `roadcarplay:setWeather`, `roadwatch:setWeather` | `weather` | Weather fan-out to companion resources. |
-| `roadphonebox:acceptcall`, `roadphonebox:endCall` | varies | Phonebox companion signaling. |
-| `roadtv:playVideoYT` | video data | RoadTV companion playback. |
+<ApiClienteventsHooks />
 
 ---
 
@@ -263,93 +258,7 @@ All forward their payload to the FaceTime NUI layer:
 
 `roadphone:facetime:incoming`, `:callerReady`, `:calleeReady`, `:callAccepted`, `:declined`, `:ended`, `:participantJoined`, `:participantLeft`, `:participantInvited`, `:participantDeclined`, `:participantUnreachable`, `:incomingTimeout`, `:callState`, `:reaction` — each takes a single `data` table. `:declined` and `:ended` have a second handler in `camera.lua` that cleans up the selfie camera.
 
-## Radio — `client/client.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:client:joinradio` | `frz` | Joins a radio frequency (item + access checks). |
-| `roadphone:client:leaveradio` | — | Leaves the radio channel. |
-
-## Messages & Groups — `client/client.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:receiveMessage` | `message, isOwner (0/1), phoneNumber, targetPhoneNumber` | New SMS: blocked/multi-phone checks, NUI push, sound, RoadWatch mirror. |
-| `roadphone:messages:setAllMessages` | `allmessages` | Replaces the local message cache. |
-| `roadphone:messagesRead` | `readerNumber` | Marks own sent messages as read (read receipts). |
-| `roadphone:messages:group:receive` | `message` | New group message. |
-| `roadphone:messages:groupCreated` | `group, name` | Added to a new group. |
-| `roadphone:messages:groupCreated:owner` | `group` | Confirms own group creation. |
-| `roadphone:messages:groupOwnerChanged` | `groupid, newOwner` | Ownership transfer. |
-| `roadphone:messages:groupDeleted` | `groupid` | Group removed. |
-| `roadphone:messages:groupSettingsChanged` | `groupid, name, picture` | Group renamed/re-imaged. |
-| `roadphone:messages:groupMembersChanged` | `groupid, members` | Member list updated. |
-
-## Bank, Crypto & Account — `client/client.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:bank:addTransaction` | `transaction` | Appends a bank transaction (NUI + RoadWatch). |
-| `roadphone:bank:requestUpdate` | `payload` | Payment-request update. |
-| `roadphone:crypto:set` | `data` | Crypto market data. |
-| `roadphone:client:crypto:setcrypto` | `crypto` | The player's crypto holdings. |
-| `roadphone:loginAccount` | `id, firstname, lastname, mail, profile, birth` | Cloud/RoadID account login push. |
-
-## Gallery & Weather — `client/client.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:addPicture` | `picture` | Adds a photo to the gallery UI. |
-| `roadphone:albumCreated` | `album` | Confirms a created album. |
-| `roadphone:checkWeather` | — | Refreshes weather from game state. |
-| `roadphone:setWeather` | `weather` | Pushes weather data (fans out to companions). |
-
-## Camera — `client/camera.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `camera:phone` | — | Opens the photo camera (prop + cell cam). |
-| `camera:facetime:menu` | — | Opens the FaceTime selfie camera. |
-| `camera:videophone` | — | Sets up the live video-call camera. |
-| `roadphone:livestream:camera` | — | Opens the camera in livestream mode (registered in both `client.lua` and `camera.lua`). |
-
-## Admin / Billing / Jobs / Taxi / RoadDrop / Yellow Pages
-
-| Event | File | Params | Description |
-|---|---|---|---|
-| `roadphone:admin:open` | admin.lua | — | Opens the admin config panel (server ACE-gates recipients). |
-| `roadphone:admin:chunkResult` | admin.lua | `transferId, result` | Resolves a pending chunked admin save. |
-| `roadphone:updatebilling` | billing.lua | — | Refreshes the invoice list. |
-| `roadphone:jobs:gigAdded` | jobs.lua | `gig` | New gig on the gig board. |
-| `roadphone:jobs:gigRemoved` | jobs.lua | `id` | Gig removed. |
-| `roadphone:taxi:update` | taxi.lua | `taxijob` | Driver-side job list update. |
-| `roadphone:taxi:update:customer` | taxi.lua | `taxijob` | Customer-side job update. |
-| `roadphone:taxi:pickedup:check:client` | taxi.lua | `phone, gpstogo, vehicle2, source` | Reads the driver's plate and confirms pickup with the server. |
-| `roadphone:taxi:setWaypoint` | taxi.lua | `GPStogo` | Sets a map waypoint. |
-| `roadphone:taxi:showRating` | taxi.lua | `tripData` | Shows the post-ride rating UI. |
-| `roadphone:roaddrop:receive:picture` | roaddrop.lua | `picturelink, sender` | Incoming RoadDrop image. |
-| `roadphone:roaddrop:receive:contact` | roaddrop.lua | `contact, sender` | Incoming RoadDrop contact. |
-| `roadphone:roaddrop:receive:playlist` | roaddrop.lua | `playlist, sender` | Incoming RoadDrop playlist. |
-| `roadphone:yellowpages:newpost` | advertising.lua | `post` | New yellow-pages ad (+ optional notification). |
-| `roadphone:yellowpages:delete` | advertising.lua | `id` | Ad removed. |
-
-## Service (Dispatch & Business) — `client/service.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:service:newDispatch` | `dispatch` | New dispatch: NUI push + dispatch sound. |
-| `roadphone:service:deleteDispatch` | `id` | Dispatch deleted. |
-| `roadphone:service:finishDispatch` | `id` | Dispatch finished. |
-| `roadphone:service:declineDispatch` | `id` | Dispatch declined. |
-| `roadphone:service:statusUpdate` | `data` (`id, status, assignedTo, assignedToName`) | Dispatch status change. |
-| `roadphone:service:dispatchForwarded` | `data` (`dispatchId, forwardedTo`) | Dispatch reassigned. |
-| `roadphone:service:locationRequest` | `data` (`dispatchId, dispatcherName`) | Live-location share offer. |
-| `roadphone:service:locationSharingAccepted` | `data` (`dispatchId`) | Share accepted. |
-| `roadphone:service:liveLocationUpdate` | `data` (`dispatchId, x, y, dispatcherName`) | Live coordinates. |
-| `roadphone:service:locationSharingStopped` | `data` (`dispatchId`) | Share ended. |
-| `roadphone:businessStatusUpdate` | `job, status` | Business open/closed state. |
-| `roadphone:newBusinessNews` | `newsItem` | New business news item. |
-| `roadphone:managementDataUpdate` | `data` (`balance, employees`) | Business management data. |
+<ApiClienteventsRadio />
 
 ## Music — `client/music.lua`
 
@@ -359,146 +268,9 @@ All forward their payload to the FaceTime NUI layer:
 | `roadphone:music:setPlaylists` | `playlists` | Playlist list push. |
 | `roadphone:music:setAdmin` | `isAdmin` | Music-admin flag for the UI. |
 
-## Mail / Notes / Calendar / Voice Memos / News
+<ApiClienteventsMailNotesCalendar />
 
-| Event | File | Params | Description |
-|---|---|---|---|
-| `roadphone:mail:updatemails` | mail.lua | `mails, sendermails` | Mailbox refresh. |
-| `roadphone:notes:new` | notes.lua | `note` | New note push. |
-| `roadphone:notes:sync` | notes.lua | — | Triggers a notes refetch. |
-| `roadphone:calendar:new` | calendar.lua | `event` | New calendar event push. |
-| `roadphone:calendar:sync` | calendar.lua | — | Triggers a calendar refetch. |
-| `roadphone:voicemail:newpost` | voicememos.lua | `post` | New voice memo. |
-| `roadphone:voicemail:delete` | voicememos.lua | `id` | Voice memo deleted. |
-| `roadphone:news:newpost` | news.lua | `post` | New article (+ optional notification). |
-| `roadphone:news:postUpdated` | news.lua | `postData` | Article edited. |
-| `roadphone:news:delete` | news.lua | `id` | Article deleted. |
-| `roadphone:news:categoryCreated` | news.lua | `category` | Category created. |
-| `roadphone:news:categoryDeleted` | news.lua | `id` | Category deleted. |
-| `roadphone:news:breakingToggled` | news.lua | `data` (`id, is_breaking, breaking_until`) | Breaking flag toggled. |
-| `roadphone:news:breaking` | news.lua | `post` | Breaking-news alert broadcast. |
-
-## Health — `client/health.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:health:stressUpdate` | `stressLevel` | Injects a stress value (see [Integration Events](#roadphone-health-stressupdate)). |
-
----
-
-## Connect (Instagram) — `client/connect.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:instagram_setAccount` | `id, firstname, lastname, username, password, avatarUrl, verify` | Session account push. |
-| `roadphone:instagram_setposts` | `posts` | Feed data. |
-| `roadphone:instagram_newpost` | `inap` | New post (+ optional notification). |
-| `roadphone:instagram_addAccount` | `account` | New account broadcast. |
-| `roadphone:insto_createAccount` | `account` | Account-created confirmation. |
-| `roadphone:instagram:logout` | — | Logout push. |
-| `roadphone:insto_updateinapLikes` | `inapId, likes` | Post like count. |
-| `roadphone:updatepostIsLiked` | `inapId, isLikes` | Own like state. |
-| `roadphone:instagram:addcomment` | `comment` | New comment. |
-| `roadphone:connect:commentLikeUpdated` | `payload` (`commentId, likes`) | Comment like count. |
-| `roadphone:connect:commentLikeSelf` | `payload` (`commentId, isLiked`) | Own comment-like state. |
-| `roadphone:connect:postUpdated` | `post` | Post edited. |
-| `roadphone:connect_delete` | `postId` | Post deleted. |
-| `roadphone:instagram:addstory` | `story` | New story. |
-| `roadshop:instagram:follow:client` | `selfUser, username` | Follow notification fired by the roadshop resource. |
-
-### Connect DMs & Live — `client/connect.lua`, `client/connectlive.lua`
-
-DM pushes (`connect_dm_newMessage`, `connect_dm_read`, `connect_dm_reaction`, typing) arrive via the generic `roadphone:nui` passthrough. Connect Live registers:
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:setConnectLivestreams` | `streams` | Active Connect livestreams. |
-| `roadphone:connectLive:viewerUpdate` | `data` | Viewer count update. |
-| `roadphone:connectLive:ended` | `data` (`streamId`) | Stream ended. |
-| `roadphone:nui` | `data` (with `.event`) | Generic NUI passthrough (see [Integration Events](#roadphone-nui)). |
-
-## TweetWave — `client/tweetwave.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:twitter_setAccount` | `username, password, avatarUrl, verify, date, accountId` | Session account push. |
-| `roadphone:twitter_createAccount` | `account` | Account-created confirmation. |
-| `roadphone:twitter_loggedOut` / `roadphone:twitter:logout` | — | Logout pushes. |
-| `roadphone:twitter_deleteTwitter` | `username, password` | Account deleted; refreshes users. |
-| `roadphone:twitter_newpost` | `tweet` | New tweet notification. |
-| `roadphone:twitter_newTweet` | `tweet` | New tweet data. |
-| `roadphone:twitter_getUserTweets` | `tweets` | Own tweets push. |
-| `roadphone:twitter_updateTweetLikes` | `tweetId, likes` | Like count. |
-| `roadphone:twitter_setTweetLikes` | `tweetId, isLikes` | Own like state. |
-| `roadphone:twitter_updateTweetReposts` | `tweetId, count` | Repost count. |
-| `roadphone:twitter_setTweetRepost` | `tweetId, isReposted` | Own repost state. |
-| `roadphone:twitter_updateQuoteCount` | `tweetId, count` | Quote count. |
-| `roadphone:twitter_setBookmark` | `tweetId, isBookmarked` | Own bookmark state. |
-| `roadphone:twitter_setFollow` | `targetUserId, isFollowing` | Own follow state. |
-| `roadphone:twitter:addcomment` | `comment` | New comment. |
-
-## Snapy — `client/snapy.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:snapy_setAccount` | `account` | Session account push. |
-| `roadphone:snapy_loginError` / `roadphone:snapy_registerError` | — / `reason` | Auth errors. |
-| `roadphone:snapy_newSnap` | `snapData` | Incoming snap (+ gated notification). |
-| `roadphone:snapy_newStory` | `storyData` | New story. |
-| `roadphone:snapy_newMessage` | `message` | New chat message (+ gated notification). |
-| `roadphone:snapy_newGroup` | `group` | Added to a group. |
-| `roadphone:snapy_friendRequest` | `request` | Incoming friend request. |
-| `roadphone:snapy_friendAccepted` | `payload` | Request accepted. |
-| `roadphone:snapy_friendIgnored` | `requestId` | Request ignored. |
-| `roadphone:snapy_friendRemoved` | `data` | Friendship removed. |
-| `roadphone:snapy_typing` | `payload` (`from, name, group_id`) | Typing indicator. |
-| `roadphone:snapy_messageRead` | `payload` (`by`) | Read receipt. |
-| `roadphone:snapy_messageReaction` | `data` | Message reaction. |
-| `roadphone:snapy_snapSaved` | `data` | Snap saved to chat. |
-| `roadphone:snapy_screenshotted` | `data` | Screenshot alert. |
-| `roadphone:snapy_profileUpdated` | `data` | Profile change. |
-| `roadphone:snapy_memoryAdded` | `memory` | Memory saved. |
-
-## DarkChat — `client/darkchat.lua`
-
-Each forwards its `payload` table to the DarkChat NUI layer:
-
-`roadphone:darkchat:messagePushed`, `:messageDeleted`, `:roomUpdated`, `:memberJoined`, `:memberLeft`, `:memberKicked`, `:memberUpdated`, `:youWereKicked`, `:resyncRooms`.
-
-## Dating (DateMe) — `client/dating.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:dating_authCheckResult` | `exists, profile, hasProfile, profileComplete` | Auth check response. |
-| `roadphone:dating_loginResult` | `success, profile, hasProfile, profileComplete` | Login response. |
-| `roadphone:dating_registerResult` | `success, profile` | Registration response. |
-| `roadphone:dating_setupComplete` | `success` | Setup finished. |
-| `roadphone:dating_profileData` | `profile` | Own profile push. |
-| `roadphone:dating_profileUpdated` | `success` | Profile update confirmation. |
-| `roadphone:dating_swipeQueue` | `profiles` | Swipe queue. |
-| `roadphone:dating_newMatch` | `matchId, profile` | New match (+ phone notification). |
-| `roadphone:dating_matchesList` | `matches` | Matches list. |
-| `roadphone:dating_likesList` | `profiles` | Who liked you. |
-| `roadphone:dating_matchRemoved` | `matchId` | Unmatched. |
-| `roadphone:dating_messageHistory` | `matchId, messages` | Chat history. |
-| `roadphone:dating_newMessage` | `message` | New chat message. |
-| `roadphone:dating_messagesRead` | `matchId, messageIds` | Read receipts. |
-
-## Livestream — `client/livestream.lua`
-
-| Event | Params | Description |
-|---|---|---|
-| `roadphone:receiveActiveStreams` | `streams` | Active-streams list. |
-| `livestream:startStream` | `data` (`streamId, …`) | Own stream started. |
-| `livestream:stopStream` | — | Own stream stopped. |
-| `livestream:streamEnded` | `streamId` | Watched stream ended. |
-| `livestream:updateViewerCount` | `streamId, viewerCount` | Viewer count. |
-| `roadphone:livestream:streamAdded` | `stream` | New stream in the list. |
-| `roadphone:livestream:streamRemoved` | `streamId` | Stream removed. |
-| `roadphone:livestream:newStream` | `username` | "X went live" notification. |
-| `roadphone:livestream:setaccount` | `username, password, avatar` | Account push. |
-| `roadphone:livestream:profileUpdated` | `username, avatarUrl` | Profile change. |
-| `roadphone:livestream:receiveMessage` | `data` | Stream chat message. |
+<ApiClienteventsLivestream />
 
 ## Addons
 
@@ -516,5 +288,5 @@ Battery events only register with `Config.BatterySystem` + `Config.UseMetadata`;
 | `roadpods:client:connect` | RoadPods | — | Connects RoadPods (ownership check, opens the phone). |
 
 <Note>
-  `clientAPI.lua` and `island.lua` register no networked events — their surfaces are exports and NUI callbacks. The Dynamic-Island Lua API is documented under [Client Exports](/roadphone/api/client).
+  `clientAPI.lua` and `island.lua` register no networked events — their surfaces are exports and NUI callbacks. The Live Bar Lua API is documented under [Client Exports](/roadphone/api/client).
 </Note>

@@ -1,0 +1,30 @@
+## Glimpse — `server/snapy.lua`
+
+Identity resolves via `GetSnapyAccountForSource`; all events are rate-limited per `SnapyCfg.RateLimits`.
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:snapy_login` | `username, password` | Authenticates by credentials, issues a session. |
+| `roadphone:snapy_register` | `data` (`username, password, displayName, avatarUrl`) | Creates an account. |
+| `roadphone:snapy_logout` | — | Clears the session. |
+| `roadphone:snapy_addFriend` | `accountId (ignored), targetUsernameOrSnapcode` | Sends a friend request. |
+| `roadphone:snapy_acceptFriend` | `requestId` | Accepts a request (ownership-scoped). |
+| `roadphone:snapy_ignoreFriend` | `requestId` | Ignores/deletes a pending request. |
+| `roadphone:snapy_removeFriend` | `friendId` | Removes a friendship + the 1:1 conversation. |
+| `roadphone:snapy_blockUser` | `targetId` | Blocks a user (removes friendship + conversation). |
+| `roadphone:snapy_unblockUser` | `targetId` | Unblocks a user. |
+| `roadphone:snapy_sendSnap` | `data` (`recipients, imageUrl, thumbUrl, blurhash, caption, duration, mode, mediaType, overlays`) | Sends a snap to accepted friends; advances snapstreaks. |
+| `roadphone:snapy_markSnapViewed` | `snapId` | Marks a received snap opened. |
+| `roadphone:snapy_screenshot` | `snapId` | Flags a snap screenshotted; alerts the sender. |
+| `roadphone:snapy_saveSnap` | `data` (`snapId`) | Saves a viewed snap into the chat. |
+| `roadphone:snapy_createStory` | `data` (`imageUrl, thumbUrl, blurhash, caption, visibility, group_id, overlays, mediaType`) | Posts a 24h story. |
+| `roadphone:snapy_viewStory` | `storyId, viewerId (ignored)` | Records a unique story view. |
+| `roadphone:snapy_setHighlight` | `storyId, on` | Marks/unmarks a story as a profile highlight. |
+| `roadphone:snapy_sendMessage` | `data` (`receiverId or groupId, message, messageType, imageUrl, storyRef`) | Sends a chat message (friendship/membership enforced). |
+| `roadphone:snapy_typing` | `data` (`receiverId or groupId`) | Relays typing state. |
+| `roadphone:snapy_reactMessage` | `data` (`messageId, emoji`) | Reacts to a message. |
+| `roadphone:snapy_leaveGroup` | `groupId` | Leaves a group (ownership transfer / cleanup). |
+| `roadphone:snapy_updateProfile` | `accountId (ignored), data` (`displayName, avatarUrl`) | Updates the profile. |
+| `roadphone:snapy_updateSettings` | `data` (`ghost_mode, quick_add, story_default, memories_autosave`) | Updates settings/privacy. |
+| `roadphone:snapy_addMemory` | `data` (`mediaUrl, thumbUrl, blurhash, caption, mediaType, kind`) | Saves a permanent memory. |
+| `roadphone:snapy_deleteMemory` | `data` (`id`) | Deletes a caller-owned memory. |

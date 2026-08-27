@@ -1,0 +1,11 @@
+## Radio
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:getRadioAmount` | — | `true` or `nil` | Whether the player may use the radio app (`Config.RadioNeedItem`). |
+| `roadphone:radio:getSavedChannels` | — | array of `{ id, name, frequency, icon_color }` | Saved radio channels. |
+| `roadphone:radio:addChannel` | `channelData` | new channel id | Saves a channel (DB + metadata). |
+| `roadphone:radio:updateChannel` | `channelId, channelData` | boolean | Updates a caller-owned channel. |
+| `roadphone:radio:deleteChannel` | `channelId` | boolean | Deletes a caller-owned channel. |
+| `roadphone:radio:getRecentChannels` | — | array of frequencies | Recently used channels (metadata mode). |
+| `roadphone:radio:getUsersInChannel` | `frequency` | array of `{ id, name, isTalking? }` | Players in a frequency (pma-voice/mumble/yaca). |

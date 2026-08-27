@@ -1,0 +1,239 @@
+## Health Tracking
+
+<Note>
+  The health system requires `Config.BatterySystem` or the health addon to be enabled. Server-side exports return data from the in-memory cache, which is updated by client sync events.
+</Note>
+
+### getPlayerHealth
+
+Get all current health data for a player from the server cache.
+
+```lua
+local health = exports['roadphone']:getPlayerHealth(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Health data table, or `nil` if not cached.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local health = exports['roadphone']:getPlayerHealth(source)
+if health then
+    print("Heart Rate: " .. health.heartRate)
+    print("Steps: " .. health.steps)
+    print("Stress: " .. health.stress)
+end
+```
+</CodeGroup>
+
+---
+
+### getPlayerHeartRate
+
+Get a player's current heart rate.
+
+```lua
+local heartRate = exports['roadphone']:getPlayerHeartRate(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Heart rate in bpm (default: `70` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerStress
+
+Get a player's current stress level.
+
+```lua
+local stress = exports['roadphone']:getPlayerStress(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Stress level 0-100 (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerSteps
+
+Get a player's step count for the current session.
+
+```lua
+local steps = exports['roadphone']:getPlayerSteps(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  Steps today (default: `0` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerDailyHealth
+
+Get a player's daily health summary from the database.
+
+```lua
+local summary = exports['roadphone']:getPlayerDailyHealth(source, date)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="date" type="string">
+  Date in `'YYYY-MM-DD'` format (default: today).
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  Database row with daily stats (steps, distance, calories, etc.), or `nil` if no data.
+</ResponseField>
+
+---
+
+### getPlayerHealthHistory
+
+Get a player's health history for the last N days.
+
+```lua
+local history = exports['roadphone']:getPlayerHealthHistory(source, days)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="days" type="number">
+  Number of days to retrieve (default: `7`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of daily health records ordered by date DESC.
+</ResponseField>
+
+---
+
+### isPlayerSleeping
+
+Check if a player is currently sleeping.
+
+```lua
+local sleeping = exports['roadphone']:isPlayerSleeping(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` if sleeping, `false` otherwise.
+</ResponseField>
+
+---
+
+### addSleepHours
+
+Add sleep hours to a player's daily health record. Useful for bed script integrations.
+
+```lua
+local success = exports['roadphone']:addSleepHours(source, hours)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="hours" type="number" required>
+  Number of sleep hours to add.
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Bed script integration
+RegisterCommand('sleep', function(source)
+    exports['roadphone']:addSleepHours(source, 8)
+end)
+```
+</CodeGroup>
+
+---
+
+### setPlayerStress
+
+Set a custom stress level for a player. Updates the server cache and notifies the client.
+
+```lua
+local success = exports['roadphone']:setPlayerStress(source, stressLevel)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="stressLevel" type="number" required>
+  Stress level (automatically clamped to 0-100).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if player identifier not found.
+</ResponseField>
+
+---
+
+### getPlayerSpO2
+
+Get a player's blood oxygen saturation level.
+
+```lua
+local spo2 = exports['roadphone']:getPlayerSpO2(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="number">
+  SpO2 percentage (default: `98` if not cached).
+</ResponseField>
+
+---
+
+### getPlayerBloodPressure
+
+Get a player's blood pressure values.
+
+```lua
+local bp = exports['roadphone']:getPlayerBloodPressure(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ systolic = number, diastolic = number }` (default: `{ systolic = 120, diastolic = 80 }`).
+</ResponseField>
+
+---

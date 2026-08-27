@@ -1,0 +1,34 @@
+## Messages
+
+### sendMessage
+
+Send an SMS message from one phone number to another. Works for both online and offline players.
+
+```lua
+local success = exports['roadphone']:sendMessage(senderNumber, receiverNumber, message)
+```
+
+<ParamField path="senderNumber" type="string" required>
+  The sender's phone number.
+</ParamField>
+
+<ParamField path="receiverNumber" type="string" required>
+  The recipient's phone number.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The message content (must not be empty).
+</ParamField>
+
+<ResponseField name="returns" type="boolean">
+  `true` on success, `false` if validation fails (missing params, empty message, same sender/receiver).
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+-- Send an automated SMS
+local sent = exports['roadphone']:sendMessage("911", "1234567", "Your report has been received.")
+```
+</CodeGroup>
+
+---

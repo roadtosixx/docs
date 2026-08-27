@@ -1,0 +1,45 @@
+## Music
+
+### getMusicLibrary
+
+Search the music library by title or artist.
+
+```lua
+local songs = exports['roadphone']:getMusicLibrary(search, limit)
+```
+
+<ParamField path="search" type="string">
+  Search term (optional — returns all if nil).
+</ParamField>
+
+<ParamField path="limit" type="number">
+  Maximum results (default: `50`).
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  Array of `{ id, url_type, title, artist, thumbnail, length }`.
+</ResponseField>
+
+<Note>
+  Requires RoadWatch to be enabled. Returns empty table if disabled.
+</Note>
+
+---
+
+### getPlayerPlaylists
+
+Get a player's playlists and saved songs.
+
+```lua
+local data = exports['roadphone']:getPlayerPlaylists(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  `{ playlists = table, songs = table }`.
+</ResponseField>
+
+---
