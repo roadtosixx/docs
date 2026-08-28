@@ -1,0 +1,316 @@
+---
+title: 'Custom Widgets'
+description: 'Register a widget kind from your own resource and it appears in the widget bar'
+icon: 'frame'
+---
+
+# Custom Widgets
+
+A widget is not a small app. It sits flat in a wall, it does not turn towards
+the player, it has no title bar and cannot be focused, and outside the edit mode
+it takes no clicks at all — it is something you glance at, not something you
+use. It is also **saved in the player's profile**, so a widget somebody hangs
+today is still on that wall tomorrow.
+
+Write your own resource, register a kind, and it turns up in the widget bar next
+to the clock. A complete, running example is in `examples/roadvr_examplewidget/`.
+
+<Note>
+  **Why a page and not a component.** RoadVR's interface is one compiled Vue
+  bundle. Your resource cannot add a component to a build that shipped before
+  your resource existed — so your widget is loaded as a page in a frame instead.
+
+  That is the better deal anyway. Inside the frame you use whatever you like,
+  plain HTML or a framework, and a crash in your widget cannot take the headset
+  down with it.
+</Note>
+
+## Getting one on a wall
+
+<Steps>
+  <Step title="Create a resource">
+    Any normal FiveM resource will do. Put your page and your icon in the
+    `files {}` block so RoadVR can load them:
+
+    ```lua fxmanifest.lua
+    client_script 'client.lua'
+
+    files {
+        'ui/widget.html',
+        'ui/icon.svg',
+    }
+    ```
+  </Step>
+
+  <Step title="Register the kind">
+    Once, at resource start. RoadVR may not be up yet when your resource
+    starts, so retry until it takes:
+
+    ```lua client.lua
+    CreateThread(function()
+        while true do
+            local ok = pcall(function()
+                return exports.roadvr:registerRoadVRWidget({
+                    id     = 'myres_gauge',
+                    page   = 'ui/widget.html',
+                    name   = 'Gauge',
+                    icon   = 'ui/icon.svg',
+                    size   = 0.34,
+                    aspect = 1.0,
+                    mount  = 'recess',
+                    shape  = 'round',
+                })
+            end)
+
+            if ok then break end
+            Wait(2000)
+        end
+    end)
+    ```
+  </Step>
+
+  <Step title="Write the page">
+    Transparent background, no cursor, no scrolling. See
+    [Writing the page](#writing-the-page) below.
+  </Step>
+</Steps>
+
+## The four exports
+
+<CodeGroup>
+
+```lua Register
+-- Returns ok, err. Fails when the id already belongs to another resource —
+-- nobody gets to replace someone else's wall decoration.
+local ok, err = exports.roadvr:registerRoadVRWidget({
+    id   = 'myres_gauge',
+    page = 'ui/widget.html',
+})
+```
+
+```lua Unregister
+-- Widgets already hanging are LEFT ON THE WALL. They belong to the player.
+exports.roadvr:unregisterRoadVRWidget('myres_gauge')
+```
+
+```lua Send
+-- Reaches every widget of this kind that is currently drawn.
+exports.roadvr:sendToRoadVRWidget('myres_gauge', { rpm = 3400 })
+```
+
+```lua List
+-- { 'w_3', 'w_7' } — or an empty table, which is a normal answer.
+local ids = exports.roadvr:getRoadVRWidgetInstances('myres_gauge')
+```
+
+</CodeGroup>
+
+## The definition
+
+<ParamField path="id" type="string" required>
+  Unique across every resource. Prefix it with your resource name. Registering
+  over an id that belongs to somebody else fails with an error rather than
+  silently replacing their widget.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  A file inside **your** resource, e.g. `'ui/widget.html'`. The `nui://` address
+  is built for you, so it cannot point somewhere else by accident. Put the file
+  in your `files {}` block.
+</ParamField>
+
+<ParamField path="name" type="string" default="the id">
+  Shown under the tile in the widget bar.
+</ParamField>
+
+<ParamField path="icon" type="string" default="">
+  A file inside your resource. Shown as the tile in the bar — a remote kind does
+  not get a live preview, because that would mean loading your page a second
+  time just to shrink it into a corner.
+</ParamField>
+
+<ParamField path="size" type="number" default="0.34">
+  Metres of **width**. The height follows from `aspect`, so you never have to
+  keep two numbers in agreement.
+</ParamField>
+
+<ParamField path="min" type="number" default="0.2">
+  Smallest width the player's mouse wheel may scale it to, in metres.
+</ParamField>
+
+<ParamField path="max" type="number" default="0.8">
+  Largest width the wheel may scale it to, in metres. Hard-capped at 4 m.
+</ParamField>
+
+<ParamField path="aspect" type="number" default="1.0">
+  Width divided by height. `1.0` is square, `1.78` is a 16:9 letterbox.
+</ParamField>
+
+<ParamField path="mount" type="string" default="recess">
+  `'recess'` sinks the widget into the wall — a routed edge, a bore wall, a
+  floor a couple of centimetres back. `'raised'` stands it off the wall on a
+  plate that throws a shadow. Pick by what the thing is: a dial belongs in the
+  wall, a print belongs in front of it.
+</ParamField>
+
+<ParamField path="shape" type="string" default="rounded">
+  `'round'` cuts the recess as a circle, anything else as a rounded square. Only
+  meaningful for the recess mount.
+</ParamField>
+
+## Talking to your widget
+
+`sendToRoadVRWidget` arrives in your page as a `message` event:
+
+```js
+window.addEventListener('message', (e) => {
+  if (e.data?.source !== 'roadvr') return
+  console.log(e.data.rpm)
+})
+```
+
+Everything RoadVR forwards carries `source: 'roadvr'`, so a stray message from
+somewhere else cannot be mistaken for one of yours.
+
+The other direction needs nothing from RoadVR. FiveM routes
+`https://<your-resource>/<callback>` by resource name, no matter which page
+fires the request, so a plain `fetch` inside the frame reaches your own
+`RegisterNUICallback`:
+
+<CodeGroup>
+
+```js In the page
+const res = await fetch('https://myres/getGaugeData', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+  body: JSON.stringify({}),
+})
+```
+
+```lua In your client.lua
+RegisterNUICallback('getGaugeData', function(_, cb)
+    cb({ rpm = GetVehicleCurrentRpm(GetVehiclePedIsIn(PlayerPedId(), false)) })
+end)
+```
+
+</CodeGroup>
+
+## More than one on the wall
+
+A player may hang several widgets of the same kind. A message reaches **all of
+them** — messages are addressed to the kind, not to the piece.
+
+To tell themselves apart, each page gets its own widget id in its address:
+
+```
+nui://myres/ui/widget.html?widget=w_3
+```
+
+```js
+const me = new URLSearchParams(location.search).get('widget')
+```
+
+Use `getRoadVRWidgetInstances` before you start sending. Nothing hanging means
+nothing to send to, and that check is the difference between a widget that costs
+nothing when unused and one that does not.
+
+<Warning>
+  Four limits worth knowing before you build something around this:
+
+  - **A widget takes no clicks outside the edit mode.** It is a display, not a
+    control. Inside the edit mode the clicks belong to RoadVR's own grab, edit
+    and remove buttons.
+  - **`Config.Widgets.max` — 12 by default — counts every widget together**,
+    yours and RoadVR's. Frames cost more than components; that number is what
+    protects the frame rate.
+  - **Beyond `Config.Widgets.renderDistance` a widget is hidden, but its frame
+    keeps running.** If you have an expensive loop, stop it yourself when
+    nothing arrives.
+  - **There is no per-instance payload in this version.** If you need state per
+    piece, key it by the instance id on your own side.
+</Warning>
+
+## Lifecycle
+
+Register once at resource start. There is no need to unregister on stop.
+
+Registration survives the headset being taken off and put back on. The list is
+kept on the Lua side and pushed to the interface again on every boot, so a
+resource that started long before anyone put a headset on still shows up in the
+bar.
+
+**When your resource stops, the widgets stay on the wall.** This is the one
+place custom widgets differ from custom apps: an app that goes away takes its
+window with it, but a widget lives in the player's profile, and a resource
+restarting is not a reason to clear somebody's wall. The kind disappears from
+the bar and the hanging pieces show a plate reading *"Widget unavailable"*. Start
+the resource again and they light back up, in the same spots and at the same
+sizes.
+
+The player can always take one off the wall in the edit mode, available or not —
+the grab and remove controls belong to the mount, not to your kind.
+
+## Writing the page
+
+The page renders at a fixed pixel size and is scaled to the widget's size in
+metres, so set type much larger than you would in a browser. RoadVR's own
+widgets render at 512 px across.
+
+**Keep the background transparent.** RoadVR's mount sits behind your page. A
+background colour on `body` shows up as a rectangle inside a round recess.
+
+**Hide the cursor** with `cursor: none`. The headset draws its own pointer.
+
+**Do not scroll.** Set `overflow: hidden` on `html, body` and make the page fit.
+The wheel is taken while a widget is being placed — it resizes the widget — and
+a scrollbar inside a hole in a wall looks like a fault.
+
+## Talking to RoadVR itself
+
+The same SDK the apps use, with one difference in what it reports:
+
+```html
+<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+```
+
+```js
+;(async function () {
+  // Opened straight in a browser the nui:// address does not resolve at all.
+  if (!window.RoadVr) return
+
+  const ctx = await RoadVr.ready()
+
+  RoadVr.applyTheme()
+  RoadVr.on('resize', ({ size }) => layout(size))
+  RoadVr.on('close', () => save())
+})()
+```
+
+`ctx.surface` is `'widget'`, `ctx.window` is `null`, and `ctx.widget` holds
+what a piece on the wall has:
+
+```js
+{ kind: 'yourresource_kind', id: 'w7', size: 0.34, aspect: 1, mount: 'recess' }
+```
+
+`size` is metres of width — one number, because the height follows from
+`aspect`. The `resize` event carries `{ size }` rather than the `{ width,
+height }` an app's window sends, for the same reason.
+
+`RoadVr.close()` does nothing for a widget. A widget hangs in a wall and
+belongs to the player; taking one off is theirs to do.
+
+Everything else — `theme`, `locale`, `world`, `visible` / `hidden`, `message`,
+the counterpart returned by every `on()` — works exactly as it does for an app.
+The full table is in [Custom Apps](/roadvr/custom-apps), and every field and function in the [SDK reference](/roadvr/api/sdk).
+
+## Trying the example
+
+```
+ensure roadvr_examplewidget
+```
+
+Put the headset on, press the widget key, and "Speed" is in the bar. Hang it,
+get in a car, and the number follows you. Hang a second one and both show the
+same reading. Stop the resource and they both say *"Widget unavailable"* without
+leaving the wall; start it again and they come back.

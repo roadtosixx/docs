@@ -1,0 +1,318 @@
+---
+title: 'Custom Apps'
+description: 'Put an app from your own resource onto the headset home screen'
+icon: 'pickaxe'
+---
+
+# Custom Apps
+
+Write your own resource, register an app, and it appears on the headset's home
+screen. Opening it loads your page into a window.
+
+**RoadVR is not modified in the process**, so an update overwrites nothing of
+yours.
+
+<Card title="Working example" icon="folder-code">
+  A complete, running resource ships in `examples/roadvr_exampleapp/`.
+</Card>
+
+## Why a page and not a component
+
+RoadVR's interface is one compiled Vue bundle. Your resource cannot add a
+component to a build that shipped before your resource existed — so your app is
+loaded as a page in a frame instead.
+
+That is the better deal anyway. Inside the frame you use whatever you like,
+plain HTML or a framework, and a crash in your app cannot take the headset down
+with it.
+
+## The three exports
+
+<CodeGroup>
+
+```lua Register
+exports.roadvr:registerRoadVrApp({
+    id     = 'myres_shop',          -- unique, prefix it with your resource name
+    page   = 'ui/index.html',       -- a file in YOUR resource
+    name   = 'Shop',                -- shown under the icon
+    icon   = 'ui/icon.png',         -- a file in YOUR resource
+    size   = { w = 1.1, h = 0.7 },  -- metres, not pixels
+})
+```
+
+```lua Unregister
+exports.roadvr:unregisterRoadVrApp('myres_shop')
+```
+
+```lua Send
+exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
+```
+
+</CodeGroup>
+
+### registerRoadVrApp
+
+<ParamField path="id" type="string" required>
+  Unique across the whole server. Prefix it with your resource name.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  A file **in your resource**, e.g. `ui/index.html`. The `nui://` address is
+  built for you, so it cannot point somewhere else by accident. Put the file in
+  your own `files {}` block.
+</ParamField>
+
+<ParamField path="name" type="string">
+  Shown under the icon. Defaults to the id.
+</ParamField>
+
+<ParamField path="icon" type="string">
+  A file in your resource, e.g. `ui/icon.png`.
+</ParamField>
+
+<ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
+  Window size in **metres**. Not pixels — see [Writing the
+  page](#writing-the-page).
+</ParamField>
+
+<ParamField path="hidden" type="boolean" default="false">
+  Keep it off the home screen and open it yourself with
+  `openRoadVrPanel(id)`.
+</ParamField>
+
+<ResponseField name="ok" type="boolean">
+  `false` when the id already belongs to another resource — nobody gets to
+  replace someone else's window.
+</ResponseField>
+
+<ResponseField name="err" type="string">
+  Why it failed, when it did.
+</ResponseField>
+
+### sendToRoadVrApp
+
+<ResponseField name="return" type="boolean">
+  `false` while the window is closed. **That is normal, not an error** — your
+  resource has no idea whether the player has your app open.
+</ResponseField>
+
+## Building the resource
+
+<Steps>
+  <Step title="Declare your files">
+    ```lua fxmanifest.lua
+    fx_version 'cerulean'
+    game 'gta5'
+
+    -- No ui_page. The page is rendered by RoadVR inside a headset window, so
+    -- this resource never shows a NUI of its own — it only serves the files.
+    files {
+        'ui/index.html',
+        'ui/icon.png',
+    }
+
+    client_scripts { 'client.lua' }
+
+    dependencies { 'roadvr' }
+    ```
+  </Step>
+
+  <Step title="Register on start">
+    ```lua client.lua
+    CreateThread(function()
+        -- A moment for RoadVR to have built its own tables. The manifest
+        -- dependency guarantees the order of starting, not of the first frame.
+        Wait(500)
+
+        local ok, err = exports.roadvr:registerRoadVrApp({
+            id   = 'myres_shop',
+            name = 'Shop',
+            page = 'ui/index.html',
+            icon = 'ui/icon.png',
+            size = { w = 1.1, h = 0.7 },
+        })
+
+        if not ok then
+            print(('^1[myres_shop]^7 registration failed: %s'):format(err or 'unknown'))
+        end
+    end)
+    ```
+  </Step>
+
+  <Step title="Start it">
+    ```cfg server.cfg
+    ensure myres_shop
+    ```
+
+    Put the headset on and your icon is on the home screen.
+  </Step>
+</Steps>
+
+## Talking to your own Lua
+
+Nothing is needed from RoadVR for this. FiveM routes
+`https://<your-resource>/<callback>` by resource name, no matter which page
+fires the request, so inside the frame a plain fetch reaches your own
+`RegisterNUICallback`:
+
+<CodeGroup>
+
+```js Page
+const res = await fetch('https://myres_shop/getPlayerInfo', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+  body: JSON.stringify({}),
+})
+```
+
+```lua client.lua
+RegisterNUICallback('getPlayerInfo', function(_, cb)
+    cb({ health = GetEntityHealth(PlayerPedId()) - 100 })
+end)
+```
+
+</CodeGroup>
+
+The one direction you cannot do alone is inbound. Your own `SendNUIMessage`
+would go to your own frame, and that one is never rendered. Use
+`sendToRoadVrApp` instead.
+
+## Talking to RoadVR itself
+
+Your own Lua tells you about your world. The **SDK** tells you about the
+headset: which theme is on, which language the player picked, how big your
+window is, whether it is focused — and, the one that matters most, that it is
+about to close.
+
+```html
+<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+```
+
+The path is relative to the RoadVR resource, so `public/` belongs in it. There
+is nothing to add to your own `files {}` block — the file is served by RoadVR,
+so there is no copy in your resource that can go stale.
+
+```js
+;(async function () {
+  // Opened straight in a browser the nui:// address does not resolve at all.
+  if (!window.RoadVr) return
+
+  const ctx = await RoadVr.ready()
+
+  RoadVr.applyTheme()          // your page now uses RoadVR's colours
+
+  RoadVr.on('theme', (t) => console.log(t.light ? 'light' : 'dark'))
+  RoadVr.on('resize', ({ width, height }) => layout(width, height))
+  RoadVr.on('close', () => save())
+})()
+```
+
+<Card title="Full SDK reference" icon="code" href="/roadvr/api/sdk">
+  Every field, every event, every function
+</Card>
+
+### The events, briefly
+
+| Event | When |
+|---|---|
+| `theme` | light/dark toggled, accent or icon set changed |
+| `locale` | the player switched interface language |
+| `world` | weather and clock tick — only after `watch('world')` |
+| `focus` / `blur` | your window became, or stopped being, the focused one |
+| `visible` / `hidden` | pause menu, map, cinema screen, fast head turn |
+| `resize` | your window was dragged to a new size |
+| `anchor` | your window switched between following the player and staying put |
+| `close` | your window is going away |
+| `message` | a push from your own Lua, i.e. `sendToRoadVrApp` |
+
+Every `on()` returns its counterpart:
+
+```js
+const off = RoadVr.on('theme', paint)
+off()
+```
+
+<Note>
+  The SDK is optional. A page that only wants pushes from its own Lua can keep
+  using a raw listener — everything RoadVR forwards carries `source: 'roadvr'`:
+
+  ```js
+  window.addEventListener('message', (e) => {
+    if (e.data?.source !== 'roadvr') return
+    console.log(e.data.type, e.data.speed)
+  })
+  ```
+</Note>
+
+## Writing the page
+
+The window renders at a fixed **1280×800 CSS pixels** whatever its size in
+metres. Sizes look oversized in a browser on purpose; that is the same scale
+every built-in app uses.
+
+<AccordionGroup>
+  <Accordion title="Keep the background transparent">
+    RoadVR's glass sits behind your page. A background colour on `body` shows
+    up as a rectangle inside the rounded window.
+
+    ```css
+    html, body { background: transparent; }
+    ```
+  </Accordion>
+
+  <Accordion title="Hide the cursor">
+    The headset draws its own pointer, and the system cursor would appear next
+    to it.
+
+    ```css
+    * { cursor: none; }
+    ```
+  </Accordion>
+
+  <Accordion title="Do not scroll">
+    Set `overflow: hidden` and make your page fit its window. A scrollbar down
+    the side of a floating pane looks like a fault, and the wheel is taken
+    anyway — it moves the window closer and further away.
+
+    ```css
+    html, body { overflow: hidden; height: 100%; margin: 0; }
+    ```
+  </Accordion>
+
+  <Accordion title="Take RoadVR's colours">
+    Point your own variables at RoadVR's, with a fallback so the page still
+    opens in a browser:
+
+    ```css
+    :root {
+      --text: var(--vr-text, rgba(255, 255, 255, 0.96));
+      --dim: var(--vr-text-dim, rgba(255, 255, 255, 0.55));
+      --fill: var(--fill-idle, rgba(255, 255, 255, 0.13));
+      --accent: var(--vr-accent, #0a84ff);
+    }
+    ```
+
+    Then call `RoadVr.applyTheme()` once and the page follows the player
+    switching theme, without knowing a single colour value.
+  </Accordion>
+</AccordionGroup>
+
+## Lifecycle
+
+Register once at resource start. **There is no need to unregister on stop** —
+RoadVR notices your resource going away, removes the app and closes its window.
+
+Registration survives the headset being taken off and put back on. The list is
+kept on the Lua side and pushed to the interface again on every boot, so a
+resource that started long before anyone put a headset on still shows up.
+
+## Trying the example
+
+```
+ensure roadvr_exampleapp
+```
+
+Put the headset on and the **Example** icon is on the home screen. It shows
+your street, health and armour on request, receives a speed reading pushed once
+a second, honks the horn of the vehicle you are in — and, in its second column,
+reports everything the headset tells it through the SDK.

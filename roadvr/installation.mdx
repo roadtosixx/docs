@@ -1,0 +1,177 @@
+---
+title: 'Installation'
+description: 'Complete setup guide for the RoadVR script'
+icon: 'download'
+---
+
+# Installation
+
+<Frame>
+  <img src="/images/roadvr/room.jpg" alt="A player wearing the RoadVR headset" />
+</Frame>
+
+RoadVR is a spatial AR interface for FiveM: world-anchored HTML panels the
+player can place in the room, carry along and interact with. It runs on ESX,
+QBCore, Qbox and standalone.
+
+<Danger>
+  **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
+  We recommend **WinSCP**.
+</Danger>
+
+<Note>
+  **There is no transaction ID to enter and no SQL file to import.** Unlike our
+  other scripts, RoadVR has no `API.lua` key step — in RoadVR, `API.lua` is the
+  exports file for other developers. The database sets itself up on first
+  start. If you came here looking for the license step, there isn't one.
+</Note>
+
+## 📋 Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="ox_lib" icon="package">
+    Required. Must be started before RoadVR.
+  </Card>
+  <Card title="oxmysql" icon="database">
+    Required. Every persistence path depends on it.
+  </Card>
+  <Card title="FTP Client" icon="server">
+    WinSCP or similar (not FileZilla)
+  </Card>
+  <Card title="Inventory" icon="backpack">
+    Optional — only if you want the headset to be a real item
+  </Card>
+</CardGroup>
+
+## 🚀 Setup Instructions
+
+<Steps>
+  <Step title="Extract the resource">
+    Extract `roadvr` into your resources folder. We recommend a `[road]`
+    folder alongside our other scripts:
+
+    ```bash
+    resources/
+    └── [road]/
+        ├── roadvr/
+        └── other_scripts/
+    ```
+  </Step>
+
+  <Step title="Register the item">
+    Add an item called `roadvr_headset` to your inventory. The name is
+    configurable through `Config.Item`.
+
+    <Tabs>
+      <Tab title="ox_inventory">
+        ```lua data/items.lua
+        ['roadvr_headset'] = {
+            label = 'VR Headset',
+            weight = 400,
+            stack = false,
+            close = true,
+            description = 'Put it on and the room fills with windows.',
+        },
+        ```
+      </Tab>
+      <Tab title="ESX / QBCore">
+        Add `roadvr_headset` to your items table the same way you add any
+        other usable item. RoadVR registers the usable item itself — you only
+        have to make the item exist.
+      </Tab>
+      <Tab title="No item at all">
+        Leave `Config.Item` empty:
+
+        ```lua config.lua
+        Config.Item = ''
+        ```
+
+        Everybody can then use the headset without carrying anything. The way
+        in is `/roadvr_toggle` or the FiveM keybind of the same name, which
+        the player assigns themselves.
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Configure">
+    Everything lives in `config.lua`. For a first start you rarely need to
+    touch more than the top:
+
+    ```lua config.lua
+    Config.Locale    = 'de'                -- server-wide language for Lua messages
+    Config.Item      = 'roadvr_headset'    -- empty string = no item needed
+    Config.FocusKey  = 'E'                 -- focuses the panel you are looking at
+    Config.MaxPanels = 6
+    Config.Debug     = false               -- set false on a live server
+    ```
+
+    <Warning>
+      Ship with `Config.Debug = false`. It enables `/roadvr_calib` and the
+      in-game tuning keys, which players should not have.
+    </Warning>
+
+    <Info>
+      Interface language is **not** `Config.Locale`. Each player picks their
+      own in the headset's Settings app. `Config.Locale` only covers Lua-side
+      messages — notifications and errors.
+    </Info>
+  </Step>
+
+  <Step title="Start the resource">
+    ```cfg server.cfg
+    ensure ox_lib
+    ensure oxmysql
+    ensure roadvr
+    ```
+  </Step>
+</Steps>
+
+## 🗄️ About the database
+
+The four tables are created on first start, and an older installation has
+missing columns added automatically. You do not have to prepare anything.
+
+`sql/roadvr.sql` ships for two cases only:
+
+- your database user has no `CREATE` permission
+- you want to read the schema before a script touches your database
+
+## ✅ Verification
+
+Run this in your **server console**:
+
+```bash
+roadvr diag
+```
+
+It checks the bridge, ox_lib, oxmysql, your inventory, the locale, the
+database table, and the optional xsound and RoadPhone integrations.
+
+Then in game: use the item, and the visor should open onto the launcher.
+
+## 🖼️ One thing that is deliberately missing
+
+RoadVR ships **without panorama images** for the Environments app. An 8192px
+equirectangular JPG is around 36 MB, downloaded once by every player, and
+which ones those should be is the server owner's call.
+
+<Card title="Setting up environments" icon="image" href="/roadvr/environments">
+  Where to get panoramas and how to add them
+</Card>
+
+## 📚 Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Controls" icon="keyboard" href="/roadvr/controls">
+    Keys, focus mode and how windows are moved
+  </Card>
+  <Card title="Apps & Widgets" icon="layout-grid" href="/roadvr/apps">
+    What comes with the headset
+  </Card>
+  <Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
+    Put your own resource on the home screen
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadvr/faq">
+    Any problems or questions?
+  </Card>
+</CardGroup>

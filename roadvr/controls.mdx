@@ -1,0 +1,104 @@
+---
+title: 'Controls'
+description: 'Keys, focus mode and how windows are moved around'
+icon: 'keyboard'
+---
+
+# Controls
+
+<Frame>
+  <img src="/images/roadvr/lenses.jpg" alt="The RoadVR headset" />
+</Frame>
+
+## Two modes
+
+RoadVR always runs in one of two modes, and knowing which one you are in
+explains almost every question about the controls.
+
+<CardGroup cols={2}>
+  <Card title="Passthrough" icon="footprints">
+    Windows float around you. You walk, drive and play normally — the windows
+    are pure graphics and take no input.
+  </Card>
+  <Card title="Focus" icon="mouse-pointer-click">
+    The mouse is free and you can click. Movement is locked while you are in
+    it.
+  </Card>
+</CardGroup>
+
+You enter focus mode by looking at a window and pressing `E`, and you leave it
+with `ESC`. Nothing is torn down on the way out — the windows stay exactly
+where they were.
+
+## The keys
+
+| Input | What it does | Configurable |
+|---|---|---|
+| Use the item | Put the headset on and take it off | `Config.Item` |
+| `F7` | Home screen (launcher) | FiveM keybind |
+| `F6` | Control centre | `Config.ControlCenter.key` |
+| `G` | Widget edit mode | `Config.Widgets.editKey` |
+| `E` while looking at a window | Focus it, free the mouse | `Config.FocusKey` |
+| `ESC` | Leave focus, back to passthrough | — |
+| Drag the title bar | Move the window across the sphere around you | — |
+| Mouse wheel on the title bar | Pull the window closer or push it further away | — |
+| Drag a corner | Resize the window | — |
+
+<Note>
+  Every key above is a **FiveM keybind**, which means each player can rebind it
+  under Settings → Key Bindings → FiveM. What you set in `config.lua` is the
+  default, not a lock.
+</Note>
+
+## The unbound key
+
+`roadvr_toggle` appears in the FiveM key bindings and is deliberately shipped
+**without a default key**.
+
+That is not an oversight. A default would take a key away from every server
+that installs RoadVR, and most servers hand the headset out as an item anyway.
+If you run without an item (`Config.Item = ''`), tell your players to bind it
+once themselves — or use the command:
+
+```
+/roadvr_toggle
+```
+
+## Moving windows
+
+A window hangs on a sphere around the player rather than in free 3D space, so
+dragging the title bar moves it along that shell and it always faces you.
+
+Two anchor modes decide what happens when you walk away:
+
+<CardGroup cols={2}>
+  <Card title="Body" icon="person-standing">
+    The window follows you. Good for anything you want to keep reading while
+    you move.
+  </Card>
+  <Card title="World" icon="map-pin">
+    The window stays where you put it. Good for leaving a screen on a desk.
+  </Card>
+</CardGroup>
+
+Each player picks their own default in the headset's Settings app. A server
+owner's setting does not override that — it is the player's own preference.
+
+<Tip>
+  In the home screen's tray there is a **move all** toggle. While it is on, the
+  grab handle of any window moves every window at once. Every grab handle is
+  tinted while it runs, because an invisible mode that changes what dragging
+  does is a trap.
+</Tip>
+
+## Widgets
+
+Press `G` for edit mode, and the widget bar opens. Pick a tile, carry it to a
+wall and let go — it sticks. The mouse wheel resizes the one you are carrying.
+
+Widgets live in the player's profile, so they survive taking the headset off,
+relogging and a resource restart.
+
+<Card title="Apps & Widgets" icon="layout-grid" href="/roadvr/apps">
+  Everything that ships with the headset
+</Card>

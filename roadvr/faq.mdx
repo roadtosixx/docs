@@ -1,0 +1,203 @@
+---
+title: 'FAQ'
+description: 'Common questions and problems with RoadVR'
+icon: 'badge-info'
+---
+
+# FAQ
+
+## Start here
+
+Before anything else, run this in your **server console**:
+
+```bash
+roadvr diag
+```
+
+It checks the bridge, ox_lib, oxmysql, your inventory, the locale, the database
+table, and the optional xsound and RoadPhone integrations — and it names which
+one is unhappy. Most of the accordions below are things `roadvr diag` will tell
+you outright.
+
+## Installation
+
+<AccordionGroup>
+  <Accordion title="Where do I enter my transaction ID?">
+    Nowhere. RoadVR has no license key step. In RoadVR, `API.lua` is the
+    **exports file for other developers**, not a place to put credentials — it
+    is in `escrow_ignore` precisely so people can read it.
+
+    If you are used to RoadPad or RoadPhone, this is the one thing that is
+    different.
+  </Accordion>
+
+  <Accordion title="Do I have to import the SQL file?">
+    No. The four tables are created on first start, and an older installation
+    has missing columns added automatically.
+
+    `sql/roadvr.sql` ships for two cases only: a database user without `CREATE`
+    permission, and a server owner who wants to read the schema before a script
+    touches their database.
+  </Accordion>
+
+  <Accordion title="The resource starts but the headset never finishes booting">
+    Almost always `oxmysql`. Every persistence path depends on it
+    unconditionally, and without it the resource starts, the item works, and
+    the boot simply never completes — a failure that is hard to read from the
+    console alone.
+
+    `roadvr diag` names it directly.
+  </Accordion>
+
+  <Accordion title="Which frameworks are supported?">
+    ESX, QBCore, Qbox and standalone. RoadPhone is detected when present but is
+    **not** a requirement.
+  </Accordion>
+</AccordionGroup>
+
+## Getting in
+
+<AccordionGroup>
+  <Accordion title="The item does nothing">
+    Check that the item name in your inventory matches `Config.Item`
+    (`roadvr_headset` by default), and that the item is registered as
+    **usable**. RoadVR registers the usable item itself, but the item has to
+    exist in your inventory's item list first.
+  </Accordion>
+
+  <Accordion title="I want to run it without an item">
+    Set `Config.Item = ''`. Everybody can then use the headset, and the way in
+    is `/roadvr_toggle` or the FiveM keybind of the same name.
+  </Accordion>
+
+  <Accordion title="The roadvr_toggle keybind has no key">
+    That is deliberate. A default would take a key away from every server that
+    installs RoadVR. Players bind it once themselves under Settings → Key
+    Bindings → FiveM.
+  </Accordion>
+
+  <Accordion title="F7 does nothing">
+    F7 only works while the headset is on. If it is on and nothing happens,
+    another resource has taken F7 — rebind it in the FiveM key settings.
+  </Accordion>
+</AccordionGroup>
+
+## Using it
+
+<AccordionGroup>
+  <Accordion title="I cannot click anything">
+    You are in passthrough. Look at a window and press `E` to focus it — that
+    is what frees the mouse. `ESC` goes back.
+  </Accordion>
+
+  <Accordion title="The interface is in the wrong language">
+    There are two languages and they are separate on purpose:
+
+    - **`Config.Locale`** covers Lua-side messages — notifications and errors.
+      It is server-wide.
+    - **Interface text** follows each player's own choice in the headset's
+      Settings app.
+
+    A player seeing English panels on a German server is not a bug; it is their
+    setting.
+  </Accordion>
+
+  <Accordion title="A window will not stay where I put it">
+    Check its anchor. **Body** follows the player, **World** stays put. Each
+    player sets their own default in Settings.
+  </Accordion>
+
+  <Accordion title="A widget will not stick to a surface">
+    Three reasons, in order of likelihood: the surface is tilted more than
+    `Config.Widgets.maxSurfaceTilt` and counts as floor or ceiling; you are
+    further away than `Config.Widgets.reach` (6 m); or you already have
+    `Config.Widgets.max` widgets up (12).
+  </Accordion>
+
+  <Accordion title="My widgets disappeared">
+    Look at the distance first — beyond `Config.Widgets.renderDistance` (20 m)
+    a widget is not drawn, but it is still saved.
+
+    They also step aside once `Config.Widgets.hideAtPanels` app windows are
+    awake in view at the same time (4 by default). Close a window and they come
+    back. Set it to `0` to switch that off.
+  </Accordion>
+</AccordionGroup>
+
+## Environments
+
+<AccordionGroup>
+  <Accordion title="The Environments app is empty">
+    RoadVR ships without panorama images, deliberately — one 8192px
+    equirectangular JPG is about 36 MB per player.
+
+    See [Environments](/roadvr/environments) for where to get them and how to
+    add them.
+  </Accordion>
+
+  <Accordion title="An app refuses to open while an environment runs">
+    `Config.Environments.blockedApps` — basketball, drone and GPS by default.
+    All three put something into the **world**, and the panorama sphere is
+    exactly what stands between the player and the world.
+  </Accordion>
+</AccordionGroup>
+
+## Performance
+
+<AccordionGroup>
+  <Accordion title="The frame rate drops with a lot of windows open">
+    `Config.MaxPanels` (6) caps app windows and `Config.Widgets.max` (12) caps
+    widgets. Both exist for this reason. `Config.Widgets.hideAtPanels` sheds
+    the decoration automatically once the workspace fills up.
+  </Accordion>
+
+  <Accordion title="A panorama stutters for a second when it opens">
+    The file is too large. Re-encode it to 4096×2048 WebP.
+
+    Lowering `Config.Environments.texture` will **not** help: it caps video
+    memory only. An 8192 image is still downloaded in full and still unpacked
+    at full size before being scaled down.
+  </Accordion>
+
+  <Accordion title="Windows lag behind when I turn my head quickly">
+    That is the browser layer being one frame behind, and RoadVR handles it: on
+    a fast head turn the spatial layer fades out until the head settles, rather
+    than showing windows sliding around. The fade is `Config.Fade`.
+  </Accordion>
+</AccordionGroup>
+
+## Developers
+
+<AccordionGroup>
+  <Accordion title="Can I add my own app without editing RoadVR?">
+    Yes, and that is the supported way. Your own resource registers an HTML
+    page and it appears on the home screen — RoadVR is not modified, so an
+    update overwrites nothing.
+
+    See [Custom Apps](/roadvr/custom-apps) and [Custom
+    Widgets](/roadvr/custom-widgets).
+  </Accordion>
+
+  <Accordion title="Can my app read the theme, the language or its window size?">
+    Yes — that is what the [SDK](/roadvr/api/sdk) is for. It also tells your
+    page when its window is about to close.
+  </Accordion>
+
+  <Accordion title="Where is the full export list?">
+    In `API.lua` inside the resource. It is in `escrow_ignore`, so it is
+    readable. The same list with parameters is at [Client
+    API](/roadvr/api/client).
+  </Accordion>
+
+  <Accordion title="Can I build the Vue interface myself?">
+    Only from the source repository. The shipped package contains the built
+    interface in `public/` and no `ui/` folder — which is also why custom apps
+    are loaded as pages rather than compiled in.
+  </Accordion>
+</AccordionGroup>
+
+## Still stuck?
+
+<Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
+  Post the output of `roadvr diag` — it saves a round of questions
+</Card>

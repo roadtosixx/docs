@@ -1,0 +1,140 @@
+---
+title: 'Apps & Widgets'
+description: 'Everything that ships with the RoadVR headset'
+icon: 'layout-grid'
+---
+
+# Apps & Widgets
+
+Two different things live in the headset. **Apps** open as floating windows you
+can move, resize and push away. **Widgets** stick into a wall and stay there.
+
+## Apps
+
+Press `F7` for the home screen and every app is one tile.
+
+<CardGroup cols={3}>
+  <Card title="Settings" icon="settings">
+    Theme, accent colour, interface language, default anchor. Each player's
+    own — a server setting does not override it.
+  </Card>
+  <Card title="Control Centre" icon="sliders-horizontal">
+    One key for the things you reach for constantly: what is playing, what came
+    in, whether windows follow you, which environment is on.
+  </Card>
+  <Card title="Media" icon="music">
+    Music playback with the remote in the control centre.
+  </Card>
+  <Card title="My Car" icon="car">
+    Your vehicle, plus **Valet** — have it brought to you.
+  </Card>
+  <Card title="GPS" icon="map">
+    A 3D map table you can lean over, not a flat minimap.
+  </Card>
+  <Card title="Environments" icon="image">
+    Replaces the world around you with a panorama. Ships without images — see
+    [Environments](/roadvr/environments).
+  </Card>
+  <Card title="Weather" icon="cloud-sun">
+    In-game weather, wind, sunrise and sunset.
+  </Card>
+  <Card title="Clock" icon="clock">
+    The in-game clock and calendar.
+  </Card>
+  <Card title="Calculator" icon="calculator">
+    Exactly what it says.
+  </Card>
+  <Card title="Notes" icon="sticky-note">
+    Written notes, saved to the player's profile.
+  </Card>
+  <Card title="Messages" icon="message-square">
+    Message threads inside the headset.
+  </Card>
+  <Card title="Photos" icon="images">
+    Your gallery, with a cinema view that puts a picture on a curved screen.
+  </Card>
+  <Card title="Drone" icon="plane">
+    Fly a drone and watch its camera feed in a window.
+  </Card>
+  <Card title="Cockpit" icon="gauge">
+    Instruments that hang in front of you while you drive.
+  </Card>
+  <Card title="HUD" icon="monitor">
+    A compact status strip in your field of view.
+  </Card>
+  <Card title="Basketball" icon="circle-dot">
+    Place a hoop and shoot.
+  </Card>
+</CardGroup>
+
+<Info>
+  Apps written by other resources appear on the same home screen, next to
+  these. See [Custom Apps](/roadvr/custom-apps).
+</Info>
+
+## Widgets
+
+<Frame>
+  <img src="/images/roadvr/widgets-wall.jpg" alt="RoadVR widgets stuck into a wall" />
+</Frame>
+
+Press `G`, pick a tile from the bar, carry it to a wall and let go. The mouse
+wheel resizes the one you are carrying.
+
+<CardGroup cols={3}>
+  <Card title="Clock" icon="clock">
+    An analogue face, recessed into the wall.
+  </Card>
+  <Card title="Weather" icon="cloud-sun">
+    Temperature and conditions at a glance.
+  </Card>
+  <Card title="Note" icon="sticky-note">
+    A written note that stays on the wall.
+  </Card>
+  <Card title="Photo" icon="image">
+    A picture from your gallery, framed.
+  </Card>
+  <Card title="Calendar" icon="calendar">
+    The in-game date.
+  </Card>
+  <Card title="Sign" icon="signpost">
+    Free text, for labelling a room or a door.
+  </Card>
+  <Card title="Aquarium" icon="fish">
+    A window into water. It does nothing useful and everybody hangs one up.
+  </Card>
+</CardGroup>
+
+<Note>
+  Widgets belong to the **player**, not to the resource that provides them. A
+  resource restarting leaves them on the wall showing an *unavailable* plate
+  until it comes back — they are never silently removed from somebody's room.
+</Note>
+
+<Card title="Custom Widgets" icon="pickaxe" href="/roadvr/custom-widgets">
+  Add your own widget kinds from your own resource
+</Card>
+
+## Limits worth knowing
+
+<ParamField path="Config.MaxPanels" type="number" default="6">
+  How many app windows can be open at once.
+</ParamField>
+
+<ParamField path="Config.Widgets.max" type="number" default="12">
+  How many widgets one player may have on walls.
+</ParamField>
+
+<ParamField path="Config.Widgets.renderDistance" type="number" default="20.0">
+  Metres. Beyond this a widget is neither drawn nor tested against walls. It
+  stays saved — this is only about what is worth rendering.
+</ParamField>
+
+<ParamField path="Config.Widgets.reach" type="number" default="6.0">
+  Metres. How far away a widget may be placed.
+</ParamField>
+
+<ParamField path="Config.Widgets.hideAtPanels" type="number" default="4">
+  Once this many app windows are open, the widgets step aside so the view does
+  not fill up.
+</ParamField>

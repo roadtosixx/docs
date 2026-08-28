@@ -1,0 +1,282 @@
+---
+title: 'JavaScript SDK'
+description: 'What a page inside a RoadVR window can read and be told about'
+icon: 'braces'
+---
+
+# JavaScript SDK
+
+A custom app or widget runs in an iframe. Reaching its own Lua works without
+RoadVR, and being reached from its own Lua works through `sendToRoadVrApp`. The
+SDK is the third direction: the page asking **RoadVR itself** what is going on,
+and being told when it changes.
+
+## Loading it
+
+```html
+<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+```
+
+The path is relative to the RoadVR resource, so `public/` belongs in it. There
+is nothing to add to your own `files {}` block — the file is served by RoadVR,
+which means there is no copy in your resource that can go stale against a
+newer headset.
+
+<Warning>
+  Opened straight in a browser while you work on the page, the `nui://` address
+  does not resolve at all and `window.RoadVr` is simply not there. Guard for it
+  so the rest of your page still runs:
+
+  ```js
+  if (!window.RoadVr) return
+  ```
+</Warning>
+
+<Note>
+  The global is `RoadVr`, matching the resource name. The product is written
+  RoadVR; the identifier is not.
+</Note>
+
+## Getting started
+
+```js
+;(async function () {
+  if (!window.RoadVr) return
+
+  const ctx = await RoadVr.ready()
+
+  RoadVr.applyTheme()
+
+  RoadVr.on('theme', (t) => document.body.classList.toggle('is-light', t.light))
+  RoadVr.on('close', () => save())
+})()
+```
+
+## RoadVr.ready()
+
+<ResponseField name="return" type="Promise<context>">
+  Settles once the headset has answered, with the context object below.
+</ResponseField>
+
+Inside FiveM but with no headset on, nothing answers. After two seconds it
+settles anyway, with `surface: null` and usable defaults — rather than leaving
+your page waiting forever.
+
+Calling it twice is free: once it has settled it resolves immediately.
+
+## RoadVr.context
+
+The same object `ready()` resolves with, kept up to date. Every event updates
+it **before** the handlers run, so a handler that would rather read the whole
+picture finds it already current.
+
+```js
+{
+  version: '0.1.0',
+  surface: 'app',                                     // or 'widget', or null
+  app:     { id, name },                              // apps only
+  widget:  { kind, id, size, aspect, mount },         // widgets only
+  window:  { id, width, height, anchor, distance },   // apps only
+  theme:   { light, accent, iconTheme, palette },
+  locale:  { language },
+  headset: { state, focused, visible },
+  world:   null,
+}
+```
+
+<ResponseField name="version" type="string | null">
+  The SDK contract version, not the resource version. It moves when a field is
+  added, so you can check whether the headset you happen to be running in knows
+  about something. `null` means nothing answered.
+</ResponseField>
+
+<ResponseField name="surface" type="string | null">
+  `'app'`, `'widget'`, or `null` outside a headset.
+</ResponseField>
+
+<ResponseField name="window" type="object | null">
+  Apps only. `width` and `height` are **metres**, not pixels — your page always
+  lays out at 1280×800 CSS pixels however large the window stands in the world.
+  Reading these as pixels gives you a layout that changes with window size.
+
+  `anchor` is `'body'` (follows the player) or `'world'` (stays put).
+</ResponseField>
+
+<ResponseField name="widget" type="object | null">
+  Widgets only. `size` is metres of **width** — one number, because the height
+  follows from `aspect`. `mount` is `'recess'` or `'raised'`.
+</ResponseField>
+
+<ResponseField name="theme" type="object">
+  `light` is a boolean, `accent` a hex colour, `iconTheme` the icon set name.
+  `palette` is RoadVR's own CSS custom properties — see
+  [applyTheme](#roadvr-applytheme).
+</ResponseField>
+
+<ResponseField name="locale" type="object">
+  `language` is the player's **own** interface choice, not the server's
+  `Config.Locale`. Those are two different settings, and mixing them up shows
+  German text to a player who set English.
+</ResponseField>
+
+<ResponseField name="headset" type="object">
+  `state` is `off`, `passthrough`, `focus` or `shutdown`.
+
+  `focused` is **this window** being the focused one, not some window being
+  focused.
+
+  `visible` is false while the pause menu, the map or the cinema screen is up,
+  and during a fast head turn. One field for all four, because the answer is
+  the same in all four: stop animating.
+</ResponseField>
+
+<ResponseField name="world" type="object | null">
+  `null` until you call `watch('world')`. See [Weather and the
+  clock](#weather-and-the-clock).
+</ResponseField>
+
+## RoadVr.on()
+
+<ParamField path="event" type="string" required>
+  One of the nine events below.
+</ParamField>
+
+<ParamField path="handler" type="function" required>
+  Receives the changed subtree, not the whole context.
+</ParamField>
+
+<ResponseField name="return" type="function">
+  The counterpart. Calling it removes this one handler.
+</ResponseField>
+
+```js
+const off = RoadVr.on('theme', paint)
+off()
+```
+
+### The events
+
+| Event | Payload | When |
+|---|---|---|
+| `theme` | `{ light, accent, iconTheme, palette }` | light/dark toggled, accent or icon set changed |
+| `locale` | `{ language }` | the player switched interface language |
+| `world` | the world object | weather and clock tick — only after `watch('world')` |
+| `focus` | `{}` | your window became the focused one |
+| `blur` | `{}` | your window stopped being it |
+| `visible` | `{}` | the layer came back |
+| `hidden` | `{}` | pause menu, map, cinema screen, fast head turn |
+| `resize` | `{ width, height }` for apps, `{ size }` for widgets | dragged to a new size, or the wheel turned |
+| `anchor` | `{ anchor }` | switched between following the player and staying put |
+| `close` | `{}` | your window or widget is going away |
+| `message` | your payload | a push from your own Lua |
+
+<Tip>
+  **`close` is the one to wire up first.** It is the only warning your page gets
+  that it is about to be taken down, and it is sent before the frame is
+  detached — so whatever has to survive being closed gets written there.
+</Tip>
+
+### `message` and the raw listener
+
+`RoadVr.on('message', …)` and a plain `window.addEventListener('message', …)`
+carry the same pushes from your own Lua. The difference is that the SDK keeps
+its own traffic out of the first one; a raw listener sees both and has to tell
+them apart itself.
+
+Everything RoadVR forwards carries `source: 'roadvr'`. SDK traffic additionally
+carries `channel: 'sdk'`.
+
+## RoadVr.applyTheme()
+
+<ParamField path="element" type="HTMLElement" default="document.documentElement">
+  Where to write the custom properties.
+</ParamField>
+
+Writes RoadVR's palette into your page and keeps it there when the player
+switches theme — call it once, after `ready()`.
+
+The names are the ones the interface uses itself: `--vr-text`,
+`--vr-text-dim`, `--vr-text-3`, `--vr-glass-top`, `--vr-glass-bottom`,
+`--vr-chrome-top`, `--vr-chrome-bottom`, `--vr-separator`, `--vr-stroke`,
+`--fill-idle`, `--fill-hover`, `--fill-selected`, `--on-selected`,
+`--view-recessed`, plus `--vr-accent`.
+
+Point your own variables at them with a fallback and the page still opens in a
+browser:
+
+```css
+:root {
+  --text: var(--vr-text, rgba(255, 255, 255, 0.96));
+  --dim: var(--vr-text-dim, rgba(255, 255, 255, 0.55));
+  --fill: var(--fill-idle, rgba(255, 255, 255, 0.13));
+  --accent: var(--vr-accent, #0a84ff);
+}
+```
+
+## Weather and the clock
+
+Not sent unless asked for. The Lua ticker runs once a second and only while
+somebody is listening, so an app that never reads it should not keep it awake.
+
+```js
+RoadVr.watch('world')
+
+RoadVr.on('world', ({ weather, hours, minutes, temperature }) => {
+  clock.textContent = `${hours}:${String(minutes).padStart(2, '0')}`
+})
+
+RoadVr.unwatch('world')
+```
+
+The world object carries `weather`, `temperature`, `hours`, `minutes`,
+`windSpeed`, `windBearing`, `sunrise`, `sunset`, `day`, `month`, `year` and
+`weekday`.
+
+<Info>
+  A frame that goes away without calling `unwatch` still stops counting — the
+  ticker does not stay on for a window nobody can see.
+</Info>
+
+## RoadVr.close()
+
+Closes **your own** window.
+
+```js
+RoadVr.close()
+```
+
+The window is resolved from the frame the call came out of, never from
+something you pass in, so one app cannot close another's window.
+
+<Note>
+  It does nothing for a widget. A widget hangs in a wall and belongs to the
+  player; taking one off is theirs to do.
+</Note>
+
+## What the SDK cannot do
+
+By design, this version is **read plus events, and one action**. There is no
+way to play a sound, post a notification into the control centre, resize your
+own window, or open another app. Nor does it hand out game data — vehicle,
+health, position and the rest belong in your own Lua, and RoadVR is not a
+general game API.
+
+The message protocol is built so those can be added later without breaking
+anything already written against it.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
+    Getting your page onto the home screen
+  </Card>
+  <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
+    Getting your page onto a wall
+  </Card>
+  <Card title="Client API" icon="code" href="/roadvr/api/client">
+    The Lua half
+  </Card>
+  <Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
+    Questions about integrating
+  </Card>
+</CardGroup>

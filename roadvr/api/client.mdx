@@ -1,0 +1,294 @@
+---
+title: 'Client API'
+description: 'Client-side exports for RoadVR integration'
+icon: 'code'
+---
+
+# Client API
+
+Every export below is client-side and lives in `API.lua` inside the resource.
+That file is in `escrow_ignore`, so you can read the source of anything on this
+page.
+
+## Headset
+
+### isRoadVrActive
+
+Is the headset currently on?
+
+<ResponseField name="return" type="boolean">
+  `true` while the player is wearing it.
+</ResponseField>
+
+```lua
+local active = exports.roadvr:isRoadVrActive()
+```
+
+### getRoadVrState
+
+The state machine, as a string.
+
+<ResponseField name="return" type="string">
+  One of `off`, `booting`, `passthrough`, `focus`, `shutdown`.
+
+  `passthrough` is windows floating while the player moves normally. `focus` is
+  the mode in which the mouse is free and the player can click.
+</ResponseField>
+
+```lua
+if exports.roadvr:getRoadVrState() == 'focus' then
+    -- the player is clicking something right now
+end
+```
+
+### putVisorOn
+
+Puts the visor on **another** ped's head.
+
+<ParamField path="ped" type="number" required>
+  The ped handle to fit the visor to.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  A handle you keep for `takeVisorOff`.
+</ResponseField>
+
+```lua
+local handle = exports.roadvr:putVisorOn(somePed)
+```
+
+<Info>
+  This exists for scene work — actors who should be wearing the headset without
+  the calling resource having to know anything about head bones, offsets or
+  addon clothing. It does not start a session for that ped.
+</Info>
+
+### takeVisorOff
+
+<ParamField path="handle" type="number" required>
+  The handle `putVisorOn` returned.
+</ParamField>
+
+```lua
+exports.roadvr:takeVisorOff(handle)
+```
+
+## Panels
+
+### openRoadVrPanel
+
+Opens a window for a registered app.
+
+<ParamField path="appId" type="string" required>
+  A registered app id — one of RoadVR's own, or one you registered yourself.
+</ParamField>
+
+<ParamField path="opts" type="table">
+  <Expandable title="Properties">
+    <ParamField path="anchor" type="string">
+      `'body'` follows the player, `'world'` stays put. Omit it and the
+      player's own setting decides — which is usually what you want.
+    </ParamField>
+
+    <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
+      Window size in **metres**.
+    </ParamField>
+
+    <ParamField path="distance" type="number">
+      How far in front of the player it opens, in metres.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="panelId" type="string | nil">
+  `nil` when the headset is off.
+</ResponseField>
+
+```lua
+local panelId = exports.roadvr:openRoadVrPanel('media', {
+    anchor   = 'world',
+    size     = { w = 1.6, h = 0.9 },
+    distance = 2.5,
+})
+```
+
+### closeRoadVrPanel
+
+<ParamField path="panelId" type="string" required>
+  The id `openRoadVrPanel` returned.
+</ParamField>
+
+```lua
+exports.roadvr:closeRoadVrPanel(panelId)
+```
+
+## Custom apps
+
+Full guide with a working example: [Custom Apps](/roadvr/custom-apps).
+
+### registerRoadVrApp
+
+<ParamField path="def" type="table" required>
+  <Expandable title="Properties">
+    <ParamField path="id" type="string" required>
+      Unique. Prefix it with your resource name.
+    </ParamField>
+    <ParamField path="page" type="string" required>
+      A file in **your** resource, e.g. `'ui/index.html'`.
+    </ParamField>
+    <ParamField path="name" type="string" default="the id">
+      Shown under the icon.
+    </ParamField>
+    <ParamField path="icon" type="string">
+      A file in your resource, e.g. `'ui/icon.png'`.
+    </ParamField>
+    <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
+      Metres.
+    </ParamField>
+    <ParamField path="anchor" type="string">
+      `'body'` or `'world'`.
+    </ParamField>
+    <ParamField path="hidden" type="boolean" default="false">
+      Keep it off the home screen and open it yourself.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="ok" type="boolean">
+  `false` when the id already belongs to another resource.
+</ResponseField>
+
+<ResponseField name="err" type="string">
+  Why it failed.
+</ResponseField>
+
+```lua
+local ok, err = exports.roadvr:registerRoadVrApp({
+    id   = 'myres_shop',
+    page = 'ui/index.html',
+    name = 'Shop',
+})
+```
+
+### unregisterRoadVrApp
+
+Not needed on resource stop — that is cleaned up on its own.
+
+```lua
+exports.roadvr:unregisterRoadVrApp('myres_shop')
+```
+
+### sendToRoadVrApp
+
+Sends data into your app's window. It arrives as a `message` event carrying
+`{ source: 'roadvr', ...payload }`.
+
+<ResponseField name="return" type="boolean">
+  `false` while the window is closed — **normal, not an error**. Your resource
+  has no idea whether the player has your app open.
+</ResponseField>
+
+```lua
+exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
+```
+
+## Custom widgets
+
+Full guide with a working example: [Custom Widgets](/roadvr/custom-widgets).
+
+### registerRoadVrWidget
+
+<ParamField path="def" type="table" required>
+  <Expandable title="Properties">
+    <ParamField path="id" type="string" required>
+      Unique. Prefix it with your resource name.
+    </ParamField>
+    <ParamField path="page" type="string" required>
+      A file in **your** resource, e.g. `'ui/widget.html'`.
+    </ParamField>
+    <ParamField path="name" type="string" default="the id">
+      Shown under the tile in the widget bar.
+    </ParamField>
+    <ParamField path="icon" type="string">
+      A file in your resource.
+    </ParamField>
+    <ParamField path="size" type="number" default="0.34">
+      Metres of **width**. The height follows from `aspect`.
+    </ParamField>
+    <ParamField path="min" type="number" default="0.2">
+      Smallest width the wheel allows, in metres.
+    </ParamField>
+    <ParamField path="max" type="number" default="0.8">
+      Largest width the wheel allows, in metres.
+    </ParamField>
+    <ParamField path="aspect" type="number" default="1.0">
+      Width divided by height.
+    </ParamField>
+    <ParamField path="mount" type="string" default="recess">
+      `'recess'` sinks it into the wall, `'raised'` stands it off.
+    </ParamField>
+    <ParamField path="shape" type="string" default="rounded">
+      `'round'` or `'rounded'`. Recess only.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```lua
+local ok, err = exports.roadvr:registerRoadVrWidget({
+    id   = 'myres_gauge',
+    page = 'ui/widget.html',
+    name = 'Gauge',
+})
+```
+
+### unregisterRoadVrWidget
+
+<Warning>
+  Widgets already hanging are **left on the wall**. They are in the player's
+  profile, and a resource going away is not a reason to clear somebody's room —
+  they fall back to an *unavailable* plate until it returns.
+</Warning>
+
+```lua
+exports.roadvr:unregisterRoadVrWidget('myres_gauge')
+```
+
+### sendToRoadVrWidget
+
+Reaches **every** widget of this kind that is currently drawn. Arrives as
+`{ source: 'roadvr', widget: '<id>', ...payload }`.
+
+<ResponseField name="return" type="boolean">
+  `false` when the kind is not yours.
+</ResponseField>
+
+```lua
+exports.roadvr:sendToRoadVrWidget('myres_gauge', { rpm = 3400 })
+```
+
+### getRoadVrWidgetInstances
+
+Which widgets of your kind are on a wall right now.
+
+<ResponseField name="return" type="table">
+  A list of instance ids. An empty table is a normal answer — the player may
+  simply not have hung one.
+</ResponseField>
+
+```lua
+local ids = exports.roadvr:getRoadVrWidgetInstances('myres_gauge')
+
+-- Check before you start sending. Nothing hanging means nothing to send to,
+-- and that check is the difference between a widget that costs nothing when
+-- unused and one that does not.
+if #ids == 0 then return end
+```
+
+## Talking to a page from inside the frame
+
+Everything above is Lua. The other half — a page asking RoadVR about the theme,
+its window, or the fact that it is closing — is the JavaScript SDK.
+
+<Card title="JavaScript SDK" icon="braces" href="/roadvr/api/sdk">
+  `ready()`, the context object, nine events, `applyTheme()` and `close()`
+</Card>
