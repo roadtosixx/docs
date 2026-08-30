@@ -12,8 +12,11 @@ screen. Opening it loads your page into a window.
 **RoadVR is not modified in the process**, so an update overwrites nothing of
 yours.
 
-<Card title="Working example" icon="folder-code">
-  A complete, running resource ships in `examples/roadvr_exampleapp/`.
+<Card title="Working examples" icon="folder-code">
+  Two complete, running app resources ship in `examples/`:
+  **`roadvr_exampleapp`**, which reads the game through its own Lua, and
+  **`roadvr_mediaapp`** — the Media app itself, which needs almost no Lua and
+  does everything through the SDK instead.
 </Card>
 
 ## Why a page and not a component
@@ -57,17 +60,18 @@ exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
 </ParamField>
 
 <ParamField path="page" type="string" required>
-  A file **in your resource**, e.g. `ui/index.html`. The `nui://` address is
-  built for you, so it cannot point somewhere else by accident. Put the file in
-  your own `files {}` block.
+  A file **in your resource**, e.g. `ui/index.html`. The full address —
+  `https://cfx-nui-<your-resource>/<file>` — is built for you, so it cannot
+  point somewhere else by accident. Put the file in your own `files {}` block.
 </ParamField>
 
 <ParamField path="name" type="string">
   Shown under the icon. Defaults to the id.
 </ParamField>
 
-<ParamField path="icon" type="string">
-  A file in your resource, e.g. `ui/icon.png`.
+<ParamField path="icon" type="string | table">
+  A file in your resource, e.g. `ui/icon.png` — or a pair of tones, see [Two
+  icons](#two-icons-if-you-want-the-setting-to-work) below.
 </ParamField>
 
 <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
@@ -88,6 +92,33 @@ exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
 <ResponseField name="err" type="string">
   Why it failed, when it did.
 </ResponseField>
+
+### Two icons, if you want the setting to work
+
+`icon` may be a pair instead of one file:
+
+```lua
+icon = { dark = 'ui/icon-dark.svg', light = 'ui/icon-light.svg' },
+```
+
+Settings has an **icon style** — dark, light, or following the interface theme
+— and every built-in app ships both tones for it. One file name is fine and is
+what most apps want; it simply shows under either setting. A pair makes your
+icon follow the player's choice the same way the rest of the home screen does.
+
+The recipe the built-in set uses: **dark** is a near-black tile with the glyph
+in the app's own colour, **light** is a tile carrying that colour as a gradient
+with a white glyph.
+
+<Warning>
+  Name **both** files in your `files {}` block. A file RoadVR asks for that is
+  not listed is a missing icon and nothing that says so.
+</Warning>
+
+<Info>
+  Give only one side of the pair and the other falls back to it, so half a pair
+  is still an icon under both settings rather than a gap under one.
+</Info>
 
 ### sendToRoadVrApp
 
@@ -185,7 +216,7 @@ window is, whether it is focused — and, the one that matters most, that it is
 about to close.
 
 ```html
-<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+<script src="https://cfx-nui-roadvr/public/sdk/roadvr.js"></script>
 ```
 
 The path is relative to the RoadVR resource, so `public/` belongs in it. There
@@ -194,7 +225,7 @@ so there is no copy in your resource that can go stale.
 
 ```js
 ;(async function () {
-  // Opened straight in a browser the nui:// address does not resolve at all.
+  // Opened straight in a browser the cfx-nui- address does not resolve at all.
   if (!window.RoadVr) return
 
   const ctx = await RoadVr.ready()
@@ -218,10 +249,12 @@ so there is no copy in your resource that can go stale.
 | `theme` | light/dark toggled, accent or icon set changed |
 | `locale` | the player switched interface language |
 | `world` | weather and clock tick — only after `watch('world')` |
+| `placement` | how far your window stands away — only after `watch('placement')` |
 | `focus` / `blur` | your window became, or stopped being, the focused one |
 | `visible` / `hidden` | pause menu, map, cinema screen, fast head turn |
 | `resize` | your window was dragged to a new size |
 | `anchor` | your window switched between following the player and staying put |
+| `action` | one of your ornament buttons was pressed |
 | `close` | your window is going away |
 | `message` | a push from your own Lua, i.e. `sendToRoadVrApp` |
 
@@ -230,6 +263,27 @@ Every `on()` returns its counterpart:
 ```js
 const off = RoadVr.on('theme', paint)
 off()
+```
+
+### Two things worth knowing about
+
+**`watch('placement')`** tells you how far your window is standing from the
+player's head, in metres, four times a second and only while it changes. It is
+what the Media app turns its volume down with as somebody walks away.
+
+```js
+RoadVr.watch('placement')
+RoadVr.on('placement', ({ distance }) => fade(distance))
+```
+
+**`setActions()`** hangs up to three buttons in your window's ornament, left of
+the close button — the place for a control that has to stay reachable while
+your page cannot offer one, over a video or a map.
+
+```js
+RoadVr.setActions([
+  { id: 'back', label: 'Back', icon: 'solar:alt-arrow-left-bold', onSelect: showList },
+])
 ```
 
 <Note>
@@ -279,6 +333,23 @@ every built-in app uses.
     ```
   </Accordion>
 
+  <Accordion title="Make sure nothing can be selected">
+    RoadVR sets `user-select: none` on its own panels, but that rule **stops at
+    the frame boundary**. Your page is its own document and starts from the
+    default, which is selectable — so dragging across your window paints it
+    blue while the headset draws its own pointer next to the smear.
+
+    RoadVR cannot do this for you. Set it yourself:
+
+    ```css
+    html, body { user-select: none; -webkit-user-select: none; }
+
+    /* The one exception, and the same one RoadVR makes for itself: a field you
+       type into is unusable without a caret and a selection. */
+    input, textarea { user-select: text; -webkit-user-select: text; }
+    ```
+  </Accordion>
+
   <Accordion title="Take RoadVR's colours">
     Point your own variables at RoadVR's, with a fallback so the page still
     opens in a browser:
@@ -306,7 +377,7 @@ Registration survives the headset being taken off and put back on. The list is
 kept on the Lua side and pushed to the interface again on every boot, so a
 resource that started long before anyone put a headset on still shows up.
 
-## Trying the example
+## Trying the examples
 
 ```
 ensure roadvr_exampleapp
@@ -316,3 +387,18 @@ Put the headset on and the **Example** icon is on the home screen. It shows
 your street, health and armour on request, receives a speed reading pushed once
 a second, honks the horn of the vehicle you are in — and, in its second column,
 reports everything the headset tells it through the SDK.
+
+```
+ensure roadvr_mediaapp
+```
+
+The **Media** app, as an ordinary resource of its own. It is the other shape:
+almost no Lua at all — one `registerRoadVrApp` call and nothing else — with
+every runtime detail coming through the SDK instead. It is also the one to read
+for `watch('placement')` and `setActions()`, both of which it uses for real.
+
+<Info>
+  `roadvr_mediaapp` registers under the id `media`, which is the id the built-in
+  Media app used. Starting it takes that place over rather than adding a second
+  icon, so `openRoadVrPanel('media')` keeps working either way.
+</Info>

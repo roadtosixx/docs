@@ -98,12 +98,15 @@ QBCore, Qbox and standalone.
     touch more than the top:
 
     ```lua config.lua
-    Config.Locale    = 'de'                -- server-wide language for Lua messages
+    Config.Locale    = 'en'                -- server-wide language for Lua messages
     Config.Item      = 'roadvr_headset'    -- empty string = no item needed
     Config.FocusKey  = 'E'                 -- focuses the panel you are looking at
-    Config.MaxPanels = 6
-    Config.Debug     = false               -- set false on a live server
+    Config.MaxPanels = 4
+    Config.Debug     = false               -- keep this false on a live server
     ```
+
+    `Config.Locale` ships as `'en'`. The German translation is included —
+    set it to `'de'` and the Lua-side notifications switch over.
 
     <Warning>
       Ship with `Config.Debug = false`. It enables `/roadvr_calib` and the
@@ -157,6 +160,20 @@ which ones those should be is the server owner's call.
 
 <Card title="Setting up environments" icon="image" href="/roadvr/environments">
   Where to get panoramas and how to add them
+</Card>
+
+## 📦 What else is in the download
+
+`examples/` carries three ready-to-run resources you can `ensure` as they are:
+
+| Resource | What it is |
+|---|---|
+| `roadvr_mediaapp` | The **Media** app — YouTube in a window. Start it and it appears on the home screen. |
+| `roadvr_exampleapp` | A worked example of an app that reads the game through its own Lua. |
+| `roadvr_examplewidget` | A worked example of a wall widget. |
+
+<Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
+  How the examples are built, and how to write your own
 </Card>
 
 ## 📚 Next Steps

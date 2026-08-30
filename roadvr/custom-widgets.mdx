@@ -50,7 +50,7 @@ to the clock. A complete, running example is in `examples/roadvr_examplewidget/`
     CreateThread(function()
         while true do
             local ok = pcall(function()
-                return exports.roadvr:registerRoadVRWidget({
+                return exports.roadvr:registerRoadVrWidget({
                     id     = 'myres_gauge',
                     page   = 'ui/widget.html',
                     name   = 'Gauge',
@@ -82,7 +82,7 @@ to the clock. A complete, running example is in `examples/roadvr_examplewidget/`
 ```lua Register
 -- Returns ok, err. Fails when the id already belongs to another resource —
 -- nobody gets to replace someone else's wall decoration.
-local ok, err = exports.roadvr:registerRoadVRWidget({
+local ok, err = exports.roadvr:registerRoadVrWidget({
     id   = 'myres_gauge',
     page = 'ui/widget.html',
 })
@@ -90,17 +90,17 @@ local ok, err = exports.roadvr:registerRoadVRWidget({
 
 ```lua Unregister
 -- Widgets already hanging are LEFT ON THE WALL. They belong to the player.
-exports.roadvr:unregisterRoadVRWidget('myres_gauge')
+exports.roadvr:unregisterRoadVrWidget('myres_gauge')
 ```
 
 ```lua Send
 -- Reaches every widget of this kind that is currently drawn.
-exports.roadvr:sendToRoadVRWidget('myres_gauge', { rpm = 3400 })
+exports.roadvr:sendToRoadVrWidget('myres_gauge', { rpm = 3400 })
 ```
 
 ```lua List
 -- { 'w_3', 'w_7' } — or an empty table, which is a normal answer.
-local ids = exports.roadvr:getRoadVRWidgetInstances('myres_gauge')
+local ids = exports.roadvr:getRoadVrWidgetInstances('myres_gauge')
 ```
 
 </CodeGroup>
@@ -114,9 +114,9 @@ local ids = exports.roadvr:getRoadVRWidgetInstances('myres_gauge')
 </ParamField>
 
 <ParamField path="page" type="string" required>
-  A file inside **your** resource, e.g. `'ui/widget.html'`. The `nui://` address
-  is built for you, so it cannot point somewhere else by accident. Put the file
-  in your `files {}` block.
+  A file inside **your** resource, e.g. `'ui/widget.html'`. The full address —
+  `https://cfx-nui-<your-resource>/<file>` — is built for you, so it cannot
+  point somewhere else by accident. Put the file in your `files {}` block.
 </ParamField>
 
 <ParamField path="name" type="string" default="the id">
@@ -160,7 +160,7 @@ local ids = exports.roadvr:getRoadVRWidgetInstances('myres_gauge')
 
 ## Talking to your widget
 
-`sendToRoadVRWidget` arrives in your page as a `message` event:
+`sendToRoadVrWidget` arrives in your page as a `message` event:
 
 ```js
 window.addEventListener('message', (e) => {
@@ -203,14 +203,14 @@ them** — messages are addressed to the kind, not to the piece.
 To tell themselves apart, each page gets its own widget id in its address:
 
 ```
-nui://myres/ui/widget.html?widget=w_3
+https://cfx-nui-myres/ui/widget.html?widget=w_3
 ```
 
 ```js
 const me = new URLSearchParams(location.search).get('widget')
 ```
 
-Use `getRoadVRWidgetInstances` before you start sending. Nothing hanging means
+Use `getRoadVrWidgetInstances` before you start sending. Nothing hanging means
 nothing to send to, and that check is the difference between a widget that costs
 nothing when unused and one that does not.
 
@@ -261,6 +261,17 @@ background colour on `body` shows up as a rectangle inside a round recess.
 
 **Hide the cursor** with `cursor: none`. The headset draws its own pointer.
 
+**Nothing can be selected.** Set `user-select: none` on `html, body`.
+
+RoadVR sets it on its own widgets, but that rule stops at the frame boundary —
+your page is its own document and starts from the default, which is
+selectable. A widget that takes no clicks is also one nobody should be able to
+smear blue.
+
+```css
+html, body { user-select: none; -webkit-user-select: none; }
+```
+
 **Do not scroll.** Set `overflow: hidden` on `html, body` and make the page fit.
 The wheel is taken while a widget is being placed — it resizes the widget — and
 a scrollbar inside a hole in a wall looks like a fault.
@@ -270,12 +281,12 @@ a scrollbar inside a hole in a wall looks like a fault.
 The same SDK the apps use, with one difference in what it reports:
 
 ```html
-<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+<script src="https://cfx-nui-roadvr/public/sdk/roadvr.js"></script>
 ```
 
 ```js
 ;(async function () {
-  // Opened straight in a browser the nui:// address does not resolve at all.
+  // Opened straight in a browser the cfx-nui- address does not resolve at all.
   if (!window.RoadVr) return
 
   const ctx = await RoadVr.ready()
@@ -299,6 +310,10 @@ height }` an app's window sends, for the same reason.
 
 `RoadVr.close()` does nothing for a widget. A widget hangs in a wall and
 belongs to the player; taking one off is theirs to do.
+
+Two more are **apps only** and do nothing here either: `RoadVr.setActions()`,
+because a widget has no ornament to hang buttons in, and `watch('placement')`,
+because a widget hangs still — there is no distance that changes.
 
 Everything else — `theme`, `locale`, `world`, `visible` / `hidden`, `message`,
 the counterpart returned by every `on()` — works exactly as it does for an app.

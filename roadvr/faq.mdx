@@ -53,6 +53,11 @@ you outright.
     ESX, QBCore, Qbox and standalone. RoadPhone is detected when present but is
     **not** a requirement.
   </Accordion>
+
+  <Accordion title="The Media app is not on the home screen">
+    It is its own resource. `ensure roadvr_mediaapp` — it is in the `examples/`
+    folder of the download and registers itself with RoadVR on start.
+  </Accordion>
 </AccordionGroup>
 
 ## Getting in
@@ -108,18 +113,23 @@ you outright.
   </Accordion>
 
   <Accordion title="A widget will not stick to a surface">
-    Three reasons, in order of likelihood: the surface is tilted more than
-    `Config.Widgets.maxSurfaceTilt` and counts as floor or ceiling; you are
-    further away than `Config.Widgets.reach` (6 m); or you already have
-    `Config.Widgets.max` widgets up (12).
+    Four reasons, in order of likelihood:
+
+    - the surface is tilted more than `Config.Widgets.maxSurfaceTilt` and counts
+      as floor or ceiling
+    - that spot already carries `Config.Widgets.maxPerCluster` widgets (3)
+      within `clusterRadius` (5 m) — the notification says *"that spot already
+      has enough widgets on it"*
+    - you are further away than `Config.Widgets.reach` (6 m)
+    - you already have `Config.Widgets.max` widgets up (12)
   </Accordion>
 
   <Accordion title="My widgets disappeared">
-    Look at the distance first — beyond `Config.Widgets.renderDistance` (20 m)
+    Look at the distance first — beyond `Config.Widgets.renderDistance` (10 m)
     a widget is not drawn, but it is still saved.
 
     They also step aside once `Config.Widgets.hideAtPanels` app windows are
-    awake in view at the same time (4 by default). Close a window and they come
+    awake in view at the same time (3 by default). Close a window and they come
     back. Set it to `0` to switch that off.
   </Accordion>
 </AccordionGroup>
@@ -146,7 +156,7 @@ you outright.
 
 <AccordionGroup>
   <Accordion title="The frame rate drops with a lot of windows open">
-    `Config.MaxPanels` (6) caps app windows and `Config.Widgets.max` (12) caps
+    `Config.MaxPanels` (4) caps app windows and `Config.Widgets.max` (12) caps
     widgets. Both exist for this reason. `Config.Widgets.hideAtPanels` sheds
     the decoration automatically once the workspace fills up.
   </Accordion>

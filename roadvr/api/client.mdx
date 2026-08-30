@@ -49,12 +49,14 @@ Puts the visor on **another** ped's head.
   The ped handle to fit the visor to.
 </ParamField>
 
-<ResponseField name="return" type="number">
-  A handle you keep for `takeVisorOff`.
+<ResponseField name="return" type="table | nil">
+  A handle you keep for `takeVisorOff`. `nil` when nothing was possible on that
+  ped.
 </ResponseField>
 
 ```lua
 local handle = exports.roadvr:putVisorOn(somePed)
+if not handle then return end
 ```
 
 <Info>
@@ -65,7 +67,7 @@ local handle = exports.roadvr:putVisorOn(somePed)
 
 ### takeVisorOff
 
-<ParamField path="handle" type="number" required>
+<ParamField path="handle" type="table" required>
   The handle `putVisorOn` returned.
 </ParamField>
 
@@ -139,8 +141,11 @@ Full guide with a working example: [Custom Apps](/roadvr/custom-apps).
     <ParamField path="name" type="string" default="the id">
       Shown under the icon.
     </ParamField>
-    <ParamField path="icon" type="string">
-      A file in your resource, e.g. `'ui/icon.png'`.
+    <ParamField path="icon" type="string | table">
+      A file in your resource, e.g. `'ui/icon.png'` — or a pair,
+      `{ dark = 'ui/icon-dark.svg', light = 'ui/icon-light.svg' }`, to follow
+      the player's icon style the way the built-in apps do. Name every file you
+      pass in your own `files {}` block.
     </ParamField>
     <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
       Metres.
@@ -290,5 +295,6 @@ Everything above is Lua. The other half — a page asking RoadVR about the theme
 its window, or the fact that it is closing — is the JavaScript SDK.
 
 <Card title="JavaScript SDK" icon="braces" href="/roadvr/api/sdk">
-  `ready()`, the context object, nine events, `applyTheme()` and `close()`
+  `ready()`, the context object, the events, `applyTheme()`, `watch()`,
+  `setActions()` and `close()`
 </Card>

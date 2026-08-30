@@ -14,7 +14,7 @@ and being told when it changes.
 ## Loading it
 
 ```html
-<script src="nui://roadvr/public/sdk/roadvr.js"></script>
+<script src="https://cfx-nui-roadvr/public/sdk/roadvr.js"></script>
 ```
 
 The path is relative to the RoadVR resource, so `public/` belongs in it. There
@@ -22,10 +22,20 @@ is nothing to add to your own `files {}` block — the file is served by RoadVR,
 which means there is no copy in your resource that can go stale against a
 newer headset.
 
+<Note>
+  Use the `https://cfx-nui-` form, not `nui://`. Both reach the same file, but
+  the address decides what your page is standing on: a browser sends a
+  `Referer` only from an http(s) document, so a page loaded over `nui://`
+  reaches every service on the web without one — and a service that checks it,
+  YouTube being the loud example, refuses to serve you. The `cfx-nui-` form
+  gives your page a real web origin, which is also what makes `fetch` and
+  browser storage behave the way you expect.
+</Note>
+
 <Warning>
-  Opened straight in a browser while you work on the page, the `nui://` address
-  does not resolve at all and `window.RoadVr` is simply not there. Guard for it
-  so the rest of your page still runs:
+  Opened straight in a browser while you work on the page, the `cfx-nui-`
+  address does not resolve at all and `window.RoadVr` is simply not there.
+  Guard for it so the rest of your page still runs:
 
   ```js
   if (!window.RoadVr) return
@@ -51,6 +61,12 @@ newer headset.
   RoadVr.on('close', () => save())
 })()
 ```
+
+<Card title="Working examples" icon="folder-code">
+  Three complete resources ship in `examples/`: `roadvr_exampleapp`,
+  `roadvr_examplewidget` and `roadvr_mediaapp` — the last one is the Media app
+  itself, and it uses `watch('placement')` and `setActions()` for real.
+</Card>
 
 ## RoadVr.ready()
 
@@ -120,7 +136,8 @@ picture finds it already current.
 </ResponseField>
 
 <ResponseField name="headset" type="object">
-  `state` is `off`, `passthrough`, `focus` or `shutdown`.
+  `state` is `off`, `booting`, `passthrough`, `focus` or `shutdown`. `focus` is
+  the mode in which the player can actually click things.
 
   `focused` is **this window** being the focused one, not some window being
   focused.
@@ -138,7 +155,7 @@ picture finds it already current.
 ## RoadVr.on()
 
 <ParamField path="event" type="string" required>
-  One of the nine events below.
+  One of the events below.
 </ParamField>
 
 <ParamField path="handler" type="function" required>
@@ -161,12 +178,14 @@ off()
 | `theme` | `{ light, accent, iconTheme, palette }` | light/dark toggled, accent or icon set changed |
 | `locale` | `{ language }` | the player switched interface language |
 | `world` | the world object | weather and clock tick — only after `watch('world')` |
+| `placement` | `{ distance }` | your window moved — only after `watch('placement')`, apps only |
 | `focus` | `{}` | your window became the focused one |
 | `blur` | `{}` | your window stopped being it |
 | `visible` | `{}` | the layer came back |
 | `hidden` | `{}` | pause menu, map, cinema screen, fast head turn |
 | `resize` | `{ width, height }` for apps, `{ size }` for widgets | dragged to a new size, or the wheel turned |
 | `anchor` | `{ anchor }` | switched between following the player and staying put |
+| `action` | `{ id }` | one of your ornament buttons was pressed |
 | `close` | `{}` | your window or widget is going away |
 | `message` | your payload | a push from your own Lua |
 
@@ -213,10 +232,13 @@ browser:
 }
 ```
 
-## Weather and the clock
+## Watched topics
 
-Not sent unless asked for. The Lua ticker runs once a second and only while
-somebody is listening, so an app that never reads it should not keep it awake.
+Two things are **not** sent unless you ask for them, because both tick and a
+ticker running for a page that never reads it is load nobody chose. Each one
+starts with its first watcher and stops with its last.
+
+### Weather and the clock
 
 ```js
 RoadVr.watch('world')
@@ -228,14 +250,96 @@ RoadVr.on('world', ({ weather, hours, minutes, temperature }) => {
 RoadVr.unwatch('world')
 ```
 
-The world object carries `weather`, `temperature`, `hours`, `minutes`,
-`windSpeed`, `windBearing`, `sunrise`, `sunset`, `day`, `month`, `year` and
-`weekday`.
+Once a second. The world object carries `weather`, `temperature`, `hours`,
+`minutes`, `windSpeed`, `windBearing`, `sunrise`, `sunset`, `day`, `month`,
+`year` and `weekday`. `RoadVr.context.world` is `null` until you watch it.
+
+### How far away your window is
+
+Apps only — a widget hangs in a wall and does not move.
+
+```js
+RoadVr.watch('placement')
+
+RoadVr.on('placement', ({ distance }) => fade(distance))
+
+RoadVr.unwatch('placement')
+```
+
+`distance` is metres from the player's head to your window, four times a second
+and only while it actually changes. It is what the Media app turns its volume
+down with as you walk away, and what a display carrying too much detail to read
+from across the room can simplify itself on.
 
 <Info>
-  A frame that goes away without calling `unwatch` still stops counting — the
+  Nothing else about where anybody is standing travels — not the window's
+  position and not the player's. One number is the whole answer to "am I near
+  it"; the position would be a different question with a different answer.
+</Info>
+
+<Info>
+  A frame that goes away without calling `unwatch` still stops counting — a
   ticker does not stay on for a window nobody can see.
 </Info>
+
+## RoadVr.setActions()
+
+Puts buttons in **your own window's ornament** — the bar along the bottom edge
+that already holds the close button, the grabber and the tilt. Yours go to the
+left of the close button.
+
+<ParamField path="list" type="array" required>
+  Up to three items of `{ id, label, icon, onSelect }`. An empty array takes
+  them away again.
+</ParamField>
+
+```js
+RoadVr.setActions([
+  {
+    id: 'back',
+    label: 'Back',
+    icon: 'solar:alt-arrow-left-bold',
+    onSelect: () => showTheList(),
+  },
+])
+
+RoadVr.setActions([])   // takes them away again
+```
+
+That is the place for a control that has to stay reachable while your page
+cannot offer one — over a video, over a map, over anything that swallows
+pointer events.
+
+<ParamField path="id" type="string">
+  Yours. It comes back as the payload of the `action` event, and it is how the
+  SDK finds your `onSelect` again.
+</ParamField>
+
+<ParamField path="label" type="string">
+  **Finished text, not a locale key.** Your page carries its own strings and
+  RoadVR does not translate them — switch them yourself on the `locale` event
+  and call `setActions` again.
+</ParamField>
+
+<ParamField path="icon" type="string">
+  Either a name from RoadVR's own bundled set, spelled
+  `solar:alt-arrow-left-bold`, or an SVG path in a 24×24 box. A name gets you
+  the same filled glyph the close button beside it uses, but only for the icons
+  RoadVR happens to bundle — a name it does not have logs a warning and draws
+  nothing. A path always works and is drawn as an outline.
+</ParamField>
+
+<ParamField path="onSelect" type="function">
+  Runs in your page. The press travels as the id and the SDK finds your
+  function again, so a second `setActions` with a shorter list cannot leave a
+  handler behind for a button that is gone.
+</ParamField>
+
+<Warning>
+  **Three at most, and apps only.** The ornament also holds the window's own
+  controls, and a fourth button would push those off the bar. A widget has no
+  ornament — it hangs in a wall.
+</Warning>
 
 ## RoadVr.close()
 
@@ -255,11 +359,11 @@ something you pass in, so one app cannot close another's window.
 
 ## What the SDK cannot do
 
-By design, this version is **read plus events, and one action**. There is no
-way to play a sound, post a notification into the control centre, resize your
-own window, or open another app. Nor does it hand out game data — vehicle,
-health, position and the rest belong in your own Lua, and RoadVR is not a
-general game API.
+By design, this version is **read plus events, plus two actions** — closing
+your own window and hanging buttons in its ornament. There is no way to play a
+sound, post a notification into the control centre, resize your own window, or
+open another app. Nor does it hand out game data — vehicle, health, position
+and the rest belong in your own Lua, and RoadVR is not a general game API.
 
 The message protocol is built so those can be added later without breaking
 anything already written against it.

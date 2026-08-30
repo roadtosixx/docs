@@ -39,20 +39,40 @@ photograph will not — it has no way to cover the whole sphere.
 ## Where to get them
 
 <Card title="Poly Haven" icon="download" href="https://polyhaven.com/hdris">
-  Free, CC0, no attribution required. The two examples already written into
+  Free, CC0, no attribution required. The two examples commented into
   `config.lua` come from here.
 </Card>
+
+`Config.Environments.list` ships **empty**, with those two written above it as
+a comment to copy:
+
+```lua config.lua
+Config.Environments = {
+    -- Empty on purpose: no panorama ships with the resource. Put your own
+    -- equirectangular images into public/environments/ and list them here.
+    --
+    --   { id = 'town',     image = 'german_town_street.webp', label = 'Old town' },
+    --   { id = 'aquarium', image = 'ushaka_aquarium.webp',    label = 'Aquarium' },
+    list = {},
+```
 
 ## Adding one
 
 <Steps>
   <Step title="Convert it">
     Download the tonemapped JPG, then re-encode to **WebP at 4096×2048,
-    quality 90**.
+    quality 90**:
+
+    ```bash
+    ffmpeg -i in.jpg -vf scale=4096:2048:flags=lanczos -c:v libwebp -quality 90 -preset picture out.webp
+    ```
 
     This matters more than anything else on this page. The two examples went
     from 72 MB to 3.8 MB with no visible difference on the sphere — and that is
     72 MB every single player would have downloaded.
+
+    `texture` below scales anything larger down to 4096 anyway, so the extra
+    pixels only ever cost the download and the decode.
 
     <Warning>
       A smaller `texture` value in the config does **not** shrink the download
@@ -73,12 +93,18 @@ photograph will not — it has no way to cover the whole sphere.
     ```lua config.lua
     Config.Environments = {
         list = {
-            { id = 'german_town_street', image = 'german_town_street.webp', label = 'Altstadt' },
-            { id = 'ushaka_aquarium',    image = 'ushaka_sea_world_aquarium.webp', label = 'Aquarium' },
-            { id = 'my_rooftop',         image = 'my_rooftop.webp',         label = 'Rooftop' },
+            { id = 'town',      image = 'german_town_street.webp', label = 'Old town' },
+            { id = 'aquarium',  image = 'ushaka_aquarium.webp',    label = 'Aquarium' },
+            { id = 'my_rooftop', image = 'my_rooftop.webp',        label = 'Rooftop' },
         },
     }
     ```
+
+    <Warning>
+      `label` is shown to the player exactly as written — it does **not** go
+      through the interface's language files. Write it in the language your
+      players read.
+    </Warning>
 
     <Info>
       `id` has to stay stable — it is what a player's saved choice points at.
