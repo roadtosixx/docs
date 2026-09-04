@@ -1,0 +1,294 @@
+---
+title: 'Custom App RPC'
+description: 'Call your own server code from a custom app, and keep the UI in sync without a push channel'
+icon: 'arrows-left-right'
+---
+
+# Custom App RPC
+
+A custom app is an iframe inside RoadPhone. It has **no `ui_page` of its own**,
+which decides everything on this page: how a request reaches your server, and
+why the answer can only ever come back as a reply to a request the UI made
+itself.
+
+Every request follows the same shape:
+
+```
+UI  ──fetch/post──▶  your client.lua  ──server callback──▶  your server.lua
+                                                                   │
+UI  ◀── the reply resolves the pending fetch ◀─────────────────────┘
+```
+
+One server callback per resource — `roadphone:customApp:<resource>` — with the
+handler name as a string argument. Do not register one callback per action.
+
+## Picking a transport
+
+There are two ways for the UI to reach your client, and both end at the same
+server callback.
+
+| Transport | Call | Works when |
+| --- | --- | --- |
+| Own `/rpc` | `fetch('https://<resource>/rpc')` | The server routes same-resource fetches from the iframe. Most do. |
+| Host bridge | `roadphone.post('customAppRpc', …)` | Always — it targets RoadPhone, which has a `ui_page`. |
+
+<Warning>
+  The own-`/rpc` fetch depends on the server and the FiveM build. It works on
+  most setups, but it has been observed failing with `net::ERR_FAILED` on
+  others. Ship the dual path below and you never have to find out which kind of
+  server your customer runs.
+</Warning>
+
+## JavaScript side
+
+One `api()` helper for the whole app. Everything else calls through it.
+
+```javascript
+const rp = window.parent.roadphone
+
+// Derive the resource name from the host — the page is served from
+// https://cfx-nui-<resource>/…, the NUI callback lives at https://<resource>/…
+const RES = (window.location.host || '').replace(/^cfx-nui-/, '') || 'my-app'
+
+// A failing SQL query never invokes its mysql-async callback, so the server
+// simply never replies and this fetch hangs forever — a blank screen with no
+// error. Time it out instead.
+const API_TIMEOUT = 12000
+
+async function api(name, data) {
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null
+  const timer = setTimeout(() => ctl && ctl.abort(), API_TIMEOUT)
+
+  try {
+    const resp = await fetch(`https://${RES}/rpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, data: data || {} }),
+      signal: ctl ? ctl.signal : undefined,
+    })
+    return await resp.json()
+  } catch (e) {
+    // Fallback: RoadPhone's host bridge. Same server callback, different route.
+    if (rp && rp.post) {
+      try {
+        const r = await rp.post('customAppRpc', { resource: RES, name, data: data || {} })
+        // post() returns the parsed payload for a string reply, but the whole
+        // axios response for a table reply — unwrap before reading any field.
+        const out = r && r.data !== undefined ? r.data : r
+        if (out && typeof out === 'object') return out
+      } catch (e2) { /* fall through */ }
+    }
+    return { error: e && e.name === 'AbortError' ? 'timeout' : 'network' }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+```
+
+<Warning>
+  **Always unwrap `roadphone.post()`.** It parses the reply as JSON and returns
+  the raw axios response when that parse fails — which is exactly what happens
+  when your Lua returns a table. `res.ok` is `undefined` and the payload sits at
+  `res.data`. Reading fields off `res` directly is the single most common bug in
+  custom apps.
+</Warning>
+
+### Errors are codes, not sentences
+
+The server returns a code, the UI turns it into a translated string. That keeps
+player-facing text in your locale files and out of Lua.
+
+```javascript
+function errText(res) {
+  const code = res && res.error
+  if (!code) return t('ERR_GENERIC')
+  if (code === 'cooldown') return t('ERR_COOLDOWN', fmtDuration(res.seconds))
+
+  const key = 'ERR_' + String(code).toUpperCase()
+  const mapped = t(key)
+  return mapped === key ? t('ERR_GENERIC') : mapped
+}
+```
+
+### Normalise empty lists
+
+An empty Lua table serialises as `{}`, not `[]`. Anything you iterate needs a
+guard:
+
+```javascript
+const rows = Array.isArray(res.rows) ? res.rows : []
+```
+
+## Lua: client relay
+
+The client does nothing but forward — unless the action is genuinely
+client-only (setting a waypoint, playing an animation), in which case it never
+has to leave the client at all.
+
+```lua
+local RPC = 'roadphone:customApp:' .. GetCurrentResourceName()
+
+RegisterNUICallback('rpc', function(payload, cb)
+    local name = payload and payload.name
+    local data = (payload and payload.data) or {}
+    if not name then cb({ error = 'no_name' }) return end
+
+    -- Client-only action: no server needed.
+    if name == 'local.waypoint' then
+        if data.x and data.y then SetNewWaypoint(data.x + 0.0, data.y + 0.0) end
+        cb({ ok = true })
+        return
+    end
+
+    Bridge.TriggerCallback(RPC, function(result)
+        cb(result or {})
+    end, name, data)
+end)
+```
+
+<Warning>
+  **Resolve `cb` inside this handler.** Storing it and calling it later from a
+  separate `RegisterNetEvent` does not reliably resolve the pending fetch. The
+  reply has to come out of the server callback's own result.
+</Warning>
+
+## Lua: server dispatcher
+
+One callback, a handler table, and a guard that `cb` fires exactly once.
+
+```lua
+local Handlers = {}
+
+function Handlers.whoami(src, player, data, reply)
+    reply({ ok = true, name = player.name, job = player.job })
+end
+
+Bridge.RegisterCallback('roadphone:customApp:' .. GetCurrentResourceName(), function(src, cb, name, data)
+    local player = Bridge.GetPlayer(src)
+    if not player then cb({ error = 'no_player' }) return end
+
+    local handler = Handlers[name]
+    if not handler then cb({ error = 'unknown_handler' }) return end
+
+    -- A handler that replies and then errors must not reply twice, and a
+    -- handler that errors before replying must still reply — otherwise the
+    -- UI's fetch hangs until its timeout.
+    CreateThread(function()
+        local replied = false
+        local function reply(result)
+            if replied then return end
+            replied = true
+            cb(result)
+        end
+
+        local ok, err = pcall(handler, src, player, data or {}, reply)
+        if not ok then
+            print('[my-app] handler error in ' .. name .. ': ' .. tostring(err))
+            reply({ error = 'server_error' })
+        end
+    end)
+end)
+```
+
+The `CreateThread` is what lets a handler wait on a database query. Register the
+callback through whichever system your framework uses:
+
+- **ESX** — `ESX.RegisterServerCallback(name, fn)`
+- **QBCore** — `QBCore.Functions.CreateCallback(name, fn)`
+- **Qbox** — `lib.callback.register(name, fn)` (needs `@ox_lib/init.lua`)
+
+<Warning>
+  `data` comes from the UI. Treat every field as hostile: check types, clamp
+  numbers, cut strings to length, and re-check permissions and prices on the
+  server. The UI hiding a button is not a permission check.
+</Warning>
+
+## Refetching: there is no push
+
+`SendNUIMessage` from your resource has no document to deliver to and cannot
+reach the iframe. Nothing your server does can put data into the UI on its own —
+the UI has to ask. Four patterns cover it:
+
+<Steps>
+  <Step title="Refetch when a view opens">
+    The default, and it covers more than it looks like. Leaving the app and
+    coming back **destroys and reloads the iframe** — your boot code runs again
+    from scratch, so there is nothing stale to refresh. Within a session, have
+    every tab or view load its own data on mount, so switching away and back is
+    a refresh. Ask the server for feature flags before drawing the tab bar, so
+    no tab points at a disabled system.
+  </Step>
+  <Step title="Cache with a TTL, bust it on writes">
+    For read-heavy apps, cache per handler name and drop the whole cache after
+    any write — a write makes every cached read suspect. Never cache a reply
+    that carries an `error`, and exclude handlers that must always be live.
+
+    ```javascript
+    const CACHEABLE = { 'records.list': 15000, 'stats.get': 30000 }
+    const VOLATILE = new Set(['plate.lookup', 'licenses.get'])
+    ```
+  </Step>
+  <Step title="Notify, then let the app refetch">
+    Server-side events reach the player through RoadPhone's own notification
+    system, not through your iframe:
+
+    ```lua
+    TriggerClientEvent('roadphone:sendNotification', src, {
+        apptitle = 'My App',
+        title = 'New order',
+        message = 'A customer is waiting.',
+        img = '/public/img/Apps/light_mode/custom.webp',
+    })
+    ```
+
+    When the client already knows what happened, use the client export instead
+    and skip the round trip: `exports['roadphone']:sendNotification({ … })`.
+
+    The UI can listen for it and refresh:
+
+    ```javascript
+    rp.on('notificationReceived', () => refreshCurrentView())
+    ```
+  </Step>
+  <Step title="Time out locally on a server-provided duration">
+    For "this expires in N seconds", have the server return the duration and run
+    the countdown in the UI. Guard it with a token so a stale timer from an
+    earlier run cannot overwrite a newer state.
+  </Step>
+</Steps>
+
+<Info>
+  Effects in the game world are not affected by any of this. Blips, waypoints,
+  animations and props are plain client code: `TriggerClientEvent` from your
+  server to a `RegisterNetEvent` in your client works normally, because it never
+  touches NUI.
+</Info>
+
+### Host events worth listening to
+
+```javascript
+rp.on('darkModeChanged', applyTheme)
+rp.on('languageChanged', () => location.reload())
+rp.on('phoneOpened', () => refreshCurrentView())   // phone reopened, app still mounted
+rp.on('appOpened', (e) => { /* { app, path } — another app was opened */ })
+rp.on('appClosed', (e) => { /* … and left */ })
+rp.on('notificationReceived', (n) => { /* { appTitle, title, message, icon } */ })
+```
+
+<Info>
+  `appOpened` fires for the app the player navigates *to*. Your own iframe is
+  torn down when the player leaves your app, so use `phoneOpened` — not
+  `appOpened` — as the "I am visible again" signal.
+</Info>
+
+## Checklist
+
+- One server callback per resource, dispatching by handler name.
+- `cb` is called on **every** branch, exactly once — early returns included.
+- `cb` is resolved inside the NUI callback, never from a later net event.
+- The UI unwraps `roadphone.post()` replies before reading any field.
+- Every fetch has a timeout; a dead server callback must not become a blank screen.
+- Empty Lua tables are normalised to arrays in JS.
+- `data` from the UI is validated server-side.
+- Views refetch on open; writes bust the cache.
+- No `SendNUIMessage` in a resource without a `ui_page`.
