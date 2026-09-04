@@ -154,7 +154,7 @@ exactly like on a real phone:
 **Where the install state lives:**
 
 - **Metadata mode** (`Config.UseMetadata = true`): the list of installed apps
-  is stored on the **phone item's metadata** (`installed_apps`, up to 50 apps
+  is stored on the **phone item's metadata** (`installed_apps`, up to 100 apps
   per phone). Each phone keeps its own apps — trade or steal a phone and its
   installed apps travel with it.
 - **Non-metadata mode**: installed apps persist in the browser's
@@ -1294,6 +1294,12 @@ window.roadphone.off('darkModeChanged', handler)
   section is about the real thing: **calling your own resource's server code
   and getting a response back**.
 </Info>
+
+<Tip>
+  **[Custom App RPC](/roadphonepro/custom-app-rpc)** covers this in depth: both
+  transports and when each one fails, timeouts, the dispatcher pattern with a
+  reply guard, and how to keep the UI in sync without a push channel.
+</Tip>
 
 A custom app has **no `ui_page`**, so FiveM does not reliably route
 `https://<your-resource>/…` fetches from inside the phone's iframe — your app

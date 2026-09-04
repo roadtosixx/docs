@@ -50,6 +50,7 @@
               "roadphonepro/metadata",
               "roadphonepro/simcards",
               "roadphonepro/custom-apps",
+              "roadphonepro/custom-app-rpc",
               "roadphonepro/commands",
               "roadphonepro/admin-menu",
               "roadphonepro/admin-menu-file-permissions",
