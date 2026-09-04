@@ -30,6 +30,18 @@
             ]
           },
           {
+            "group": "RoadVR",
+            "pages": [
+              "roadvr/installation",
+              "roadvr/controls",
+              "roadvr/apps",
+              "roadvr/environments",
+              "roadvr/custom-apps",
+              "roadvr/custom-widgets",
+              "roadvr/faq"
+            ]
+          },
+          {
             "group": "RoadPhone Pro",
             "pages": [
               "roadphonepro/installation",
@@ -65,7 +77,8 @@
             "pages": [
               "roadpad/installation",
               "roadpad/faq",
-              "roadpad/custom-apps"
+              "roadpad/custom-apps",
+              "roadpad/fivemanage"
             ]
           },
           {
@@ -98,6 +111,13 @@
             "group": "API documentation",
             "pages": [
               "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "RoadVR",
+            "pages": [
+              "roadvr/api/client",
+              "roadvr/api/sdk"
             ]
           },
           {
