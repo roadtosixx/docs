@@ -68,7 +68,7 @@ Config.MaxBackupsPerPhone = 5
 |---|---|---|
 | `ox_inventory` | full | Remove its built-in phone item code — see below |
 | `one_inventory` | full | Hooks for trade/give are wired up automatically |
-| `jaksam` | full | Works out of the box; the item is always `phone` |
+| `jaksam` | full | Fully supports per-item metadata for phones |
 | `tgiann` | full | Data lives in `item.info`; handled by the bridge |
 | `qb-inventory` | partial | Uses `item.info` instead of `item.metadata` |
 | `core_inventory` | partial | Basic metadata support |
@@ -153,7 +153,7 @@ When a player has multiple phones in their inventory:
 
 ## Metadata Structure
 
-The item stores device data and pointers to signed-in accounts; account content remains in the database. Fields are created on demand. The optional `phone_model` below illustrates a Jaksam Fold item; omit it on regular Pro phones. See [Accounts & Sessions](/roadphonepro/accounts) and [Fold persistence](/roadphonepro/fold#fold-and-unfold).
+The item stores device data and pointers to signed-in accounts; account content remains in the database. Fields are created on demand. Fold uses the configured `phone_fold` item name, including on Jaksam; no special `phone_model` field is required. See [Fold persistence](/roadphonepro/fold#fold-and-unfold).
 
 ```lua
 {
@@ -161,7 +161,6 @@ The item stores device data and pointers to signed-in accounts; account content 
     phone_number         = "1234567",     -- unique number (ignored with the SIM Card DLC)
     phone_owner          = "John Doe",    -- who it was first assigned to
     phone_assigned_date  = 1234567890,    -- unix timestamp
-    phone_model          = "ultra",       -- Fold selector on Jaksam; omit for regular phones
     phone_setup          = 1,             -- 0 = setup screen, 1 = ready
     phone_powered_on     = 1,             -- 0 = switched off
 
@@ -211,6 +210,7 @@ The item stores device data and pointers to signed-in accounts; account content 
     snapy_session        = { ... },
     livestream_session   = { ... },
     dating_session       = { ... },
+    loop_session         = { ... },
 
     -- Hardware add-ons
     phone_sims           = { ... },        -- SIM Card DLC
@@ -220,7 +220,7 @@ The item stores device data and pointers to signed-in accounts; account content 
 ```
 
 <Warning>
-  `phone_account` and `phone_twitter_account` are **dead fields**. Accounts moved to server-authoritative sessions — the fields are only read once, migrated into a session and then cleared. Never write them.
+  `phone_account` and `phone_twitter_account` are legacy fields. Current account identity comes from server-authoritative sessions. Do not use these fields for login or logout.
 </Warning>
 
 ### Limits

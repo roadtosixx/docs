@@ -13,7 +13,7 @@ icon: 'fold-horizontal'
 Keep the resource named `roadphone`. Add the Fold item to your inventory's item definitions and shops, then configure its name in `config.lua`:
 
 ```lua config.lua
-Config.FoldableItems = { 'roadphone_ultra' }
+Config.FoldableItems = { 'phone_fold' }
 Config.FoldKey = ''
 Config.FoldProps = {
     closed = { model = 'roadphone_fold_closed' },
@@ -30,22 +30,6 @@ Config.FoldProps = {
 
 Automatic registration inside RoadPhone does **not** create an inventory item definition or put the item in a shop. Use your existing Pro inventory integration. Each device needs its own slot when using metadata.
 
-### Jaksam inventory
-
-Jaksam uses the item named `phone`. Set **`phone_model = 'ultra'`** in that item's metadata and use `Config.UseMetadata = true` so the form factor is included in the phone-open snapshot.
-
-```lua
-local foldMetadata = {
-    phone_model = 'ultra',
-}
-```
-
-Merge this value through your inventory's item creation/update API; do not replace an existing phone's metadata table.
-
-<Note>
-  `roadphone_ultra`, `phone_model = 'ultra'` and the key-binding label “RoadPhone Ultra: fold / unfold” are existing technical identifiers for RoadPhone Fold. Keep these values as shown. The interface's form-factor value is `fold`.
-</Note>
-
 ## Fold and unfold
 
 1. Use the Fold item from the inventory to select the correct device.
@@ -59,7 +43,7 @@ The command only acts while a Fold phone is open. It does not open the phone or 
 | `Config.UseMetadata = true` | `phone_settings.unfolded` on the selected item; follows the phone when traded. |
 | `Config.UseMetadata = false` | Client KVP `roadphone_unfolded`; shared between that client's Fold devices. |
 
-Jaksam's metadata-based Fold selection requires metadata mode. Legacy mode selects Fold by configured item name.
+Fold selection uses the configured `phone_fold` item name. Metadata mode controls per-item data and fold-state persistence.
 
 ## Apps on the wider screen
 
@@ -114,7 +98,7 @@ Likewise, `getPhoneProp(itemName)` maps regular item/colour variants; it does no
 
 | Symptom | Check |
 | --- | --- |
-| A normal phone opens | Use the actual Fold inventory item. Check `Config.FoldableItems`; on Jaksam check `phone_model = 'ultra'` and metadata mode. |
+| A normal phone opens | Use the `phone_fold` item and check that it is listed in `Config.FoldableItems`, including on Jaksam. |
 | The fold key does nothing | Assign a key, open the Fold phone, then try `/roadphone_fold`. |
 | The unfolded prop is missing | Check both YDR files, the YTYP, manifest and model names. Restart the resource after updating assets. |
 | The wrong phone data appears | Use the exact inventory slot. Custom inventory hooks should use [OnPhoneItemUsed](/roadphonepro/api/metadata#item-helpers). |

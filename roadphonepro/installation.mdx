@@ -126,7 +126,7 @@ RoadPhone automatically detects your framework. No manual configuration needed.
 -- Set to true if players need a phone item to use the phone
 Config.NeedItem = true
 
--- Phone items (ignored if using jaksam_inventory)
+-- Regular phone items
 Config.Items = {
     "phone",
     "purple_phone",
@@ -295,7 +295,7 @@ If `Config.NeedItem = true`, you need to add phone items to your inventory syste
     </Tab>
 
     <Tab title="jaksam_inventory">
-        Phone items are automatically registered. No additional setup needed.
+        RoadPhone registers configured phone items for use. Jaksam supports both the regular `phone` and the separate `phone_fold` item. Create or enable `phone_fold` in the inventory and list it in `Config.FoldableItems`; see [Fold setup](/roadphonepro/fold).
     </Tab>
 </Tabs>
 

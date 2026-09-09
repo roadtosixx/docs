@@ -15,24 +15,22 @@ icon: 'sparkles'
 | Garage | Vehicle information, locating vehicles and valet | [Garage](/roadphonepro/apps#garage-and-housing), [Valet exports](/roadphonepro/api/client#valet) |
 | Events and Wallet | Event creation, tickets, passes and showing cards to nearby players | [Configuration](/roadphonepro/apps#events-and-wallet) |
 | Loop | Short videos, discovery, messages, live streams, gifts, creator tools and promotions | [Loop](/roadphonepro/apps#loop) |
-| Social apps | Wave polls and DMs; Connect replies, reactions and unsending; Glimpse chats and stories | [Accounts](/roadphonepro/accounts) |
+| Social apps | Wave polls and DMs; Connect replies, reactions and unsending; Glimpse chats and stories | Install through App Shop |
 | Calls | Voicemail with personal greetings and recordings; voice/video/group calls | [Call controls](/roadphonepro/api/client#call-management) |
 | Music | Redesigned library, playlists and player, external playback controls | [Music API](/roadphonepro/custom-music-api) |
 | Personalization | New backgrounds, four icon packs, icon shapes, widgets and lockscreen customization | [Personalization](/roadphonepro/apps#personalization-and-live-cards) |
 | Games | Pair Flip, Minefield and Color Echo alongside the existing games | Install through App Shop |
 | Live Bar and maps | External live cards, buttons, lockscreen cards and pins on phone and game maps | [Live Bar](/roadphonepro/api/client#live-bar), [Map pins](/roadphonepro/api/client#map-pins) |
-| Item data | Active-slot handling, buffered writes, backups and account sessions | [Metadata](/roadphonepro/metadata), [Accounts](/roadphonepro/accounts) |
+| Item data | Active-slot handling, buffered writes, backups and account sessions | [Metadata](/roadphonepro/metadata) |
 
 ## Update an existing server
 
 1. Back up the `roadphone` resource and database.
 2. Update from the complete release, including `public/`, scripts, bridge, manifest and streamed Fold models.
 3. Merge new options into existing `config.lua`, addon configs and `public/static/config/config.json`. Preserve server-specific `API.lua`, credentials, integrations and customization.
-4. Add the Fold inventory item or Jaksam metadata using the [Fold guide](/roadphonepro/fold).
+4. Add the `phone_fold` inventory item using the [Fold guide](/roadphonepro/fold).
 5. Start dependencies first, restart `roadphone`, and check the console for database migration errors. The resource runs database setup/migrations on startup; fresh-install SQL is not an upgrade script.
 6. Verify regular Pro and Fold items separately: numbers, saved content, accounts, fold state, props and enabled apps.
-
-See [session migration](/roadphonepro/accounts#upgrading-existing-accounts) for existing accounts. Do not clear session tables or item metadata as an update step.
 
 ## Developer changes
 

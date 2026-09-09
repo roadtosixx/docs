@@ -1,0 +1,269 @@
+---
+title: 'Export Index'
+description: 'Complete client and server exports for Pro and its included Fold device'
+icon: 'list'
+---
+
+RoadPhone Fold is included with RoadPhone Pro and uses the same `roadphone` resource. This index covers the current 2.7.0 manifest and runtime registrations. Export names are case-sensitive; names shared by client and server can have different parameters.
+
+Call exports from the side shown after RoadPhone has started. Follow each reference for arguments, return values and configuration requirements. Addon exports require their addon to be loaded; listing an addon here does not imply that separate addon is included in Pro.
+
+```lua
+dependency 'roadphone'
+```
+
+There are **no Fold-specific exports** in this build. See the command and saved settings in [Fold integration](/roadphonepro/fold#integration-and-exports). Global Lua functions are not automatically exports.
+
+## Client exports
+
+| Export | Side | Reference |
+| --- | --- | --- |
+| `acceptCall` | client | [Parameters and behaviour](/roadphonepro/api/client#acceptcall) |
+| `AddMapPin` | client | [Parameters and behaviour](/roadphonepro/api/client#addmappin) |
+| `blockPhone` | client | [Parameters and behaviour](/roadphonepro/api/client#blockphone) |
+| `closePhone` | client | [Parameters and behaviour](/roadphonepro/api/client#closephone) |
+| `declineCall` | client | [Parameters and behaviour](/roadphonepro/api/client#declinecall) |
+| `deliverOrMarkCar` | client | [Parameters and behaviour](/roadphonepro/api/client#deliverormarkcar) |
+| `endCall` | client | [Parameters and behaviour](/roadphonepro/api/client#endcall) |
+| `getBankIban` | client | [Parameters and behaviour](/roadphonepro/api/client#getbankiban) |
+| `getBankTransactions` | client | [Parameters and behaviour](/roadphonepro/api/client#getbanktransactions) |
+| `getCallState` | client | [Parameters and behaviour](/roadphonepro/api/client#getcallstate) |
+| `getClientHealthData` | client | [Parameters and behaviour](/roadphonepro/api/client#getclienthealthdata) |
+| `getClientHeartRate` | client | [Parameters and behaviour](/roadphonepro/api/client#getclientheartrate) |
+| `getClientSteps` | client | [Parameters and behaviour](/roadphonepro/api/client#getclientsteps) |
+| `getClientStress` | client | [Parameters and behaviour](/roadphonepro/api/client#getclientstress) |
+| `getContacts` | client | [Parameters and behaviour](/roadphonepro/api/client#getcontacts) |
+| `getFavouriteContacts` | client | [Parameters and behaviour](/roadphonepro/api/client#getfavouritecontacts) |
+| `getMessages` | client | [Parameters and behaviour](/roadphonepro/api/client#getmessages) |
+| `getMusicState` | client | [Parameters and behaviour](/roadphonepro/api/client#getmusicstate) |
+| `getNotes` | client | [Parameters and behaviour](/roadphonepro/api/client#getnotes) |
+| `getPhoneNumber` | client | [Parameters and behaviour](/roadphonepro/api/client#getphonenumber) |
+| `getPhoneProp` | client | [Parameters and behaviour](/roadphonepro/api/client#getphoneprop) |
+| `getRecentCalls` | client | [Parameters and behaviour](/roadphonepro/api/client#getrecentcalls) |
+| `getUnreadMessages` | client | [Parameters and behaviour](/roadphonepro/api/client#getunreadmessages) |
+| `getWeather` | client | [Parameters and behaviour](/roadphonepro/api/client#getweather) |
+| `inputFocus` | client | [Parameters and behaviour](/roadphonepro/api/client#inputfocus) |
+| `isBlocked` | client | [Parameters and behaviour](/roadphonepro/api/client#isblocked) |
+| `isFlashlight` | client | [Parameters and behaviour](/roadphonepro/api/client#isflashlight) |
+| `isFlightmode` | client | [Parameters and behaviour](/roadphonepro/api/client#isflightmode) |
+| `isInPhoneCall` | client | [Parameters and behaviour](/roadphonepro/api/client#isinphonecall) |
+| `isPhoneOpen` | client | [Parameters and behaviour](/roadphonepro/api/client#isphoneopen) |
+| `isPlayerMuted` | client | [Parameters and behaviour](/roadphonepro/api/client#isplayermuted) |
+| `RemoveMapPin` | client | [Parameters and behaviour](/roadphonepro/api/client#removemappin) |
+| `RemoveMapPins` | client | [Parameters and behaviour](/roadphonepro/api/client#removemappins) |
+| `searchCar` | client | [Parameters and behaviour](/roadphonepro/api/client#searchcar) |
+| `sendDispatch` | client | [Parameters and behaviour](/roadphonepro/api/client#senddispatch) |
+| `sendMail` | client | [Parameters and behaviour](/roadphonepro/api/client#sendmail) |
+| `sendMailOffline` | client | [Parameters and behaviour](/roadphonepro/api/client#sendmailoffline) |
+| `sendMessage` | client | [Parameters and behaviour](/roadphonepro/api/client#sendmessage) |
+| `SendMessageNUI` | client | [Parameters and behaviour](/roadphonepro/api/client#sendmessagenui) |
+| `sendNotification` | client | [Parameters and behaviour](/roadphonepro/api/client#sendnotification) |
+| `setHeaderBlack` | client | [Parameters and behaviour](/roadphonepro/api/client#setheaderblack) |
+| `setPhoneBoxActive` | client | [Parameters and behaviour](/roadphonepro/api/client#setphoneboxactive) |
+| `startCall` | client | [Parameters and behaviour](/roadphonepro/api/client#startcall) |
+| `StartIslandActivity` | client | [Parameters and behaviour](/roadphonepro/api/client#startislandactivity) |
+| `StopIslandActivity` | client | [Parameters and behaviour](/roadphonepro/api/client#stopislandactivity) |
+| `togglePhone` | client | [Parameters and behaviour](/roadphonepro/api/client#togglephone) |
+| `unblockPhone` | client | [Parameters and behaviour](/roadphonepro/api/client#unblockphone) |
+| `UpdateIslandActivity` | client | [Parameters and behaviour](/roadphonepro/api/client#updateislandactivity) |
+| `watchNextSong` | client | [Parameters and behaviour](/roadphonepro/api/client#watchnextsong) |
+| `watchPauseMusic` | client | [Parameters and behaviour](/roadphonepro/api/client#watchpausemusic) |
+| `watchPlaySong` | client | [Parameters and behaviour](/roadphonepro/api/client#watchplaysong) |
+| `watchPreviousSong` | client | [Parameters and behaviour](/roadphonepro/api/client#watchprevioussong) |
+| `watchResumeMusic` | client | [Parameters and behaviour](/roadphonepro/api/client#watchresumemusic) |
+| `watchSetVolume` | client | [Parameters and behaviour](/roadphonepro/api/client#watchsetvolume) |
+
+## Server exports
+
+| Export | Side | Reference |
+| --- | --- | --- |
+| `addBankTransaction` | server | [Parameters and behaviour](/roadphonepro/api/server#addbanktransaction) |
+| `addcrypto` | server | [Parameters and behaviour](/roadphonepro/api/server#addcrypto) |
+| `AddMapPinForPlayer` | server | [Parameters and behaviour](/roadphonepro/api/server#addmappinforplayer) |
+| `addSleepHours` | server | [Parameters and behaviour](/roadphonepro/api/server#addsleephours) |
+| `checkcryptoamount` | server | [Parameters and behaviour](/roadphonepro/api/server#checkcryptoamount) |
+| `deleteConnectAccount` | server | [Parameters and behaviour](/roadphonepro/api/server#deleteconnectaccount) |
+| `deleteTweetWaveAccount` | server | [Parameters and behaviour](/roadphonepro/api/server#deletetweetwaveaccount) |
+| `forgetActiveCall` | server | [Parameters and behaviour](/roadphonepro/api/server#forgetactivecall) |
+| `generateCallChannelID` | server | [Parameters and behaviour](/roadphonepro/api/server#generatecallchannelid) |
+| `getActivePhoneNumber` | server | [Parameters and behaviour](/roadphonepro/api/server#getactivephonenumber) |
+| `getCallSettings` | server | [Parameters and behaviour](/roadphonepro/api/server#getcallsettings) |
+| `GetCloudAccountForSource` | server | [Parameters and behaviour](/roadphonepro/api/server#getcloudaccountforsource) |
+| `GetCloudSource` | server | [Parameters and behaviour](/roadphonepro/api/server#getcloudsource) |
+| `getcryptoamount` | server | [Parameters and behaviour](/roadphonepro/api/server#getcryptoamount) |
+| `getLeitstelleDispatcherSource` | server | [Parameters and behaviour](/roadphonepro/api/server#getleitstelledispatchersource) |
+| `getMusicLibrary` | server | [Parameters and behaviour](/roadphonepro/api/server#getmusiclibrary) |
+| `getNumberFromIdentifier` | server | [Parameters and behaviour](/roadphonepro/api/server#getnumberfromidentifier) |
+| `GetPhoneNumberBySource` | server | [Parameters and behaviour](/roadphonepro/api/server#getphonenumberbysource) |
+| `getPlayerBloodPressure` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerbloodpressure) |
+| `getPlayerDailyHealth` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerdailyhealth) |
+| `getPlayerFromIBAN` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerfromiban) |
+| `getPlayerFromPhone` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerfromphone) |
+| `getPlayerHealth` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerhealth) |
+| `getPlayerHealthHistory` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerhealthhistory) |
+| `getPlayerHeartRate` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerheartrate) |
+| `getPlayerIBAN` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayeriban) |
+| `getPlayerPlaylists` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerplaylists) |
+| `GetPlayerSourceByPhoneNumber` | server | [Parameters and behaviour](/roadphonepro/api/server#getsourcefromphone) |
+| `getPlayerSpO2` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerspo2) |
+| `getPlayerSteps` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayersteps) |
+| `getPlayerStress` | server | [Parameters and behaviour](/roadphonepro/api/server#getplayerstress) |
+| `getSourceFromPhone` | server | [Parameters and behaviour](/roadphonepro/api/server#getsourcefromphone) |
+| `isLeitstelleNumber` | server | [Parameters and behaviour](/roadphonepro/api/server#isleitstellenumber) |
+| `isPlayerSleeping` | server | [Parameters and behaviour](/roadphonepro/api/server#isplayersleeping) |
+| `IsServiceOpen` | server | [Parameters and behaviour](/roadphonepro/api/server#isserviceopen) |
+| `PhoneNotifyNumber` | server | [Parameters and behaviour](/roadphonepro/api/server#phonenotifynumber) |
+| `PhoneNotifyPlayer` | server | [Parameters and behaviour](/roadphonepro/api/server#phonenotifyplayer) |
+| `registerNumberProvider` | server | [Parameters and behaviour](/roadphonepro/api/server#number-providers) |
+| `rememberActiveCall` | server | [Parameters and behaviour](/roadphonepro/api/server#rememberactivecall) |
+| `removecrypto` | server | [Parameters and behaviour](/roadphonepro/api/server#removecrypto) |
+| `RemoveMapPinForPlayer` | server | [Parameters and behaviour](/roadphonepro/api/server#removemappinforplayer) |
+| `saveTaxiTripToHistory` | server | [Parameters and behaviour](/roadphonepro/api/server#savetaxitriptohistory) |
+| `sendAirdrop` | server | [Parameters and behaviour](/roadphonepro/api/server#sendroaddrop) |
+| `sendDispatch` | server | [Parameters and behaviour](/roadphonepro/api/server#senddispatch) |
+| `sendDispatchAnonym` | server | [Parameters and behaviour](/roadphonepro/api/server#senddispatchanonym) |
+| `sendMailOffline` | server | [Parameters and behaviour](/roadphonepro/api/server#sendmailoffline) |
+| `sendMessage` | server | [Parameters and behaviour](/roadphonepro/api/server#sendmessage) |
+| `sendRoadDrop` | server | [Parameters and behaviour](/roadphonepro/api/server#sendroaddrop) |
+| `setPlayerStress` | server | [Parameters and behaviour](/roadphonepro/api/server#setplayerstress) |
+| `SetServiceOpen` | server | [Parameters and behaviour](/roadphonepro/api/server#setserviceopen) |
+
+## Metadata and storage exports
+
+| Export | Side | Reference |
+| --- | --- | --- |
+| `AddAlarmToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addalarmtometadata) |
+| `AddAlbumToPhoneMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addalbumtophonemetadata) |
+| `AddCalendarEventToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `AddContactToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addcontacttometadata) |
+| `AddMessageToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addmessagetometadata) |
+| `AddMessageToMetadataForNumber` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `AddMultiplePhotosToAlbumMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addmultiplephotostoalbummetadata) |
+| `AddNoteToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addnotetometadata) |
+| `AddPhotoToAlbumMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addphototoalbummetadata) |
+| `AddPhotoToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addphototometadata) |
+| `AddRadioChannelToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addradiochanneltometadata) |
+| `AddRadioRecentToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#addradiorecenttometadata) |
+| `AddReminderListToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `AddReminderToMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `AssignPhoneNumberToItem` | server | [Parameters and behaviour](/roadphonepro/api/metadata#assignphonenumbertoitem) |
+| `ClearConnectAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `ClearDarkchatUnreadInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#darkchat-%26-unread-counters) |
+| `ClearGroupUnreadInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#darkchat-%26-unread-counters) |
+| `ClearPhoneAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `ClearRadioRecentFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#clearradiorecentfrommetadata) |
+| `ClearTweetWaveAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `ClearTwitterAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `CreatePhoneBackup` | server | [Parameters and behaviour](/roadphonepro/api/metadata#createphonebackup) |
+| `DeleteAlarmFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletealarmfrommetadata) |
+| `DeleteAlbumFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletealbumfrommetadata) |
+| `DeleteCalendarEventFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `DeleteContactFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletecontactfrommetadata) |
+| `DeleteNoteFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletenotefrommetadata) |
+| `DeletePhoneBackup` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletephonebackup) |
+| `DeletePhotoFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deletephotofrommetadata) |
+| `DeleteRadioChannelFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#deleteradiochannelfrommetadata) |
+| `DeleteReminderFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `DeleteReminderListFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `DrainPhoneOutbox` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `EnqueuePhoneOutbox` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `FindPhoneSlotByNumber` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `GetCalendarEvents` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `GetConnectAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `GetDarkchatRoomsFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#darkchat-%26-unread-counters) |
+| `GetOrCreatePhoneNumber` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getorcreatephonenumber) |
+| `GetPhoneAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `GetPhoneAlarms` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonealarms) |
+| `GetPhoneAlbumsFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonealbumsfrommetadata) |
+| `GetPhoneAppsFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphoneappsfrommetadata) |
+| `GetPhoneBackground` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonebackground) |
+| `GetPhoneBackups` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonebackups) |
+| `GetPhoneContacts` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonecontacts) |
+| `GetPhoneMessages` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonemessages) |
+| `GetPhoneMetadataOnly` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonemetadataonly) |
+| `GetPhoneNotes` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonenotes) |
+| `GetPhoneNumberFromItem` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonenumberfromitem) |
+| `GetPhonePhotos` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonephotos) |
+| `GetPhonePin` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonepin) |
+| `GetPhoneSettingsFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonesettingsfrommetadata) |
+| `GetPhoneSetupFromItem` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getphonesetupfromitem) |
+| `GetRadioChannelsFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getradiochannelsfrommetadata) |
+| `GetRadioRecentFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#getradiorecentfrommetadata) |
+| `GetReminderLists` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `GetReminders` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `GetTweetWaveAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `GetTwitterAccountFromMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `IsPhoneItemName` | server | [Parameters and behaviour](/roadphonepro/api/metadata#item-helpers) |
+| `isPhoneNumberInUse` | server | [Parameters and behaviour](/roadphonepro/api/server#isphonenumberinuse) |
+| `MarkMessagesReadInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#markmessagesreadinmetadata) |
+| `OnPhoneItemUsed` | server | [Parameters and behaviour](/roadphonepro/api/metadata#item-helpers) |
+| `PhoneSession_InvalidateBankTx` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `PhoneSession_InvalidateCallHistory` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `PhoneWriteBehind_Flush` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `PhoneWriteBehind_FlushAll` | server | [Parameters and behaviour](/roadphonepro/api/metadata#delivery-outbox-%26-cache) |
+| `RemovePhotoFromAlbumMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#removephotofromalbummetadata) |
+| `RestorePhoneBackup` | server | [Parameters and behaviour](/roadphonepro/api/metadata#restorephonebackup) |
+| `SetConnectAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `SetPhoneAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `SetTweetWaveAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `SetTwitterAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `UpdateAlarmInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatealarminmetadata) |
+| `UpdateAlbumInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatealbuminmetadata) |
+| `UpdateCalendarEventInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `UpdateCalendarEvents` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `UpdateConnectAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `UpdateContactInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatecontactinmetadata) |
+| `UpdateDarkchatRoomsInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#darkchat-%26-unread-counters) |
+| `UpdateHomescreenLayout` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatehomescreenlayout) |
+| `UpdateInstalledApps` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updateinstalledapps) |
+| `UpdateNoteInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatenoteinmetadata) |
+| `UpdatePhoneAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `UpdatePhoneAlarms` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonealarms) |
+| `UpdatePhoneApps` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephoneapps) |
+| `UpdatePhoneBackground` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonebackground) |
+| `UpdatePhoneContacts` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonecontacts) |
+| `UpdatePhoneMessages` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonemessages) |
+| `UpdatePhoneMetadataArray` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonemetadataarray) |
+| `UpdatePhoneMetadataField` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonemetadatafield) |
+| `UpdatePhoneMetadataNested` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonemetadatanested) |
+| `UpdatePhoneNotes` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonenotes) |
+| `UpdatePhonePhotos` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonephotos) |
+| `UpdatePhonePin` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonepin) |
+| `UpdatePhoneSettings` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonesettings) |
+| `UpdatePhoneSetup` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephonesetup) |
+| `UpdatePhotoInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updatephotoinmetadata) |
+| `UpdateRadioChannelInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updateradiochannelinmetadata) |
+| `UpdateRadioChannels` | server | [Parameters and behaviour](/roadphonepro/api/metadata#updateradiochannels) |
+| `UpdateReminderInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `UpdateReminderListInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `UpdateReminders` | server | [Parameters and behaviour](/roadphonepro/api/metadata#calendar-%26-reminders) |
+| `UpdateTweetWaveAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+| `UpdateTwitterAccountInMetadata` | server | [Parameters and behaviour](/roadphonepro/api/metadata#accounts-legacy) |
+
+## Addon exports
+
+| Export | Side | Reference |
+| --- | --- | --- |
+| `addSimCredits` | server | [Parameters and behaviour](/roadphonepro/api/simcards#addsimcredits) |
+| `chargeBattery` | server | [Parameters and behaviour](/roadphonepro/api/server#chargebattery) |
+| `ejectSimCard` | server | [Parameters and behaviour](/roadphonepro/api/simcards#ejectsimcard) |
+| `getActiveSimNumber` | server | [Parameters and behaviour](/roadphonepro/api/simcards#getactivesimnumber) |
+| `getBatteryLevel` | server | [Parameters and behaviour](/roadphonepro/api/server#getbatterylevel) |
+| `getSimCards` | server | [Parameters and behaviour](/roadphonepro/api/simcards#getsimcards) |
+| `getSimCredits` | server | [Parameters and behaviour](/roadphonepro/api/simcards#getsimcredits) |
+| `giveSimCard` | server | [Parameters and behaviour](/roadphonepro/api/simcards#givesimcard) |
+| `insertSimCard` | server | [Parameters and behaviour](/roadphonepro/api/simcards#insertsimcard) |
+| `isBatteryDead` | server | [Parameters and behaviour](/roadphonepro/api/server#isbatterydead) |
+| `isCharging` | server | [Parameters and behaviour](/roadphonepro/api/server#ischarging) |
+| `isSimNumberInUse` | server | [Parameters and behaviour](/roadphonepro/api/simcards#issimnumberinuse) |
+| `removeSimCard` | server | [Parameters and behaviour](/roadphonepro/api/simcards#removesimcard) |
+| `removeSimCredits` | server | [Parameters and behaviour](/roadphonepro/api/simcards#removesimcredits) |
+| `setActiveSimCard` | server | [Parameters and behaviour](/roadphonepro/api/simcards#setactivesimcard) |
+| `setBatteryLevel` | server | [Parameters and behaviour](/roadphonepro/api/server#setbatterylevel) |
+| `startCharging` | server | [Parameters and behaviour](/roadphonepro/api/server#startcharging) |
+| `stopCharging` | server | [Parameters and behaviour](/roadphonepro/api/server#stopcharging) |
+| `usingRoadPods` | client | [Parameters and behaviour](/roadphonepro/api/client#usingroadpods) |
+
+## Compatibility names
+
+Account-blob metadata exports remain for compatibility; they do not create or clear current sessions. See [legacy account exports](/roadphonepro/api/metadata#accounts-legacy). The older `sendAirdrop` name aliases `sendRoadDrop`; prefer the current name. RoadBuds retains the `usingRoadPods` export.

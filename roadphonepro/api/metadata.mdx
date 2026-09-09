@@ -962,7 +962,7 @@ exports['roadphone']:UpdateRadioChannels(source, {})
 ## Accounts (legacy)
 
 <Warning>
-  **Do not build on these.** The RoadID/cloud account and every social account moved to **server-authoritative sessions**: the account row in the database is the content, and a session token on the phone decides who is signed in. These metadata exports only still exist so that backups taken before the change can be restored.
+  **Do not build on these.** RoadID/cloud and social accounts use **server-authoritative sessions**: the account row stores content, and a session token decides who is signed in. These legacy metadata exports do not establish or revoke current sessions.
 
   Read identity through the session instead:
 
@@ -970,11 +970,9 @@ exports['roadphone']:UpdateRadioChannels(source, {})
   local account = exports['roadphone']:GetCloudAccountForSource(source)  -- RoadID / cloud
   local src     = exports['roadphone']:GetCloudSource(accountId)         -- who is online with it
   ```
-
-  Nothing writes `phone_account` or `phone_twitter_account` any more; on the next phone open a leftover blob is migrated into a session once and then cleared.
 </Warning>
 
-These exports remain for compatibility. They do not establish or revoke a current session; do not use them for login or logout. See [Accounts & Sessions](/roadphonepro/accounts).
+These exports remain for compatibility. They do not establish or revoke a current session; do not use them for login or logout.
 
 | Signature | Account | Legacy behaviour |
 | --- | --- | --- |
