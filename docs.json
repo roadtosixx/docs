@@ -45,6 +45,10 @@
             "group": "RoadPhone Pro",
             "pages": [
               "roadphonepro/installation",
+              "roadphonepro/updates",
+              "roadphonepro/fold",
+              "roadphonepro/apps",
+              "roadphonepro/accounts",
               "roadphonepro/faq",
               "roadphonepro/commands/migrate",
               "roadphonepro/metadata",
@@ -123,6 +127,7 @@
           {
             "group": "RoadPhone Pro",
             "pages": [
+              "roadphonepro/api/exports",
               "roadphonepro/api/client",
               "roadphonepro/api/server",
               "roadphonepro/api/simcards",

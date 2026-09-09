@@ -23,23 +23,23 @@ RoadPhone Pro provides several server-side exports that allow other resources to
 
 ### getPlayerFromPhone
 
-Get a player's server ID from their phone number.
+Get the framework player object for an online phone holder. For a numeric server ID, use `getSourceFromPhone`.
 
 ```lua
-local playerId = exports['roadphone']:getPlayerFromPhone(number)
+local player = exports['roadphone']:getPlayerFromPhone(number)
 ```
 
 <ParamField path="number" type="string" required>
   The phone number to look up.
 </ParamField>
 
-<ResponseField name="returns" type="number | nil">
-  The player's server ID (source), or `nil` if not found or offline.
+<ResponseField name="returns" type="table | nil">
+  The framework player object, or `nil` if not found or offline. Prefer `getSourceFromPhone` across resource boundaries because object methods do not survive serialization.
 </ResponseField>
 
 <CodeGroup>
 ```lua Example
-local source = exports['roadphone']:getPlayerFromPhone("1234567")
+local source = exports['roadphone']:getSourceFromPhone("1234567")
 if source then
     print("Player found with source: " .. source)
 else
@@ -138,6 +138,54 @@ local taken = exports['roadphone']:isPhoneNumberInUse(number)
 </Note>
 
 ---
+
+### getActivePhoneNumber
+
+Read the number resolved by the phone's current server-side number logic. This never assigns a new number.
+
+```lua
+local number = exports['roadphone']:getActivePhoneNumber(source)
+```
+
+`source` is a numeric online player server ID. Returns a number string or `nil`. Metadata mode reads the active item; with the SIM addon it uses the active SIM. Legacy mode resolves the player's database number. `GetPhoneNumberBySource(source)` wraps the same resolver.
+
+## Account Sessions
+
+### GetCloudAccountForSource
+
+```lua
+local account = exports['roadphone']:GetCloudAccountForSource(source)
+```
+
+Returns the RoadID account table for the player's current server-authoritative session, or `nil` without a valid login. Use `account.id` for authorized server-side operations. Keep the full account row on the server; an item's `account_id` alone is not proof of login.
+
+### GetCloudSource
+
+```lua
+local playerSource = exports['roadphone']:GetCloudSource(accountId)
+```
+
+Returns the online source associated with current account presence, or `nil` if unavailable. This is a presence lookup, not authorization for an arbitrary caller. See [Accounts & Sessions](/roadphonepro/accounts).
+
+## Business Availability
+
+### SetServiceOpen
+
+```lua
+local ok, reason = exports['roadphone']:SetServiceOpen('mechanic', true)
+```
+
+Parameters: a nonblank job name (string, at most 64 characters) and an `open` boolean. Returns `true` on success or `false, 'bad_input'` for invalid arguments. Closing a job in `Config.ServiceAlwaysOpen` returns `false, 'always_open'`.
+
+Broadcasts the updated business status. State is held in memory and resets on resource restart. Use a job configured for your business listing.
+
+### IsServiceOpen
+
+```lua
+local open = exports['roadphone']:IsServiceOpen('mechanic')
+```
+
+Returns a boolean. Always-open jobs return `true`; invalid jobs or businesses without an open status return `false`.
 
 ## Notifications
 
@@ -572,7 +620,7 @@ local removed = exports['roadphone']:RemoveMapPinForPlayer(source, id)
 
 <ApiServerBankingIban />
 
-## RoadDrop (AirDrop)
+## RoadDrop
 
 ### sendRoadDrop
 
@@ -644,7 +692,7 @@ exports['roadphone']:sendRoadDrop({
 
 ### deleteConnectAccount
 
-Delete a Connect (Instagram) account and all associated data (posts, likes, comments, stories).
+Delete a Connect account and all associated data (posts, likes, comments, stories).
 
 ```lua
 local deleted = exports['roadphone']:deleteConnectAccount(username)
@@ -662,7 +710,7 @@ local deleted = exports['roadphone']:deleteConnectAccount(username)
 
 ### deleteTweetWaveAccount
 
-Delete a TweetWave account and all associated data (tweets, likes, comments).
+Delete a Wave account and all associated data (posts, likes, comments). The export retains its technical name.
 
 ```lua
 local deleted = exports['roadphone']:deleteTweetWaveAccount(username)

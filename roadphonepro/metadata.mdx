@@ -153,7 +153,7 @@ When a player has multiple phones in their inventory:
 
 ## Metadata Structure
 
-Everything a phone knows sits on the item. Fields are created on demand — a fresh phone only carries its number and setup flag.
+The item stores device data and pointers to signed-in accounts; account content remains in the database. Fields are created on demand. The optional `phone_model` below illustrates a Jaksam Fold item; omit it on regular Pro phones. See [Accounts & Sessions](/roadphonepro/accounts) and [Fold persistence](/roadphonepro/fold#fold-and-unfold).
 
 ```lua
 {
@@ -161,6 +161,7 @@ Everything a phone knows sits on the item. Fields are created on demand — a fr
     phone_number         = "1234567",     -- unique number (ignored with the SIM Card DLC)
     phone_owner          = "John Doe",    -- who it was first assigned to
     phone_assigned_date  = 1234567890,    -- unix timestamp
+    phone_model          = "ultra",       -- Fold selector on Jaksam; omit for regular phones
     phone_setup          = 1,             -- 0 = setup screen, 1 = ready
     phone_powered_on     = 1,             -- 0 = switched off
 
@@ -178,6 +179,9 @@ Everything a phone knows sits on the item. Fields are created on demand — a fr
         large_app_icons = 0,
         iconcolor = "light",              -- "light" or "dark"
         timeCustomization = nil,          -- lockscreen clock + widget layout
+        iconPack = "default",              -- default, studio, outline, monochrome
+        iconShape = "square",              -- square or round
+        unfolded = false,                 -- saved Fold state
     },
     phone_apps           = { ... },        -- installed apps + homescreen layout
     phone_chat_backgrounds = { ... },      -- per-conversation wallpapers
@@ -205,6 +209,8 @@ Everything a phone knows sits on the item. Fields are created on demand — a fr
     connect_session      = { ... },
     tweetwave_session    = { ... },
     snapy_session        = { ... },
+    livestream_session   = { ... },
+    dating_session       = { ... },
 
     -- Hardware add-ons
     phone_sims           = { ... },        -- SIM Card DLC

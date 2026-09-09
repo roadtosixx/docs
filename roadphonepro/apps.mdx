@@ -1,0 +1,91 @@
+---
+title: 'Apps & Configuration'
+description: 'Configure current Pro apps, Fold layouts and server integrations'
+icon: 'layout-grid'
+---
+
+These apps run on RoadPhone Pro and the included RoadPhone Fold. App availability and default installation are configured in `public/static/config/config.json`; server behaviour lives in `config.lua` and the relevant editable integration files.
+
+## Eats and Eats Partner
+
+Eats is the customer app; Eats Partner handles restaurants and courier work. Configure `Config.Eats`:
+
+| Setting | Default | Behaviour |
+| --- | --- | --- |
+| `RequireJob` / `Job` | `false` / `'delivery'` | Restrict courier work to the job when enabled. |
+| `SocietyEnabled` / `Society` | `false` / `'society_delivery'` | Route delivery fees to a society instead of the courier. |
+| `RequireItems` | `false` | Staff must hold menu items when marking orders ready. |
+| `NpcOrders` | `false` | Default for generated NPC orders unless overridden per shop. |
+| `ShopOptions` | `{}` | Per-slug overrides such as `requireItems` and `npcOrders`. |
+| `AllowCreateShop` / `ManageGrades` | `true` / `{}` | Bosses can create shops; override minimum management grades per job. |
+| `StaffAcceptTimeout` | `120` seconds | Automatic acceptance delay. |
+| `CourierOfferTimeout` | `90` seconds | Time after readiness before NPC courier takeover. |
+| `NpcDeliveryTime` / `NpcWaitTime` | `{120, 240}` / `90` seconds | NPC delivery timing and customer wait. |
+| `NpcOrderInterval` / `NpcOrderPay` | `60` seconds / `{base = 150, perKm = 40}` | Generated work timing and pay. |
+| `MaxTip` / `MaxItemsPerOrder` | `500` / `20` | Order limits. |
+| `HandoverDistance` | `5.0` | Maximum handover distance. |
+
+Use `Restaurants` for shops, menus, prices, item names, pickup/delivery options and coordinates. Review `BagProp`, `NpcCourierVehicle`, `NpcCourierPed`, `NpcCustomerPeds` and `NpcAddresses` for your map. Menu item names must exist in your inventory.
+
+## Events and Wallet
+
+`Config.Events` controls event creation and limits:
+
+| Setting | Default |
+| --- | --- |
+| `RequireJob` / `Job` | `false` / `'eventmanager'` |
+| `CreateFee` | `0` |
+| `MaxPrice` / `MaxCapacity` | `5000` / `500` |
+| `MaxTicketsPerBuyer` / `MaxActivePerPlayer` | `4` / `3` |
+| `MarkerLeadMinutes` | `60` |
+| `Blip` | `{ sprite = 484, color = 27, scale = 0.9 }` |
+
+Wallet shows identity, licenses, configured cards and supported passes/tickets. `Config.Wallet.ShowRadius = 3.0` controls showing cards to nearby players; `ShowDuration = 20` is the display duration in seconds.
+
+`Licenses` maps framework license aliases to cards. Add `Cards` with exactly one eligibility condition: `item`, `job` (optionally `minGrade`), or `license`.
+
+```lua
+Config.Wallet.Cards = {
+    {
+        id = 'medic_pass',
+        label = 'Medic Pass',
+        icon = 'solar:heart-pulse-bold',
+        color = '#30D158',
+        job = 'ambulance',
+        minGrade = 2,
+    },
+}
+```
+
+## Garage and Housing
+
+Garage uses `client/garage.lua` and server vehicle helpers. Match the shipped integration flags to your garage: `JGAdvancedGarages`, `cdGarages`, `CodesignGarage`, `rxGarage` or `VMSGaragesV2`. Valet uses `Config.ValetPedModel` and `Config.ValetDeliveryPrice` (default `500`). See [Valet exports](/roadphonepro/api/client#valet).
+
+Housing is disabled by default. Set `Config.HousingEnabled = true` and choose `Config.HousingSystem`: `esx_property`, `rtx_housing`, `ps_housing`, `rx_housing`, `LNS_Housing`, `vms_housing` or `custom`. Restart the resource after enabling it. `HousingBillTypes` sets displayed bill types for the RTX integration.
+
+## Loop
+
+Configure the in-game creator economy in `Config.Loop`:
+
+- `CoinPrice`, `CoinPacks` and `Gifts` define purchases and gifts.
+- `DiamondRatio`, `DiamondValue` and `MinPayout` control conversion and payouts.
+- `PromotePricePerHour`, `PromoteMaxHours` and `PromoteJobs` control promotions; an empty jobs list allows everyone.
+- `InvestigatorJobs` controls handle-to-phone tracing.
+- `MaxClipSeconds` defaults to `60` and limits the resulting clip length.
+- `MaxPostsPerAccount = 0` means unlimited posts; `PostRetentionDays = 0` disables age-based deletion.
+
+The shipped payout fraction is `DiamondRatio * DiamondValue / CoinPrice = 0.5`. Review these three settings together when changing payouts.
+
+## Personalization and live cards
+
+Players can choose an icon pack (`default`, `studio`, `outline`, `monochrome`), icon shape (`square`, `round`), backgrounds and widgets. Lockscreen customization includes the clock, widget row and quick-action buttons.
+
+In metadata mode these settings follow the phone item. External changes use the fields listed under [UpdatePhoneSettings](/roadphonepro/api/metadata#updatephonesettings).
+
+Live Bar activities also appear as lockscreen cards unless an integration sets `lockscreen = false`. The [Live Bar exports](/roadphonepro/api/client#live-bar) support progress, actions and expiry. The interface supports up to ten registered external activities and two buttons per activity.
+
+## Find My and businesses
+
+`Config.FindMy = true` enables friend location sharing and last-seen phone tracking.
+
+Businesses use configured business/job entries, `Config.ServiceBusinessGrades`, `Config.ServiceAlwaysOpen` and `Config.ServiceDispatchDisabled`. Integrations can change availability through [SetServiceOpen and IsServiceOpen](/roadphonepro/api/server#business-availability). Availability is held in memory and resets on restart, except for always-open jobs.

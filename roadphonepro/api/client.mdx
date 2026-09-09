@@ -123,12 +123,28 @@ local model = exports['roadphone']:getPhoneProp(itemName)
 ```
 
 <ParamField path="itemName" type="string">
-  Phone item name or colour key (e.g. `'phone'`, `'purple_phone'`, `'silver'`). Falls back to the last used prop.
+  Phone item name or colour key (e.g. `'phone'`, `'purple_phone'`, `'silver'`). Pass the actual item name, or the metadata colour on Jaksam; an omitted or unknown value uses the mapping's default.
 </ParamField>
 
 <ResponseField name="returns" type="string">
   Prop model name, e.g. `'phonesilver'` or the vanilla `'prop_phone_ing_03'` when custom props are disabled.
 </ResponseField>
+
+---
+
+### Fold prop limitation
+
+`getPhoneProp` does not receive active device state and does not resolve Fold's open/closed model. See [Fold configuration](/roadphonepro/fold#included-3d-props) for the model names. The normal Fold action switches the attached prop itself.
+
+### usingRoadPods
+
+Read whether the player is currently using RoadBuds. The export keeps its technical name and requires the RoadBuds addon to be loaded.
+
+```lua
+local using = exports['roadphone']:usingRoadPods()
+```
+
+Returns the client-side usage flag (`boolean`).
 
 ---
 
@@ -349,7 +365,7 @@ local id = exports['roadphone']:StartIslandActivity({
     text     = 'Drop-off: Vespucci Beach',
     color    = '#FFD60A',
     progress = 0,
-    tapApp   = 'maps_app',
+    tapApp   = 'map',
     buttons  = { { id = 'cancel', icon = 'ph:x', color = '#FF3B30' } },
 })
 

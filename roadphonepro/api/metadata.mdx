@@ -285,7 +285,7 @@ local settings = exports['roadphone']:GetPhoneSettingsFromMetadata(source)
 ```
 
 <ResponseField name="returns" type="table | nil">
-  Settings object with: `brightness`, `flightmode`, `large_app_icons`, `iconcolor`, `darkmode`, `timeCustomization`.
+  The stored settings table, or `nil` if metadata mode is disabled or settings are absent. Includes supported personalization and Fold settings; see `UpdatePhoneSettings` below.
 </ResponseField>
 
 ---
@@ -321,6 +321,27 @@ exports['roadphone']:UpdatePhoneSettings(source, {
 </CodeGroup>
 
 ---
+
+### Supported settings and Fold
+
+`UpdatePhoneSettings` merges supplied non-nil values from these keys:
+
+```text
+brightness, flightmode, large_app_icons, iconcolor, darkmode,
+timeCustomization, backgroundBlur, battery_show_percentage, ringtone,
+silentmode, focus, bluetooth, lang, hour24time, lockscreen, dnd, unfolded
+```
+
+Additionally, `iconPack` accepts `default`, `studio`, `outline` or `monochrome`; `iconShape` accepts `square` or `round`. Other values for those two fields are ignored.
+
+```lua
+local ok = exports['roadphone']:UpdatePhoneSettings(source, {
+    iconPack = 'studio',
+    iconShape = 'round',
+})
+```
+
+`timeCustomization` contains lockscreen customization, including `lsWidgets` and `lsButtons`. `unfolded` is the saved Fold preference (boolean or 0/1 when read), not the device's form factor. A server-side write does not animate the UI or refresh the held prop. Use the normal [Fold action](/roadphonepro/fold#integration-and-exports).
 
 ## PIN/Passcode
 
@@ -953,7 +974,26 @@ exports['roadphone']:UpdateRadioChannels(source, {})
   Nothing writes `phone_account` or `phone_twitter_account` any more; on the next phone open a leftover blob is migrated into a session once and then cleared.
 </Warning>
 
-The functions below are listed for completeness — `GetPhoneAccountFromMetadata`, `SetPhoneAccountInMetadata`, `UpdatePhoneAccountInMetadata`, `ClearPhoneAccountFromMetadata` for RoadID, plus `Get/Set/Update/Clear` variants of `TweetWaveAccount`, `TwitterAccount` (old name) and `ConnectAccount`. They all take `source` first and read or write the corresponding metadata field.
+These exports remain for compatibility. They do not establish or revoke a current session; do not use them for login or logout. See [Accounts & Sessions](/roadphonepro/accounts).
+
+| Signature | Account | Legacy behaviour |
+| --- | --- | --- |
+| `GetPhoneAccountFromMetadata(source)` | RoadID | Reads `phone_account`; table or nil. |
+| `SetPhoneAccountInMetadata(source, accountData)` | RoadID | Writes the legacy blob; boolean. |
+| `UpdatePhoneAccountInMetadata(source, updates)` | RoadID | Patches supported legacy profile fields; boolean. |
+| `ClearPhoneAccountFromMetadata(source)` | RoadID | Clears the legacy blob; boolean. |
+| `GetTweetWaveAccountFromMetadata(source)` | Wave | Reads `phone_twitter_account`; table or nil. |
+| `SetTweetWaveAccountInMetadata(source, accountData)` | Wave | Writes the legacy blob; boolean. |
+| `UpdateTweetWaveAccountInMetadata(source, updates)` | Wave | Patches supported legacy profile fields; boolean. |
+| `ClearTweetWaveAccountFromMetadata(source)` | Wave | Clears the legacy blob; boolean. |
+| `GetTwitterAccountFromMetadata(source)` | Wave compatibility alias | Reads `phone_twitter_account`; table or nil. |
+| `SetTwitterAccountInMetadata(source, accountData)` | Wave compatibility alias | Writes the legacy blob; boolean. |
+| `UpdateTwitterAccountInMetadata(source, updates)` | Wave compatibility alias | Patches supported legacy profile fields; boolean. |
+| `ClearTwitterAccountFromMetadata(source)` | Wave compatibility alias | Clears the legacy blob; boolean. |
+| `GetConnectAccountFromMetadata(source)` | Connect | Reads `phone_connect_account`; table or nil. |
+| `SetConnectAccountInMetadata(source, accountData)` | Connect | Writes the legacy blob; boolean. |
+| `UpdateConnectAccountInMetadata(source, updates)` | Connect | Patches supported legacy profile fields; boolean. |
+| `ClearConnectAccountFromMetadata(source)` | Connect | Clears the legacy blob; boolean. |
 
 ---
 
