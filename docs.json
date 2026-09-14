@@ -130,6 +130,7 @@
               "roadphonepro/api/client",
               "roadphonepro/api/server",
               "roadphonepro/api/simcards",
+              "roadphonepro/api/wallet",
               "roadphonepro/api/clientevents",
               "roadphonepro/api/serverevents",
               "roadphonepro/api/callbacks",

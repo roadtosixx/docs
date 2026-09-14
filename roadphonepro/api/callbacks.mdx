@@ -288,6 +288,30 @@ The short-video app. Gated by `Config.Loop`; every callback resolves the caller'
   Moderation callbacks require the moderator permission from `roadphone:loop:getPermissions` — they are not open to every account.
 </Note>
 
+## Wallet & Events
+
+Wallet callbacks verify distance and identity server-side; the Events callbacks feed the tickets and membership cards the Wallet shows. Failure reasons and payloads are on the [Wallet API](/roadphonepro/api/wallet) page.
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:wallet:getCards` | — | `{ ok, cards, profile }` | Every card of the caller, built live. |
+| `roadphone:wallet:setPhoto` | `url` | `{ ok, photo }` | Stores the ID photo URL (upload host allow-list, 1 per 3 s). |
+| `roadphone:wallet:getNearby` | `serverIds` | array of `{ playerId, name, distance }` | Players within `ShowRadius + 2 m`, same routing bucket. |
+| `roadphone:wallet:show` | `cardId, playerId` | `{ ok }` | Shows a card to one nearby player (1 per 2 s). |
+| `roadphone:wallet:checkIn` | `code` | `{ ok, checkedIn }` | Event owner checks a shown ticket in. |
+| `roadphone:events:list` | — | `{ ok, events, isBoss, canCreate, limits }` | Upcoming events and the caller's permissions. |
+| `roadphone:events:mine` | — | `{ ok, events }` | Own events and events with tickets. |
+| `roadphone:events:get` | `id` | `{ ok, event, maxTicketsPerBuyer }` | One event. |
+| `roadphone:events:create` | `data` | `{ ok, id }` | Creates an event within `Config.Events` limits. |
+| `roadphone:events:buy` | `id, qty` | `{ ok, … }` | Buys tickets (bank money, `EV-XXXXXX` codes). |
+| `roadphone:events:cancel` | `id` | `{ ok }` | Cancels and marks tickets for refund. |
+| `roadphone:events:end` | `id` | `{ ok }` | Ends an event early. |
+| `roadphone:events:sales` | `id` | `{ ok, tickets, sold, revenue, checkedIn, pendingPayout }` | Organizer overview. |
+| `roadphone:events:collect` | — | `{ ok, … }` | Pays out pending money. |
+| `roadphone:events:members` | — | `{ ok, job, members }` | Membership cards of the boss's job. |
+| `roadphone:events:issueCard` | `playerId, label, color, days` | `{ ok, id }` | Issues a membership card to a nearby player. |
+| `roadphone:events:revokeCard` | `id` | `{ ok }` | Revokes a membership card. |
+
 ## Find My
 
 Location sharing between phone numbers, gated by `Config.FindMy`. Shares expire on their own; a permanent share is one without a duration.

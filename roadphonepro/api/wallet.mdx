@@ -1,0 +1,288 @@
+---
+title: 'Wallet API'
+description: 'Callbacks, events, the card schema and how to issue wallet cards from your own resource'
+icon: 'id-card'
+---
+
+# Wallet API
+
+Developer reference for the [Wallet](/roadphonepro/wallet) app. The Wallet has **no dedicated exports**: the phone talks to the server through Bridge callbacks, the server pushes two client events, and cards are built on demand from the framework and the tables below.
+
+<Note>
+    Three ways to get a card into a player's wallet from your own resource, in order of preference:
+
+    1. **A condition card** in `Config.Wallet.Cards` — give an item, a license or a job grade and the card appears on the next open.
+    2. **A membership row** in `roadshop_wallet_cards`, followed by `roadphone:wallet:cardsChanged` for the holder — see [Issuing cards from another resource](#issuing-cards-from-another-resource).
+    3. **Code inside the `roadphone` resource** (`server/serverAPI/*.lua`, addons) can call the global builders directly.
+</Note>
+
+---
+
+## Callbacks
+
+Registered in `server/wallet.lua`. The phone calls them through the NUI proxies listed further down; the server never trusts a player id or identifier from the client — every distance is measured server-side and every identity is re-read from the framework.
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:wallet:getCards` | — | `{ ok = true, cards, profile = { photo } }` | Builds every card of the caller. Also credits pending Events money (refunds, payouts) first. |
+| `roadphone:wallet:setPhoto` | `url` | `{ ok = true, photo }` | Stores the ID photo URL. Rate-limited to one call per 3 s; the host must be on the upload allow-list. |
+| `roadphone:wallet:getNearby` | `serverIds` (max 32) | array of `{ playerId, name, distance }` | Filters the candidates to players within `ShowRadius + 2 m` in the same routing bucket, sorted by distance. |
+| `roadphone:wallet:show` | `cardId, playerId` | `{ ok = true }` | Shows one card to one player within `ShowRadius`. Rate-limited to one show per 2 s. |
+| `roadphone:wallet:checkIn` | `code` | `{ ok = true, checkedIn }` | Checks a ticket in. Only the event owner, only while the event is active, only within `ShowRadius` of the holder. Rate-limited to two calls per second. |
+
+Every failure answers `{ ok = false, reason = … }`:
+
+| Reason | Callback | Meaning |
+|--------|----------|---------|
+| `no_identifier` | all | The framework returned no identifier for the caller |
+| `db_error` | all | A query failed; the console shows a `[Wallet]` traceback |
+| `rate_limited` | setPhoto, show, checkIn | Called again too quickly |
+| `bad_url` | setPhoto | Not a string, longer than 255 characters, or a host outside the upload allow-list |
+| `bad_target` | show | Unknown, offline or own server id |
+| `too_far` | show, checkIn | Distance above `Config.Wallet.ShowRadius`, or different routing buckets |
+| `no_card` | show | The caller holds no card with that id right now |
+| `bad_code` | checkIn | Not a string or longer than 12 characters |
+| `not_found` | checkIn | No ticket with that code |
+| `not_owner` | checkIn | The caller does not own the ticket's event |
+| `event_over` | checkIn | The event is cancelled, ended or past its end time |
+| `already_checked_in` | checkIn | Already stamped; `checkedIn` carries the timestamp |
+| `bad_request` | checkIn | The caller's identity changed during the request |
+
+---
+
+## Client events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `roadphone:wallet:incoming` | `{ showId, card, from, expiresAt, duration, canCheckIn }` | A card is being shown to this player. `card` is a full [card object](#card-schema); `from` is the sender's name; `duration` is `Config.Wallet.ShowDuration`; `canCheckIn` is `true` only when the receiver owns the shown ticket's event. |
+| `roadphone:wallet:cardsChanged` | — | The player's cards changed. The phone reloads the list when the Wallet is open or has been loaded this session. |
+
+Both are networked client events (`RegisterNetEvent`), so another **server** resource may trigger `roadphone:wallet:cardsChanged` itself after touching `roadshop_wallet_cards`:
+
+```lua
+TriggerClientEvent('roadphone:wallet:cardsChanged', holderSource)
+```
+
+<Warning>
+    Do not trigger `roadphone:wallet:incoming` from your own code. The phone treats its payload as an already-verified card; the distance and identity checks live in the `show` callback.
+</Warning>
+
+---
+
+## NUI callbacks
+
+Registered in `client/wallet.lua`, for reference when you read the phone UI or write a custom app that reuses the flow.
+
+| NUI callback | Forwards to | Notes |
+|--------------|-------------|-------|
+| `walletGetCards` | `roadphone:wallet:getCards` | |
+| `walletShowCard` | `roadphone:wallet:show` | `{ cardId, playerId }` |
+| `walletSavePhoto` | `roadphone:wallet:setPhoto` | `{ url }` |
+| `walletCheckIn` | `roadphone:wallet:checkIn` | `{ code }` |
+| `walletGetNearby` | `roadphone:wallet:getNearby` | The client collects the server ids of players within `ShowRadius + 2 m` first |
+| `walletSetRoute` | — | `{ x, y }` → `SetNewWaypoint`; used by the *Route* button of ticket cards |
+| `walletRenderPhoto` | — | Renders a transparent ped headshot and answers `{ txd }`; the NUI loads it from `nui-img://` |
+| `walletPhotoDone` | — | Releases the headshot handle once the NUI has read the texture |
+
+---
+
+## Card schema
+
+Every card — in `getCards` and in `roadphone:wallet:incoming` — has this shape:
+
+```lua
+{
+    id       = 'member:7',            -- 'id' | 'license:<id>' | 'job' | 'gang' | 'custom:<id>' | 'member:<row id>' | 'ticket:<row id>'
+    type     = 'member',              -- id | license | job | gang | custom | member | ticket
+    title    = 'Gym Member',          -- locale key or plain text
+    subtitle = 'ambulance',           -- name of the holder, the job, or the ticket code
+    color    = '#30D158',             -- #RRGGBB
+    icon     = 'solar:medal-star-bold',
+    photo    = nil,                   -- profile photo URL on id / job / gang cards
+    fields   = {                      -- rendered in order
+        { label = 'WALLET_FIELD_BUSINESS',  value = 'ambulance' },
+        { label = 'WALLET_FIELD_HOLDER',    value = 'John Doe' },
+        { label = 'WALLET_FIELD_ISSUED_BY', value = 'Jane Boss' },
+        { label = 'WALLET_FIELD_ISSUED',    value = 1789459200, kind = 'date' },
+        { label = 'WALLET_FIELD_EXPIRES',   value = 1792051200, kind = 'date' },
+    },
+    meta = { issued = 1789459200, expires = 1792051200, valid = true },
+}
+```
+
+`meta` per type:
+
+| Type | `meta` |
+|------|--------|
+| `id`, `license` | `number` (8-digit ID number), `valid = true` |
+| `job`, `gang`, `custom` | `valid = true` |
+| `member` | `issued`, `expires` (unix seconds or `nil`), `valid` |
+| `ticket` | `number` (code), `valid`, `status` (`valid` / `checkedIn` / `expired`), `checkedIn`, `eventId`, `starts`, `ends`, `x`, `y` |
+
+Field `kind` values: `date`, `datetime` (unix seconds), `dob` (`YYYY-MM-DD`), `sex` (`m` / `f`), `height` (centimetres); without `kind` the value is shown as text.
+
+---
+
+## Global functions (inside the `roadphone` resource)
+
+These are plain globals of `server/wallet.lua`. They are **not exports** — use them from `server/serverAPI/*.lua`, addons or other scripts that run inside the resource.
+
+### BuildWalletCards
+
+```lua
+local cards = BuildWalletCards(source)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+    Array of [card objects](#card-schema); empty when the player has no identifier.
+</ResponseField>
+
+### BuildWalletCard
+
+```lua
+local card = BuildWalletCard(source, cardId)
+```
+
+<ParamField path="source" type="number" required>
+    The player's server ID.
+</ParamField>
+
+<ParamField path="cardId" type="string" required>
+    A card id such as `'license:drive'` or `'ticket:42'`.
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+    The card, or `nil` when the player does not hold it.
+</ResponseField>
+
+### WalletNotifyCardsChanged
+
+```lua
+WalletNotifyCardsChanged(source)
+```
+
+Sends `roadphone:wallet:cardsChanged` to an online player. Safe to call for a source that is offline — nothing happens.
+
+### WalletDistance
+
+```lua
+local metres = WalletDistance(sourceA, sourceB)
+```
+
+<ResponseField name="returns" type="number | nil">
+    Distance between the two peds, or `nil` when either player is offline or they are in different routing buckets. The same check the show, check-in and issue paths use.
+</ResponseField>
+
+---
+
+## Issuing cards from another resource
+
+Membership cards are rows in `roadshop_wallet_cards`. A resource that runs its own memberships (a club script, a company system) inserts the row and tells the holder's phone:
+
+```lua
+-- Your resource, server side.
+-- `identifier` must be the one RoadPhone stores for the character:
+-- xPlayer.identifier on ESX, citizenid on QBCore / Qbox.
+local function identifierOf(source)
+    if GetResourceState('es_extended') == 'started' then
+        local xPlayer = exports['es_extended']:getSharedObject().GetPlayerFromId(source)
+        return xPlayer and xPlayer.identifier
+    end
+    local player = exports['qb-core']:GetCoreObject().Functions.GetPlayer(source)
+    return player and player.PlayerData.citizenid
+end
+
+local function issueClubCard(holderSource, label, days)
+    local identifier = identifierOf(holderSource)
+    if not identifier then return false end
+
+    local expires = days and days > 0 and (os.time() + days * 86400) or nil
+    local id = MySQL.Sync.insert([[
+        INSERT INTO roadshop_wallet_cards (identifier, holder_name, job, label, color, issued_by_name, expires_at)
+        VALUES (@identifier, @holder, @job, @label, @color, @issuer, IF(@expires > 0, FROM_UNIXTIME(@expires), NULL))
+    ]], {
+        ['@identifier'] = identifier,
+        ['@holder']     = GetPlayerName(holderSource),
+        ['@job']        = 'nightclub',          -- shown as "Business" on the card
+        ['@label']      = label,                -- 2-60 characters
+        ['@color']      = '#BF5AF2',
+        ['@issuer']     = 'Club Management',
+        ['@expires']    = expires or 0,
+    })
+
+    if id then
+        TriggerClientEvent('roadphone:wallet:cardsChanged', holderSource)
+    end
+    return id ~= nil
+end
+
+local function revokeClubCard(cardId, holderSource)
+    MySQL.Sync.execute('UPDATE roadshop_wallet_cards SET revoked = 1 WHERE id = @id', { ['@id'] = cardId })
+    if holderSource then
+        TriggerClientEvent('roadphone:wallet:cardsChanged', holderSource)
+    end
+end
+```
+
+| Column | Rule |
+|--------|------|
+| `job` | Free text; the Business tab of the Events app lists rows whose `job` equals the boss's job name |
+| `label` | 2–60 characters |
+| `color` | `#RRGGBB` or `NULL` (default green) |
+| `expires_at` | `NULL` for unlimited; expired rows stay visible for seven days, then drop out |
+| `revoked` | Set to `1` instead of deleting the row |
+
+<Tip>
+    For cards that depend on something the player *has* — an item, a license, a job grade — skip the table and add an entry to `Config.Wallet.Cards`. It needs no code and updates itself.
+</Tip>
+
+---
+
+## Events app callbacks
+
+The Events app supplies the tickets and membership cards the Wallet shows. Registered in `server/events.lua`; every one answers `{ ok = false, reason = … }` on failure.
+
+| Callback | Input | Returns | Description |
+|---|---|---|---|
+| `roadphone:events:list` | — | `{ ok, events, isBoss, canCreate, limits }` | Upcoming events plus the caller's permissions and `Config.Events` limits |
+| `roadphone:events:mine` | — | `{ ok, events }` | Events the caller created or holds tickets for |
+| `roadphone:events:get` | `id` | `{ ok, event, maxTicketsPerBuyer }` | One event with the caller's ticket count |
+| `roadphone:events:create` | `data` | `{ ok, id }` | Creates an event; charges `Config.Events.CreateFee`, honours `RequireJob`, `MaxPrice`, `MaxCapacity`, `MaxActivePerPlayer` |
+| `roadphone:events:buy` | `id, qty` | `{ ok, … }` | Buys tickets with bank money, up to `MaxTicketsPerBuyer`; each ticket gets a unique `EV-XXXXXX` code |
+| `roadphone:events:cancel` | `id` | `{ ok }` | Cancels an event and marks every ticket for refund |
+| `roadphone:events:end` | `id` | `{ ok }` | Ends an event early |
+| `roadphone:events:sales` | `id` | `{ ok, tickets, sold, revenue, checkedIn, pendingPayout }` | Sales overview for the organizer |
+| `roadphone:events:collect` | — | `{ ok, … }` | Pays out the caller's pending money |
+| `roadphone:events:members` | — | `{ ok, job, members }` | Active membership cards of the boss's job (max 300) |
+| `roadphone:events:issueCard` | `playerId, label, color, days` | `{ ok, id }` | Issues a membership card to a nearby player; `days` is `0`, `7`, `30` or `90` |
+| `roadphone:events:revokeCard` | `id` | `{ ok }` | Revokes a card of the boss's job |
+
+`roadphone:events:changed` (Server → Client) tells the phone to reload the Events app.
+
+---
+
+## Rate limits
+
+| Action | Limit |
+|--------|-------|
+| Show a card | 1 per 2 s per player |
+| Save the ID photo | 1 per 3 s per player |
+| Check a ticket in | 2 per second per player |
+| Issue a membership card | 1 per 2 s per boss |
+
+---
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card title="Wallet" icon="wallet" href="/roadphonepro/wallet">
+        Configuration, card types, player flow and troubleshooting
+    </Card>
+    <Card title="Server Callbacks" icon="arrow-right-left" href="/roadphonepro/api/callbacks">
+        The complete callback surface of RoadPhone Pro
+    </Card>
+</CardGroup>

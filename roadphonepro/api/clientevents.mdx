@@ -292,6 +292,16 @@ Shared ringtones: other players hear the phone that is actually ringing.
 
 <ApiClienteventsLivestream />
 
+## Wallet & Events — `client/wallet.lua`, `client/events.lua`
+
+| Event | Params | Description |
+|---|---|---|
+| `roadphone:wallet:incoming` | `{ showId, card, from, expiresAt, duration, canCheckIn }` | A card is shown to this player; relayed to the NUI as `walletIncomingCard`. With the phone closed the NUI posts a notification and a lockscreen card. |
+| `roadphone:wallet:cardsChanged` | — | The player's cards changed; relayed as `walletCardsChanged`. Other server resources may trigger it after writing `roadshop_wallet_cards`. |
+| `roadphone:events:changed` | — | Events list changed; relayed as `eventsChanged`. |
+
+See the [Wallet API](/roadphonepro/api/wallet) for payloads and the integration path.
+
 ## Addons
 
 Battery events only register with `Config.BatterySystem` + `Config.UseMetadata`; SIM card events with `Config.SimCardDLC` + `Config.UseMetadata`.
