@@ -1,0 +1,323 @@
+---
+title: 'Wallet'
+description: 'ID card, licenses, passes, membership cards and event tickets — shown to nearby players instead of handed over'
+icon: 'wallet'
+---
+
+# Wallet
+
+The Wallet app collects everything a character carries as a card: an ID with photo, licenses, the job and gang card, custom passes you configure, membership cards issued by businesses and tickets bought in the Events app. Nothing is stored twice — every card is **built live** from the framework and the phone's own tables when the app opens, so a revoked license or a job change shows up immediately.
+
+<CardGroup cols={2}>
+    <Card title="Built from your framework" icon="database">
+        Identity, licenses, job and gang come straight from ESX, QBCore or Qbox. There is nothing to sync and nothing to migrate.
+    </Card>
+    <Card title="Show, don't hand over" icon="eye">
+        A card is shown to one player within `Config.Wallet.ShowRadius` for `ShowDuration` seconds. The receiver sees the card — never a copy they could keep.
+    </Card>
+    <Card title="Tickets with check-in" icon="ticket">
+        Organizers check a ticket in from the card shown to them. The ticket flips to *Checked in* on the holder's phone at the same moment.
+    </Card>
+    <Card title="Membership cards" icon="badge-check">
+        Job bosses issue expiring cards — gym member, VIP, staff — from the Events app; your own scripts do the same through an export. Holders are notified and see the card right away.
+    </Card>
+</CardGroup>
+
+<Note>
+    Wallet is a **default app** and present on every phone. Tickets and membership cards come from the **Events** app, which players install through the App Shop; configure it under [Events and Wallet](/roadphonepro/apps#events-and-wallet).
+</Note>
+
+---
+
+## What ends up in the wallet
+
+The app has three sections: **IDs & Licenses**, **Cards & Passes** and **Tickets**.
+
+| Card | Built from | Shown when |
+|------|------------|------------|
+| ID Card | Character identity (name, date of birth, sex, height, nationality), the photo taken in the app and an 8-digit ID number derived from the player identifier | Always |
+| Licenses | `Config.Wallet.Licenses`, matched against the licenses the framework knows | The player holds at least one of the entry's `keys` |
+| Job card | Current job, its label and grade label | The job is not `unemployed` |
+| Gang card | Gang and grade | The player is in a gang (QBCore / Qbox only) |
+| Custom cards | `Config.Wallet.Cards` | The entry's condition holds: `item`, `job` or `license` |
+| Membership cards | `roadshop_wallet_cards`, issued by a job boss or through `issueWalletCard` | Not revoked; kept for 7 days after expiry, marked *Expired* |
+| Tickets | `roadshop_event_tickets` from the Events app | Until one day after the event ended; status *Valid*, *Checked in* or *Expired* |
+
+### Framework coverage
+
+| | ESX | QBCore / Qbox | Standalone |
+|---|---|---|---|
+| Identity | `firstname`, `lastname`, `dateofbirth`, `sex`, `height` (player object, `users` table as fallback) | `charinfo` incl. `nationality`, no height | Player name only |
+| Licenses | `user_licenses.type` | `PlayerData.metadata.licences` (`true` or `1`) | none |
+| Job card | job with `grade_label` | job with `grade.name` | none |
+| Gang card | — | `PlayerData.gang` | — |
+| Boss (issues membership cards) | grade name `boss` | `job.isboss` | — |
+
+The ID number on the card is a stable hash of the player identifier, so on ESX the card never shows `license:…`.
+
+---
+
+## Setup
+
+<Steps>
+    <Step title="Nothing to enable">
+        The Wallet is part of every RoadPhone Pro install. `roadshop_wallet_profiles`, `roadshop_wallet_cards` and the Events tables are created on boot. Servers that cannot run the automatic setup use `lua-code/sql/wallet_events.sql`.
+    </Step>
+    <Step title="Check the upload method">
+        The ID photo is a headshot of the player's ped, uploaded through the phone's regular upload path. It needs a working `Config.uploadMethod` (`fivemanage` or [a custom endpoint](/roadphonepro/custom-upload)). Without it the card works, but stays without photo and the app keeps offering *Renew photo*.
+    </Step>
+    <Step title="Map your licenses and add passes">
+        Review `Config.Wallet` (below). The default maps `drive` / `driver` and `weapon`; add every license type your server uses.
+    </Step>
+    <Step title="Restart">
+        `ensure roadphone`. Open the Wallet on a character with a job and a license to verify the cards.
+    </Step>
+</Steps>
+
+---
+
+## Configuration
+
+Everything lives in `lua-code/config.lua`.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `Config.Wallet.ShowRadius` | number | `3.0` | Distance in metres within which a card can be shown, a ticket checked in and a membership card issued |
+| `Config.Wallet.ShowDuration` | number | `20` | Seconds a shown card stays on the receiver's phone |
+| `Config.Wallet.Licenses` | table | drive, weapon | License cards, matched by framework license keys |
+| `Config.Wallet.Cards` | table | empty | Extra passes with one eligibility condition each |
+
+### Licenses
+
+```lua config.lua
+Config.Wallet.Licenses = {
+    { id = 'drive',  keys = { 'drive', 'driver' }, label = 'WALLET_LICENSE_DRIVE',  icon = 'solar:wheel-bold',  color = '#0A84FF' },
+    { id = 'weapon', keys = { 'weapon' },          label = 'WALLET_LICENSE_WEAPON', icon = 'solar:target-bold', color = '#FF453A' },
+    { id = 'pilot',  keys = { 'pilot', 'aircraft' }, label = 'Pilot License',       icon = 'solar:plain-bold',  color = '#64D2FF' },
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique key; the card id becomes `license:<id>` |
+| `keys` | License names as your framework stores them (`user_licenses.type` on ESX, `metadata.licences` keys on QB). Any match grants the card. |
+| `label` | A locale key (`WALLET_LICENSE_DRIVE`) or plain text |
+| `icon` | An Iconify icon name; the phone ships the `solar` set offline |
+| `color` | Card colour as `#RRGGBB` |
+
+### Custom cards
+
+Every entry needs **exactly one** condition: `item`, `job` (optionally with `minGrade`) or `license`.
+
+```lua config.lua
+Config.Wallet.Cards = {
+    -- The player carries the item
+    { id = 'gym',  label = 'Gym Member',   icon = 'solar:dumbbell-bold',    color = '#FF9F0A', item = 'gym_card' },
+    -- The player holds the framework license
+    { id = 'taxi', label = 'Taxi Permit',  icon = 'solar:bus-bold',         color = '#FFD60A', license = 'taxi' },
+    -- The player has the job, at grade 2 or higher
+    { id = 'ems',  label = 'Medic Pass',   icon = 'solar:heart-pulse-bold', color = '#30D158', job = 'ambulance', minGrade = 2 },
+}
+```
+
+Custom cards are evaluated every time the wallet loads — take the item away, revoke the license or demote the player and the card is gone on the next open.
+
+---
+
+## Player flow
+
+<Steps>
+    <Step title="First open: the ID photo">
+        The app asks for a photo before it shows any card. *Take photo* renders a headshot of the ped as it looks right now (the text tells players to remove masks first), uploads it and stores the URL on the character. *Later* skips the step for this session; the ID card then reads *Photo pending* until a photo exists. *Renew photo* on the ID card repeats the capture at any time.
+    </Step>
+    <Step title="Browse">
+        IDs & Licenses, Cards & Passes and Tickets are separate sections. Tapping a card opens it large, with every field the server sent — issue and expiry dates, holder, ticket code.
+    </Step>
+    <Step title="Show a card">
+        *Show* lists the players standing within `ShowRadius` by name and distance. Picking one sends the card to that player only. The sender sees *Card shown*, *Too far away* or *Could not show the card*.
+    </Step>
+    <Step title="Receiving a card">
+        The receiver's phone shows the card as an overlay with a countdown of `ShowDuration` seconds and who is showing it. With the phone closed, a notification and a lockscreen card announce it; opening the Wallet from there shows the card as long as time is left.
+    </Step>
+    <Step title="Tickets">
+        A ticket card carries the event location. *Route* sets a waypoint on the map. At the door, the holder shows the ticket to the organizer — see below.
+    </Step>
+</Steps>
+
+### How showing is verified
+
+- The **server** measures the distance between both players; the client only proposes candidates. Players in a different routing bucket are never offered.
+- The nearby list scans `ShowRadius + 2 m` so a player who is one step too far still appears; the show itself is refused with *Too far away* beyond `ShowRadius`.
+- The receiver gets a snapshot of the card, built at that moment for the sender. It disappears after `ShowDuration` (clamped to 1–120 seconds on the phone) and is never stored.
+- A player can show one card every two seconds. Scripts use [`showWalletCard`](/roadphonepro/api/wallet#showwalletcard) with the same checks and no rate limit.
+
+---
+
+## Tickets and check-in
+
+<Steps>
+    <Step title="Buy">
+        Tickets are bought in the **Events** app (bank money, up to `Config.Events.MaxTicketsPerBuyer` per event). Each ticket has a unique code in the form `EV-XXXXXX` and appears in the Wallet's *Tickets* section right away.
+    </Step>
+    <Step title="Show at the door">
+        The holder opens the ticket and shows it to the organizer. On the organizer's phone the shown ticket carries a *Check in* button — only when they own the event, the event is still active and the ticket has not been checked in yet.
+    </Step>
+    <Step title="Check in">
+        *Check in* stamps the ticket server-side. The holder receives a notification (*Your ticket for … has been checked in*), the card flips to *Checked in* with the time on both phones, and a second attempt shows *Already checked in at …*.
+    </Step>
+    <Step title="After the event">
+        Tickets read *Expired* once the event is over or cancelled and leave the wallet one day after the event ended. Refunds for cancelled events and organizer payouts are pending money: they are credited to the bank account the next time the Wallet opens, or through *Collect* in the Events app.
+    </Step>
+</Steps>
+
+<Note>
+    Check-in is bound to the code of the ticket that was shown, to the organizer's identifier and to the distance between organizer and holder — a ticket cannot be checked in from a screenshot or from across the map.
+</Note>
+
+---
+
+## Membership cards (businesses)
+
+A **job boss** — grade name `boss` on ESX, `isboss` on QBCore / Qbox — finds a *Business* tab in the Events app. From there they issue and revoke membership cards of their job:
+
+| | |
+|---|---|
+| Who can receive one | Any player standing within `ShowRadius` of the boss |
+| Label | 2–60 characters, free text (*Gym Member*, *VIP*, *Staff*) |
+| Colour | Optional `#RRGGBB`; default green |
+| Duration | 7, 30 or 90 days, or unlimited |
+| Revoke | Any time; the card disappears from the holder's wallet immediately |
+
+The holder gets a notification (*New membership card*) and the wallet refreshes without reopening. The card shows business, holder, who issued it and the issue and expiry dates; after expiry it stays for seven days marked *Expired*, then drops out. Bosses see up to 300 active cards of their job in the Business tab.
+
+Your own resources issue the same cards through [`issueWalletCard`](/roadphonepro/api/wallet#issuewalletcard) — any label, any business name, online or offline players, no boss required.
+
+<Tip>
+    A membership card issued to the wrong person is fixed by revoking it — there is no edit. Issue a new one instead.
+</Tip>
+
+---
+
+## Data model
+
+Every card the phone receives has the same shape. Labels are locale keys where the phone has a translation and plain text otherwise; `fields` are rendered in order with their `kind` deciding the formatting.
+
+```lua
+{
+    id       = 'ticket:42',              -- 'id', 'license:drive', 'job', 'gang', 'custom:gym', 'member:7', 'ticket:42'
+    type     = 'ticket',                 -- id | license | job | gang | custom | member | ticket
+    title    = 'Rooftop Party',          -- locale key or text
+    subtitle = 'EV-7F3K2Q',
+    color    = '#FF375F',
+    icon     = 'solar:ticket-bold',
+    photo    = nil,                      -- ID, job and gang cards carry the profile photo
+    fields   = {
+        { label = 'WALLET_FIELD_EVENT',       value = 'Rooftop Party' },
+        { label = 'WALLET_FIELD_DATE',        value = 1789459200, kind = 'datetime' },
+        { label = 'WALLET_FIELD_TICKET_CODE', value = 'EV-7F3K2Q' },
+    },
+    meta = { number = 'EV-7F3K2Q', valid = true, status = 'valid', eventId = 12, x = 215.8, y = -810.2 },
+}
+```
+
+| `kind` | Value | Rendered as |
+|--------|-------|-------------|
+| *(none)* | string | as is |
+| `date` | unix seconds | localized date |
+| `datetime` | unix seconds | localized date and time |
+| `dob` | `YYYY-MM-DD` | localized date |
+| `sex` | `m` / `f` | *Male* / *Female* |
+| `height` | number | `180 cm` |
+
+`meta.valid` and `meta.status` drive the status badge: *Checked in*, *Expired*, *Invalid* or *Valid*.
+
+Two tables belong to the Wallet itself; tickets and events are documented with the [Events configuration](/roadphonepro/apps#events-and-wallet).
+
+```sql
+CREATE TABLE `roadshop_wallet_profiles` (
+  `identifier` varchar(80) NOT NULL,          -- player identifier
+  `photo`      varchar(255) DEFAULT NULL,     -- uploaded headshot URL
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`identifier`)
+);
+
+CREATE TABLE `roadshop_wallet_cards` (
+  `id`             int(11) NOT NULL AUTO_INCREMENT,
+  `identifier`     varchar(80) NOT NULL,      -- holder
+  `holder_name`    varchar(80) NOT NULL,
+  `job`            varchar(60) NOT NULL,      -- issuing business
+  `label`          varchar(60) NOT NULL,
+  `color`          varchar(9) DEFAULT NULL,
+  `issued_by_name` varchar(80) DEFAULT NULL,
+  `expires_at`     timestamp NULL DEFAULT NULL,
+  `revoked`        tinyint(1) NOT NULL DEFAULT 0,
+  `created_at`     timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  INDEX `idx_holder` (`identifier`),
+  INDEX `idx_job` (`job`)
+);
+```
+
+<Warning>
+    The photo URL captured in the app is validated against the upload host allow-list (`fivemanage.com` or the hosts named for a custom upload endpoint). A URL from any other host is refused with `bad_url`, so a modified client cannot put an arbitrary image on an ID card.
+</Warning>
+
+---
+
+## Events
+
+| Event | Direction | Payload | Description |
+|-------|-----------|---------|-------------|
+| `roadphone:wallet:incoming` | Server → Client | `{ showId, card, from, expiresAt, duration, canCheckIn }` | A card is being shown to this player |
+| `roadphone:wallet:cardsChanged` | Server → Client | — | The player's cards changed (card issued or revoked, ticket checked in); the wallet reloads if it is open |
+| `walletIncomingCard` | Client → NUI | the payload above | Opens the incoming-card overlay or, with the phone closed, posts the notification |
+| `walletCardsChanged` | Client → NUI | — | Reloads the card list |
+
+The server exports (`getWalletCards`, `hasWalletCard`, `issueWalletCard`, `showWalletCard`, …), the callbacks behind the app and the card schema are on the [Wallet API](/roadphonepro/api/wallet) page.
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+    <Accordion title="The ID card has no photo / the photo could not be saved" icon="camera-off">
+        The capture renders a headshot, uploads it and stores the URL. Check `Config.uploadMethod` and the upload credentials — the same path the camera app uses. A URL from a host outside the allow-list is refused as `bad_url`; a custom endpoint must name its hosts in `uploader/upload-server.lua`.
+    </Accordion>
+    <Accordion title="A license the player owns is not in the wallet" icon="file-x">
+        The entry's `keys` must match the license name as the framework stores it: `user_licenses.type` on ESX (`drive`, `weapon`, …), the keys of `PlayerData.metadata.licences` on QBCore / Qbox (`driver`, `weapon`, …). Add every spelling your server uses to `keys`.
+    </Accordion>
+    <Accordion title="Show says Too far away although the players stand next to each other" icon="ruler">
+        The server measures the distance between the two peds itself and requires the same routing bucket. Instanced interiors with per-player buckets block the show — as intended, since the players are not in the same world.
+    </Accordion>
+    <Accordion title="No Business tab in the Events app" icon="briefcase">
+        The player is not detected as boss. ESX needs the grade name `boss`; QBCore / Qbox needs `isboss = true` on the job grade. Check `Bridge.Job.IsBoss` for your framework.
+    </Accordion>
+    <Accordion title="A ticket disappeared from the wallet" icon="ticket-x">
+        Tickets are kept until one day after the event ended; cancelled events are shown as *Expired* until then. Refunds are credited when the Wallet opens next, or through *Collect* in the Events app.
+    </Accordion>
+    <Accordion title="Cards show raw keys like WALLET_LICENSE_DRIVE" icon="languages">
+        The key is missing in the language file of the phone's current language (`public/static/locales/<lang>.json`). Add it there, or use plain text as `label` in `Config.Wallet`.
+    </Accordion>
+    <Accordion title="Wallet shows Could not load Wallet" icon="triangle-alert">
+        The server answered `db_error`: the console shows a `[Wallet]` traceback with the failing query. Usually a missing table on a server that skipped the automatic setup — run `lua-code/sql/wallet_events.sql`.
+    </Accordion>
+</AccordionGroup>
+
+---
+
+## Related Resources
+
+<CardGroup cols={2}>
+    <Card title="Wallet API" icon="id-card" href="/roadphonepro/api/wallet">
+        Exports for reading, showing and issuing cards, plus callbacks, events and the card schema
+    </Card>
+    <Card title="Events configuration" icon="calendar" href="/roadphonepro/apps#events-and-wallet">
+        Event creation, ticket limits and the Business tab
+    </Card>
+    <Card title="Custom upload" icon="upload" href="/roadphonepro/custom-upload">
+        The upload endpoint the ID photo goes through
+    </Card>
+    <Card title="Fold" icon="smartphone" href="/roadphonepro/fold">
+        On the Fold the Wallet uses the full width of the inner display
+    </Card>
+</CardGroup>

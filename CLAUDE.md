@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Product facts (global Road rules load automatically from road-brain):
+@D:/Programming/road-brain/products/docs.md
+
 ## Project Overview
 
 Mintlify documentation site for **RoadShop** — a collection of FiveM (GTA V roleplay) scripts (RoadPhone Pro, RoadPhone, RoadPad, RoadCarPlay, RoadPods, RoadBackup). There is no `package.json` or local build toolchain; Mintlify handles everything.
