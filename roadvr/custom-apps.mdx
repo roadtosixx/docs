@@ -13,11 +13,17 @@ screen. Opening it loads your page into a window.
 yours.
 
 <Card title="Working examples" icon="folder-code">
-  Two complete, running app resources ship in `examples/`:
-  **`roadvr_exampleapp`**, which reads the game through its own Lua, and
-  **`roadvr_mediaapp`** — the Media app itself, which needs almost no Lua and
-  does everything through the SDK instead.
+  Complete, running resources ship in `examples/`: **`roadvr_exampleapp`** for
+  this page, plus **`roadvr_examplewidget`**, **`roadvr_examplemarkers`** and
+  **`roadvr_examplegame`** for the other three shapes a resource can take.
 </Card>
+
+<Info>
+  An app is one of four. A [widget](/roadvr/custom-widgets) hangs in a wall, a
+  [marker](/roadvr/custom-markers) annotates the world itself, and a
+  [game](/roadvr/custom-games) is a multiplayer session with a lobby. They share
+  the SDK but nothing else.
+</Info>
 
 ## Why a page and not a component
 
@@ -63,6 +69,14 @@ exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
   A file **in your resource**, e.g. `ui/index.html`. The full address —
   `https://cfx-nui-<your-resource>/<file>` — is built for you, so it cannot
   point somewhere else by accident. Put the file in your own `files {}` block.
+
+  That form and not `nui://`, which reaches the same file. The difference is
+  what your page is then standing on: a browser sends a `Referer` only from an
+  http(s) document, so a page loaded over `nui://` reaches every service on the
+  web without one — and a service that checks it, YouTube being the loud
+  example, refuses to serve you. The `cfx-nui-` form gives your page a real web
+  origin, which is also what makes `fetch` and browser storage behave the way
+  you expect.
 </ParamField>
 
 <ParamField path="name" type="string">
@@ -238,6 +252,13 @@ so there is no copy in your resource that can go stale.
 })()
 ```
 
+<Info>
+  `ready()` settles when the headset has answered. Inside FiveM but with no
+  headset on, nothing answers — after two seconds it settles anyway with
+  `surface: null` and usable defaults, rather than leaving your page waiting
+  forever.
+</Info>
+
 <Card title="Full SDK reference" icon="code" href="/roadvr/api/sdk">
   Every field, every event, every function
 </Card>
@@ -314,12 +335,23 @@ every built-in app uses.
     ```
   </Accordion>
 
-  <Accordion title="Hide the cursor">
-    The headset draws its own pointer, and the system cursor would appear next
-    to it.
+  <Accordion title="Leave the cursor alone">
+    **Do not set `cursor: none`.**
 
-    ```css
-    * { cursor: none; }
+    The headset draws its own pointer, but mouse events do not cross a frame
+    boundary: while the mouse is inside your page the headset hears nothing from
+    it, so it takes its dot away rather than leave one standing still at your
+    window's edge.
+
+    Load the SDK and it draws that dot inside your page instead, hiding the
+    system cursor itself as it does. Without the SDK the system cursor is all
+    your players have to aim with — and hiding it leaves them aiming blind.
+
+    If your page draws a pointer of its own — a crosshair, a brush, a game —
+    take the cursor over yourself:
+
+    ```js
+    RoadVr.usePointer(false)
     ```
   </Accordion>
 
@@ -379,7 +411,7 @@ resource that started long before anyone put a headset on still shows up.
 
 ## Trying the examples
 
-```
+```cfg server.cfg
 ensure roadvr_exampleapp
 ```
 
@@ -388,17 +420,30 @@ your street, health and armour on request, receives a speed reading pushed once
 a second, honks the horn of the vehicle you are in — and, in its second column,
 reports everything the headset tells it through the SDK.
 
-```
-ensure roadvr_mediaapp
-```
+RoadVR does not have to be restarted for a resource that registers after it, and
+nothing else has to be started alongside.
 
-The **Media** app, as an ordinary resource of its own. It is the other shape:
-almost no Lua at all — one `registerRoadVrApp` call and nothing else — with
-every runtime detail coming through the SDK instead. It is also the one to read
-for `watch('placement')` and `setActions()`, both of which it uses for real.
+<Note>
+  Two things every page in a frame has to solve for itself, whatever shape it
+  is: it carries **its own strings**, because RoadVR's locale files are
+  RoadVR's, and it declares RoadVR's **spacing and type scale** in its own
+  `:root`, because those are layout rather than theme and do not travel with the
+  palette.
+</Note>
 
-<Info>
-  `roadvr_mediaapp` registers under the id `media`, which is the id the built-in
-  Media app used. Starting it takes that place over rather than adding a second
-  icon, so `openRoadVrPanel('media')` keeps working either way.
-</Info>
+## The other three shapes
+
+<CardGroup cols={3}>
+  <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
+    A page that hangs in a wall and belongs to the player rather than to your
+    resource. `examples/roadvr_examplewidget`.
+  </Card>
+  <Card title="Custom Markers" icon="map-pin" href="/roadvr/custom-markers">
+    Labels, arrows, outlines and paths on the world itself — no page at all.
+    `examples/roadvr_examplemarkers`.
+  </Card>
+  <Card title="Custom Games" icon="gamepad-2" href="/roadvr/custom-games">
+    A multiplayer session: RoadVR brings the lobby, invitations and characters,
+    you bring the rules. `examples/roadvr_examplegame`.
+  </Card>
+</CardGroup>

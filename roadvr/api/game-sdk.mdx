@@ -1,0 +1,316 @@
+---
+title: 'Game SDK'
+description: 'The browser API a RoadVR game page connects through'
+icon: 'gamepad-2'
+---
+
+# Game SDK
+
+The API inside a game's iframe. Where the [JavaScript SDK](/roadvr/api/sdk) is
+about the *headset* around a window, this one is about the **session** a game is
+part of: the shared room, the state everyone sees, and the actions your page
+submits to the server for judgement.
+
+<Card title="The guide" icon="book-open" href="/roadvr/custom-games">
+  Registering a game, writing the rules and the lobby lifecycle
+</Card>
+
+## Loading it
+
+Copy `public/sdk/game.js` out of the built RoadVR resource into your own game
+and load it **before** your application. The source copy is at
+`ui/public/sdk/game.js`, with `game.d.ts` beside it.
+
+```html ui/index.html
+<script src="./sdk/game.js"></script>
+<script type="module" src="./app.js"></script>
+```
+
+<Note>
+  This one is copied rather than loaded from `cfx-nui-roadvr`, unlike the app
+  SDK. A game bundles its own build, and `connect()` negotiates the version
+  explicitly, so a copy that has fallen behind says so instead of failing
+  quietly.
+</Note>
+
+## RoadVrGame.connect()
+
+```js
+const game = await RoadVrGame.connect()
+```
+
+Negotiates API version 1 and resolves to the connection. It rejects when the
+host answers with a different version, and it times out when nothing answers at
+all — which is what happens if you open the page outside RoadVR.
+
+<ResponseField name="game" type="object">
+  The connection: `state`, `on`, `send`, `pause`, `leave`.
+</ResponseField>
+
+<Warning>
+  An iframe cannot claim a different game id. RoadVR resolves the registered
+  frame from the **actual message source**, not from anything the page sends.
+</Warning>
+
+## game.state
+
+```js
+{
+  room:   Room | null,
+  me:     string,
+  paused: boolean,
+}
+```
+
+`room` becomes `null` after departure or closure. `me` is the local
+participant's public RoadVR account tag.
+
+<Info>
+  Read `game.state` once after `connect()` for the opening picture, then keep up
+  through the `state` event. After a reopened view this is the **only** correct
+  source — module globals from the previous iframe are gone.
+</Info>
+
+## The Room snapshot
+
+```ts
+type Room = {
+  id: string
+  gameId: string
+  code: string
+  revision: number
+  phase: 'lobby' | 'playing' | 'finished'
+  host: string
+  players: {
+    id: string; name: string; avatar: string | false
+    appearance: CharacterAppearance | false
+    away: boolean; ready: boolean
+  }[]
+  invited: { tag: string; name: string }[]
+  maxPlayers: number
+  state: Record<string, unknown>
+}
+```
+
+<ParamField path="code" type="string">
+  The six-letter code players read out to each other to join.
+</ParamField>
+
+<ParamField path="revision" type="number">
+  Increases on every lobby and game change. An older update can never replace a
+  newer accepted snapshot.
+</ParamField>
+
+<ParamField path="host" type="string">
+  The account tag of the player who may start the game. It moves to another
+  present player if the host goes away.
+</ParamField>
+
+<ParamField path="players[].id" type="string">
+  A public RoadVR account tag — **never** a framework identifier and never a
+  FiveM source id.
+</ParamField>
+
+<ParamField path="players[].appearance" type="object | false">
+  The player's saved Character Studio look, or `false` when unavailable. See
+  [the character module](#the-character-module).
+</ParamField>
+
+<ParamField path="state" type="object">
+  Whatever your `onStart` and `onAction` handlers put there. Public to every
+  participant.
+</ParamField>
+
+## game.on()
+
+```js
+const stop = game.on('state', (snapshot) => render(snapshot))
+stop()
+```
+
+Every `on()` returns its own unsubscribe function.
+
+| Event | Payload | When |
+|---|---|---|
+| `state` | the full `game.state` | the room, the shared state or a player's look changed |
+| `paused` | `boolean` | the player paused or resumed the local view |
+| `close` | — | the immersive view is going away |
+
+<Warning>
+  Unsubscribe in `close` and release your renderer there. Closing and reopening
+  the view builds a **new iframe**, so anything left running belongs to a
+  document that is already gone.
+</Warning>
+
+## game.send()
+
+```js
+await game.send('hit', { target })
+```
+
+Submits an action for the server to judge. It resolves **after** the server has
+accepted it, and rejects with an `Error` whose `code` says why it did not.
+
+<ParamField path="action" type="string" required>
+  The action name your `onAction` handler switches on.
+</ParamField>
+
+<ParamField path="payload" type="object">
+  Plain data, held to the same content limits as the state itself.
+</ParamField>
+
+### The error codes
+
+| `error.code` | Meaning |
+|---|---|
+| `invalid` | Your own rules rejected the move |
+| `stale` | The snapshot you acted on was out of date |
+| `rate_limited` | More than one mutating action per 100 ms |
+| `busy` | A request is already in flight |
+| `timeout` | The host did not answer |
+| `state` | The room is not in a phase that accepts actions |
+| `closed` | The room is gone |
+| `unavailable` | The game or RoadVR is not available right now |
+| `game_error` | Your handler raised |
+
+<Note>
+  On `stale`, RoadVR asks for a fresh snapshot by itself — but the rejected
+  action is **not** replayed. Decide in your page whether the move still makes
+  sense against the new state, then send it again.
+
+  A custom `reason` from your handler falls back to a generic message in the
+  shared lobby, so put player-facing wording in your own page.
+</Note>
+
+<Warning>
+  RoadVR serializes local requests and rate limits mutating server actions to
+  one per 100 ms per source, **across all games**. Do not push animation frames
+  or continuous positions through `send()`. Render locally; submit meaningful
+  actions.
+</Warning>
+
+## game.pause() and game.leave()
+
+```js
+await game.pause()
+await game.leave()
+```
+
+Both also exist as RoadVR-owned controls outside your iframe, so a page needs
+them only when it wants its own button.
+
+<Info>
+  Pause is **local**: the other players carry on. Leave releases the seat
+  immediately, which is the difference between it and RoadVR's **Back to lobby**
+  — that one closes the view but keeps membership.
+</Info>
+
+## The frame you are given
+
+<ParamField path="?lang=<language>" type="string">
+  The host appends the player's interface language to your page URL, or adds it
+  to the query string you already have. Use it for your own strings with English
+  as the fallback — RoadVR does not translate a game's own text.
+</ParamField>
+
+<ParamField path="Top 76 CSS pixels" type="reserved">
+  RoadVR's controls sit there. Your iframe gets the rest. Size the renderer to
+  the iframe's actual dimensions rather than to the viewport.
+</ParamField>
+
+<ParamField path="Escape" type="key">
+  Opens RoadVR's pause sheet from inside the iframe. Do not bind it yourself.
+</ParamField>
+
+## The character module
+
+`character.js` renders the original RoadVR character, so a game does not need a
+character system of its own.
+
+```js
+import { createCharacter } from './sdk/character.js'
+
+const game = await RoadVrGame.connect()
+let character, appearanceKey
+
+function updateCharacter({ room, me }) {
+  const player = room?.players.find((player) => player.id === me)
+  const nextKey = player ? JSON.stringify(player.appearance) : undefined
+  if (nextKey === appearanceKey) return
+
+  character?.dispose()
+  appearanceKey = nextKey
+  character = player ? createCharacter(player.appearance) : null
+  if (character) scene.add(character.root)
+}
+
+updateCharacter(game.state)
+const stop = game.on('state', updateCharacter)
+game.on('close', () => { stop(); character?.dispose() })
+```
+
+<ResponseField name="createCharacter(appearance)" type="{ root, head, update, dispose }">
+  Accepts `false` and falls back to the default appearance.
+</ResponseField>
+
+<ResponseField name="update(timeSeconds, options)" type="void">
+  Call from your render loop with elapsed seconds. `options` takes
+  `{ moving, reducedMotion, putt }`; `moving` is a 0–1 intensity driving the
+  idle/walk blend.
+</ResponseField>
+
+<ResponseField name="dispose()" type="void">
+  Call before replacing a look or removing a player. It removes the root and
+  releases the geometry and materials it owns.
+</ResponseField>
+
+### Orientation
+
+The model is **Z-up**, faces **negative Y**, and has its feet at `Z = 0`.
+
+```js
+// For a Y-up scene facing positive Z:
+root.rotation.x = -Math.PI / 2
+```
+
+Move and rotate `root` to place the character. Pause your render loop with the
+game and while the document is hidden.
+
+<Info>
+  The module also exports `normalizeAppearance`, `DEFAULT_APPEARANCE`,
+  `CHOICES`, `COLORS` and `PRESETS`. `CharacterAppearance` describes the
+  version-1 hair, outfit, accessories, colours and body/face proportions in
+  `character.d.ts`, which `game.d.ts` re-exports — so keep the two declaration
+  files together when you copy them.
+</Info>
+
+<Warning>
+  `character.js` is an **ES module** with imports from `three` and
+  `three/addons`. Bundle it with your game's own Three.js dependency; the
+  example is built against Three.js 0.185.1. It is separate from the classic
+  `game.js` connection script and makes no backend requests of its own.
+</Warning>
+
+## What the Game SDK cannot do
+
+Version 1 is one shared public state, judged on one server. There is no
+per-player private channel, no persistent score, no cross-server session, no
+distribution catalog and no shared world-space rendering — a game draws in its
+own iframe, not into the room around the player.
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Custom Games" icon="gamepad-2" href="/roadvr/custom-games">
+    Registration, rules and the lobby
+  </Card>
+  <Card title="JavaScript SDK" icon="braces" href="/roadvr/api/sdk">
+    The headset API, for apps and widgets
+  </Card>
+  <Card title="Client API" icon="code" href="/roadvr/api/client">
+    The Lua half
+  </Card>
+  <Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
+    Questions about integrating
+  </Card>
+</CardGroup>

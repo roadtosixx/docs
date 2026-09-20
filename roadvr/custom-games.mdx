@@ -1,0 +1,458 @@
+---
+title: 'Custom Games'
+description: 'Ship a multiplayer 3D game as your own resource, with RoadVR providing the lobby'
+icon: 'gamepad-2'
+---
+
+# Custom Games
+
+A game is the second shape a resource can take inside the headset. Where a
+[custom app](/roadvr/custom-apps) is a window you fill, a game is a **session**:
+RoadVR provides the launcher entry, the lobby, friend invitations, ready checks,
+reconnect grace and the immersive full-view host. Your resource provides an HTML
+game and the rules that decide what a move means.
+
+**RoadVR is not modified in the process.** You register from your own server
+script; there is no RoadVR source edit and no custom RoadVR client script.
+
+<Card title="Working example" icon="folder-code">
+  **Target Garden** ships in `examples/roadvr_examplegame` — a cooperative
+  Three.js game for up to four players. Both players see the same active target
+  and the same score, and the server awards every point.
+</Card>
+
+<Note>
+  This is **Game SDK v1**. It runs on a single FiveM server and covers games
+  that exchange discrete actions and one small shared state. A distribution
+  catalog, cross-server sessions, persistent scores and shared world-space
+  rendering are not part of this version.
+</Note>
+
+## What RoadVR does and what you do
+
+<CardGroup cols={2}>
+  <Card title="RoadVR provides" icon="check">
+    The launcher tile, the lobby with its six-letter code, invitations to online
+    friends, ready checks, host handover, the away/reconnect grace, the
+    immersive view with its pause and exit controls, and the Character Studio
+    that gives every player a body.
+  </Card>
+  <Card title="You provide" icon="code">
+    An HTML page that renders the game, and two server-side handlers —
+    `onStart` and `onAction` — that hold the rules. That is the whole contract.
+  </Card>
+</CardGroup>
+
+## Try the example first
+
+From the RoadVR source checkout, with the UI dependencies already installed:
+
+```sh
+node scripts/build-game-example.mjs
+```
+
+This refreshes the SDK, the TypeScript declarations, the font and the licenses,
+then builds the example. Copy the complete `roadvr_examplegame` folder beside
+`roadvr` in your server resources.
+
+```cfg server.cfg
+ensure roadvr
+ensure roadvr_examplegame
+```
+
+Put the headset on, open **Target Garden** from the launcher, create a lobby and
+invite an online RoadVR friend — or read them the six-letter code. Everyone
+selects **Ready**, the host starts, and **Enter game** opens the 3D view. One
+player can also test it alone.
+
+<Warning>
+  The example is a developer example. RoadVR's main deploy and the customer
+  package do **not** install it.
+</Warning>
+
+## Register from the server
+
+`registerRoadVrGame` is a **server** export — unlike apps, widgets and markers,
+which are registered client-side. The rules run on the server because the server
+is the only place a rule cannot be edited by the player it applies to.
+
+```lua server.lua
+local function register()
+    if GetResourceState('roadvr') ~= 'started' then return end
+
+    local ok, reason = exports.roadvr:registerRoadVrGame({
+        id         = 'myresource_targets',
+        name       = 'Shared Targets',
+        apiVersion = 1,
+        page       = 'ui/index.html',
+        icon       = 'ui/icon.svg',
+        minPlayers = 1,
+        maxPlayers = 4,
+
+        onStart = function(room)
+            return { state = { target = 1, hits = 0 } }
+        end,
+
+        onAction = function(room, player, action, payload)
+            if action ~= 'hit' or payload.target ~= room.state.target then
+                return { reason = 'invalid' }
+            end
+            local state = room.state
+            state.hits = state.hits + 1
+            state.target = state.target % 5 + 1
+            return { state = state, finished = state.hits >= 12 }
+        end,
+    })
+
+    if not ok then
+        print(('^1[targets]^7 game registration failed: %s'):format(reason))
+    end
+end
+
+-- Register on your own start and again after a RoadVR restart.
+AddEventHandler('onResourceStart', function(resource)
+    if resource == 'roadvr' or resource == GetCurrentResourceName() then
+        SetTimeout(500, register)
+    end
+end)
+```
+
+### registerRoadVrGame
+
+<ParamField path="id" type="string" required>
+  Unique, 2–64 characters. A lowercase letter first, then lowercase letters,
+  digits, `_` or `-`. Prefix it with your resource name. Built-in app ids are
+  reserved.
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  The launcher title, 1–80 bytes.
+</ParamField>
+
+<ParamField path="apiVersion" type="number" required>
+  Must be `1`.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  A path **inside your own resource**, up to 160 bytes. Remote URLs and `..` are
+  rejected.
+</ParamField>
+
+<ParamField path="icon" type="string" required>
+  A path inside your own resource, same rules as `page`.
+</ParamField>
+
+<ParamField path="minPlayers" type="number" default="1">
+  1 to 16. Cannot exceed `maxPlayers`.
+</ParamField>
+
+<ParamField path="maxPlayers" type="number" default="4">
+  1 to 16.
+</ParamField>
+
+<ParamField path="onStart" type="function" required>
+  `onStart(room)` — returns `{ state = table, finished = boolean? }`. The
+  opening state of a round.
+</ParamField>
+
+<ParamField path="onAction" type="function" required>
+  `onAction(room, player, action, payload)` — returns a replacement
+  `{ state = table, finished = boolean? }`, or `{ reason = 'invalid' }` to
+  reject the action outright.
+</ParamField>
+
+<ResponseField name="ok" type="boolean">
+  `false` when registration was refused.
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  One of `already_registered`, `invalid`, `invalid_id`, `version`,
+  `invalid_path`, `invalid_name`, `invalid_players`, `invalid_handler`.
+</ResponseField>
+
+<Info>
+  Ownership comes from the invoking resource. A second registration under the
+  same id returns `already_registered` — **including one from the same owner**.
+  Stopping the owner removes its entries and closes its rooms, so register again
+  on restart, which is what the `onResourceStart` handler above is for.
+</Info>
+
+### Declaring the files
+
+```lua fxmanifest.lua
+fx_version 'cerulean'
+game 'gta5'
+
+-- No ui_page: RoadVR hosts the page in its own iframe.
+files {
+    'ui/index.html',
+    'ui/icon.svg',
+    'ui/assets/**/*',
+    'ui/sdk/game.js',
+}
+
+server_scripts { 'server.lua' }
+```
+
+There is deliberately **no** `dependencies { 'roadvr' }` here. The registration
+already guards on `GetResourceState`, so the game resource can start on a server
+where RoadVR is not running instead of refusing to start at all.
+
+## Rules live on the server
+
+RoadVR derives the acting player from the server callback source and verifies
+membership, phase and revision **before** it calls your handler. It passes copies
+of the public room and player, so a handler cannot reach into RoadVR's own state
+by mutating what it was given.
+
+<Warning>
+  **Keep handlers synchronous and bounded.** Do not `Wait`, do not make database
+  or network requests, do not award money and do not touch separate
+  authoritative storage inside these callbacks. The SDK does not roll back
+  external side effects.
+
+  A failed or rejected callback leaves the accepted state unchanged, and a room
+  that changed during a callback cannot be overwritten by that continuation.
+</Warning>
+
+<Warning>
+  **Validate every action yourself.** RoadVR verifies *who* is calling; only
+  your rules can decide whether the move is legal. The example verifies that the
+  selected target is the active one — it does not prove that a human aimed at
+  it, and it is not a basis for paying anybody.
+</Warning>
+
+### What state may contain
+
+Accepted state and action payloads hold plain Lua tables, strings, finite
+numbers and booleans.
+
+| Limit | Value |
+|---|---|
+| Visited values | 2,048 |
+| Nesting depth | 10 levels |
+| Bytes per string | 4,096 |
+| Content budget | 32 KiB |
+| Table keys | Strings, or positive integer indices up to 2,048 |
+
+Cycles, functions and metatables are rejected. These are content bounds rather
+than an exact encoded-JSON guarantee.
+
+<Note>
+  An empty Lua table can arrive in JavaScript as an object rather than an array.
+  Normalize optional collections before you iterate them.
+</Note>
+
+<Warning>
+  **All of `room.state` is public to every participant.** Keep secret
+  information — a hand of cards, an unrevealed board — outside it. V1 has no
+  per-player private-state channel.
+</Warning>
+
+<Info>
+  Installed resources are trusted server code. The iframe is a rendering
+  boundary, not a sandbox for untrusted Lua.
+</Info>
+
+## The page
+
+Copy `public/sdk/game.js` out of the built RoadVR resource into your game and
+load it before your application. The source copy lives at
+`ui/public/sdk/game.js`, with the TypeScript declarations beside it.
+
+```html ui/index.html
+<script src="./sdk/game.js"></script>
+<script type="module" src="./app.js"></script>
+```
+
+```js app.js
+const game = await RoadVrGame.connect()
+render(game.state)
+
+const stopState = game.on('state', (snapshot) => render(snapshot))
+const stopPause = game.on('paused', (paused) => setRenderingEnabled(!paused))
+
+game.on('close', () => {
+  stopState()
+  stopPause()
+  disposeRenderer()
+})
+
+async function hit(target) {
+  try {
+    await game.send('hit', { target })
+  } catch (error) {
+    showTranslatedError(error.code)
+  }
+}
+```
+
+<Card title="Full Game SDK reference" icon="braces" href="/roadvr/api/game-sdk">
+  Every method, every event, the room snapshot and the character module
+</Card>
+
+### Three things the page must get right
+
+<AccordionGroup>
+  <Accordion title="Do not send frames through send()">
+    RoadVR serializes local requests and rate limits mutating server actions to
+    **one per 100 ms per source**, across all games. Render locally and submit
+    meaningful actions — a scored hit, a played card, a finished turn — never
+    animation frames or continuous positions.
+  </Accordion>
+
+  <Accordion title="Size to the iframe, not to the window">
+    The top **76 CSS pixels** of the viewport belong to RoadVR's controls; your
+    iframe receives the space that is left. Measure the iframe's actual
+    dimensions and size the renderer to those.
+
+    The host appends `?lang=<language>` to your page — or adds it to the query
+    string you already have. Use it for your own strings, with English as the
+    fallback. Escape inside the iframe opens RoadVR's pause sheet.
+  </Accordion>
+
+  <Accordion title="Release everything on close">
+    Release Three.js geometries, materials, textures, animation frames, timers
+    and audio on `close` and on `pagehide`. Suspend animation and audio on
+    `paused` and while the document is hidden.
+
+    Closing and reopening the immersive view creates a **new iframe**. Restore
+    your visuals from `game.state`, never from module globals that a previous
+    view left behind.
+  </Accordion>
+</AccordionGroup>
+
+## The lobby, in order
+
+RoadVR's shared lobby handles create, join by code, invite, accept and decline,
+ready, start and leave. Your page only deals with game actions, pause and leave.
+
+<Steps>
+  <Step title="Create or join">
+    A lobby carries a six-letter code. Invitations go to **online RoadVR
+    friends** only and reserve a seat for 60 seconds; a decline, an expiry or a
+    closed room releases it again.
+  </Step>
+
+  <Step title="Ready and start">
+    Starting requires the host, the minimum player count, every player present
+    and ready, and no outstanding invitation or seat reservation.
+  </Step>
+
+  <Step title="Play">
+    New participants cannot join after the start — but an away seat that is
+    still reserved can resume during play. Your `onAction` is now the authority
+    on every move.
+  </Step>
+
+  <Step title="Finish">
+    At `finished`, keep the results on screen. Leaving and creating a new lobby
+    is how a rematch happens; v1 does not restart a room in place.
+  </Step>
+</Steps>
+
+### Leaving, pausing and coming back
+
+| Action | Effect |
+|---|---|
+| **Pause** | Local view only. The other players carry on. |
+| **Back to lobby** | Closes the immersive view, keeps the seat. |
+| **Leave game** | Releases the seat immediately. |
+| Headset off / window closed | The participant is marked **away**; another present player can become host. Reopening the lobby resumes the seat while the grace lasts. |
+
+```lua config.lua
+Config.Games = {
+    lobbyMinutes = 15, -- Idle room lifetime in minutes (1-120).
+    awayMinutes = 3,   -- Reconnect grace in minutes (1-30).
+}
+```
+
+Missing settings fall back to defaults, including on a server that kept an older
+`config.lua`.
+
+<Warning>
+  Rooms live in memory. They do **not** survive a restart of RoadVR or of the
+  game resource. Only one external immersive game view can be active per client
+  at a time.
+</Warning>
+
+## Every player has a body
+
+Each shared lobby has a **Customize character** button that opens RoadVR's
+Character Studio. The player saves a look there and returns to the lobby; the
+server loads that saved look on admission and hands it to you in
+`room.players[].appearance` — including on the `player` passed to `onAction`.
+
+```js
+import { createCharacter } from './sdk/character.js'
+
+const character = createCharacter(player.appearance)
+scene.add(character.root)
+
+// From your render loop, with elapsed seconds:
+character.update(elapsedSeconds, { moving: 0, reducedMotion: false })
+```
+
+Use the original RoadVR model rather than maintaining a second character
+implementation. Copy `public/sdk/character.js`, `character.d.ts` and the whole
+`public/sdk/character/` directory into your game's SDK folder — the example
+build does it for you.
+
+<Info>
+  A saved look broadcasts a new room revision to everyone, **including during
+  play**. Update your meshes from the next `state` event. Away seats keep the
+  new look when they return.
+
+  Appearances are copies: game rules cannot change a player's saved character by
+  modifying them. `appearance` is `false` when unavailable, and the model
+  factory accepts that and uses the default look. Account profile pictures stay
+  separate, in `avatar`.
+</Info>
+
+## Checking your work
+
+The example can be rebuilt on its own with `npm install` and `npm run build`
+inside its folder. It bundles Three.js and needs no CDN. Opening its page
+outside RoadVR times out, because there is no SDK host to answer.
+
+For a real two-player browser test from the source checkout:
+
+```sh
+node scripts/build-game-example.mjs
+node scripts/game-review-server.mjs
+```
+
+Open `http://127.0.0.1:5186/game-review.html?player=1` and the same address with
+`player=2`. The fixture uses synthetic friends and runs the **real** Lua lobby,
+registration and example rules through wasmoon. Walk the whole path: create →
+invite → accept → ready both → start → enter both → hit → pause/resume → back to
+lobby → leave. Add `&lang=de` for German. **Customize character** opens the
+actual studio, and fixture saves stay in memory rather than touching the
+database.
+
+```sh
+node scripts/check.mjs
+```
+
+<Warning>
+  Browser evidence does not replace a real FiveM check. Before you ship, verify
+  two players, headset removal, death and vehicle entry, focus restoration, and
+  stopping and restarting the game resource on a running server.
+</Warning>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Game SDK reference" icon="braces" href="/roadvr/api/game-sdk">
+    The browser API in full
+  </Card>
+  <Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
+    A window on the home screen instead of a session
+  </Card>
+  <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
+    Your page on a wall
+  </Card>
+  <Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
+    Questions about integrating
+  </Card>
+</CardGroup>

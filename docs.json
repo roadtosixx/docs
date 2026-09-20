@@ -38,6 +38,8 @@
               "roadvr/environments",
               "roadvr/custom-apps",
               "roadvr/custom-widgets",
+              "roadvr/custom-markers",
+              "roadvr/custom-games",
               "roadvr/faq"
             ]
           },
@@ -121,7 +123,8 @@
             "group": "RoadVR",
             "pages": [
               "roadvr/api/client",
-              "roadvr/api/sdk"
+              "roadvr/api/sdk",
+              "roadvr/api/game-sdk"
             ]
           },
           {

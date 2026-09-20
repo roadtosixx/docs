@@ -7,10 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Product facts (global Road rules load automatically from road-brain):
 # RoadShop documentation
 
-- Mintlify site in `D:/Programmieren/docs` (`docs.json`: primary #50a2ff, dark default, Lucide icons). One folder per product (RoadPhone Pro, RoadVR, RoadPods, RoadBackup, …) plus shared root pages; images in `images/`, logos in `logo/`.
+- Mintlify site in `D:/Programmieren/docs` (`docs.json`: primary #50a2ff, dark default, Lucide icons). Lowercase folder per product (`roadphonepro/`, `roadphone/`, `roadvr/`, `roadpad/`, `roadcarradio/`, `roadpods/`, `roadbackup/`) plus shared root pages; images in `images/`, logos in `logo/`. No RoadWatch or RoadTV pages yet.
+- The nav group still says "RoadPods": customer-facing it must read RoadBuds (keep the `roadpods/` folder so links don't break).
 - Every page: `docs.json` navigation entry + frontmatter `title`, `description`, `icon`. Code blocks labelled with language and file (```lua config.lua). Framework variants in ESX / QBCore / Qbox tabs. Run `mintlify check`.
 - Facts must match the product repos and `products/*.md` (e.g. RoadVR app count differs between docs and shop site — verify in code before writing).
-- The RoadShop logo files live here: `logo/roadshop-logo.svg`, `logo/roadshop-logo-light.svg` (fix its invalid `fill="#00000"`).
+- The RoadShop logo files live here: `logo/roadshop-logo.svg`, `logo/roadshop-logo-light.svg` (the light one has an invalid `fill="#00000"` — fix before use).
 
 ## Project Overview
 

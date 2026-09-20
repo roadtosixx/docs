@@ -1,0 +1,226 @@
+---
+title: 'Custom Markers'
+description: 'Annotate the world itself — labels, arrows, outlines and paths for the player wearing the headset'
+icon: 'map-pin'
+---
+
+# Custom Markers
+
+Call four exports and a label, arrow, outline or path appears in the world for
+the player wearing the headset. There is nothing to register up front — a marker
+exists from the moment you add it.
+
+<Card title="Working example" icon="folder-code">
+  `examples/roadvr_examplemarkers` is a complete, runnable resource. `/track`
+  annotates the nearest vehicle with all four kinds at once, and every line of
+  it is commented.
+</Card>
+
+## What a marker is
+
+An annotation on the world, not a window. It has no buttons, no page and no
+frame — a marker is a shape and, for some kinds, a line of your own text, placed
+at a point, on an entity, or along a line of points.
+
+<Warning>
+  **Only the player in whose client you call the export sees it.** RoadVR holds
+  no state across players and sends nothing to anyone else.
+
+  If a mechanic job should show its marker to every mechanic on duty, that
+  fan-out is your resource's decision, made in your own server-to-client call.
+  RoadVR places a marker; it does not distribute one.
+</Warning>
+
+## The four kinds
+
+| kind | needs | text | notes |
+|---|---|---|---|
+| `label` | `pos` or `entity` | required | Floating text, always facing the player |
+| `arrow` | `pos` or `entity` | optional, shown as a caption | Stands above its point and aims down at it, like a waypoint — never away from the player |
+| `outline` | `entity` | — | A box around the entity, sized and rotated to it automatically |
+| `path` | `points`, at least two `vector3` | — | A line through the points |
+
+`outline` needs nothing but `entity`. RoadVR reads the model's dimensions once
+and turns the box with the entity's heading every frame — you never pass a size.
+
+## Your first marker
+
+Two calls and a vehicle has an outline with a label beside it. This assumes
+`veh` is a vehicle handle you already hold:
+
+```lua client.lua
+local outline, err = exports.roadvr:addRoadVrMarker({
+    kind   = 'outline',
+    entity = veh,
+})
+
+if not outline then
+    print(('outline failed: %s'):format(err))   -- the reason says what is missing
+    return
+end
+
+local label = exports.roadvr:addRoadVrMarker({
+    kind   = 'label',
+    entity = veh,
+    text   = 'Engine: worn serpentine belt',
+})
+
+-- later, when the job is done
+exports.roadvr:removeRoadVrMarker(outline)
+exports.roadvr:removeRoadVrMarker(label)
+```
+
+Both hang on the entity, so RoadVR moves them with the vehicle and drops them by
+itself when it despawns.
+
+<Info>
+  A marker on an **entity** cleans itself up. A marker on **coordinates** does
+  not — nothing but your resource will ever remove it. That difference is the
+  one thing worth keeping in mind while you write the tick that maintains them.
+</Info>
+
+## The four exports
+
+<CodeGroup>
+
+```lua Add
+--- @return string|nil id, string? error
+local id, err = exports.roadvr:addRoadVrMarker({
+    kind         = 'label',      -- 'label' | 'arrow' | 'outline' | 'path'
+    pos          = vec3(0,0,0),  -- a fixed point in the world
+    entity       = veh,          -- or an entity it follows. Never both.
+    points       = { a, b },     -- 'path' only, at least two vector3
+    text         = 'Hello',      -- 'label' needs one, 'arrow' may have one
+    color        = '#ff9f0a',    -- default is the player's accent colour
+    throughWalls = false,        -- behaves like a window
+    fadeDistance = 60.0,         -- metres, capped by Config.Markers.cullDistance
+})
+```
+
+```lua Update
+--- Every field of addRoadVrMarker except kind, which is fixed at creation.
+--- @return boolean ok, string? error
+local ok, err = exports.roadvr:updateRoadVrMarker(id, { text = 'Fixed' })
+```
+
+```lua Remove
+--- @return boolean
+exports.roadvr:removeRoadVrMarker(id)
+```
+
+```lua Clear
+--- All of your own. Not needed on resource stop — that is cleaned up for you.
+--- @return number how many were removed
+local removed = exports.roadvr:clearRoadVrMarkers()
+```
+
+</CodeGroup>
+
+### Fields worth calling out
+
+<ParamField path="kind" type="string" required>
+  **Cannot be patched.** Everything else can — including `entity`, which
+  re-targets an `outline` and measures the new model, and `throughWalls`, which
+  can be flipped after the marker already exists.
+</ParamField>
+
+<ParamField path="pos / entity" type="vector3 / number">
+  A marker has one place, not two. Patching `pos` onto a marker that follows an
+  entity detaches it; patching `entity` onto a fixed one takes its `pos` away.
+  An `outline` lives on its entity and refuses a `pos` outright.
+</ParamField>
+
+<ParamField path="text" type="string">
+  **Your** text, localised by you. RoadVR adds no words of its own to a marker.
+</ParamField>
+
+<ParamField path="fadeDistance" type="number">
+  Metres. Leave it out — or ask for more than `Config.Markers.cullDistance`
+  allows — and you get that ceiling instead. The marker stays fully opaque until
+  80% of its fade distance, then fades to nothing at it.
+</ParamField>
+
+<Note>
+  `removeRoadVrMarker` and `updateRoadVrMarker` return `false` **quietly** on a
+  handle RoadVR does not know. That is deliberate: cleanup after a RoadVR
+  restart calls these on handles that are already gone, and that should not fill
+  the console with warnings.
+</Note>
+
+## When RoadVR restarts
+
+Markers are not persisted and do not survive a RoadVR restart — `ensure roadvr`
+from the console, a crash, a script update.
+
+This is the one pitfall everyone hits once: your resource kept running, the
+vehicle is still there, but the outline and label are simply gone, because
+RoadVR's marker registry started over from empty.
+
+```lua client.lua
+-- Add them again from whatever state you already keep. RoadVR does not
+-- remember your handles either, so there is nothing to reconcile — just add.
+AddEventHandler('onClientResourceStart', function(resource)
+    if resource ~= 'roadvr' then return end
+    restoreMyMarkers()
+end)
+```
+
+## The limits
+
+<ParamField path="Config.Markers.enabled" type="boolean" default="true">
+  `false` switches the whole export surface off — `addRoadVrMarker` then returns
+  `nil` for everyone, not just for you.
+</ParamField>
+
+<ParamField path="Config.Markers.maxPerResource" type="number" default="32">
+  A per-resource ceiling. Go over it and the request is refused, rather than the
+  oldest marker quietly making room.
+</ParamField>
+
+<ParamField path="Config.Markers.cullDistance" type="number" default="120.0">
+  Metres. The server owner's ceiling on `fadeDistance`, and also where a marker
+  stops being drawn at all regardless of what any resource asked for.
+</ParamField>
+
+## If nothing appears
+
+<Steps>
+  <Step title="Is a headset actually on?">
+    A marker draws for the wearer only. Nobody wearing one is nobody seeing one.
+  </Step>
+
+  <Step title="Is Config.Markers.enabled still true?">
+    Check the server's `config.lua` — it is a server-owner switch.
+  </Step>
+
+  <Step title="Read the second return value">
+    A bad definition returns `nil, reason`, and the reason string says which:
+
+    - a missing `entity` on an `outline`
+    - no `text` on a `label`
+    - fewer than two `points` on a `path`
+    - an unknown `kind`
+    - `pos` and `entity` passed together
+    - an `entity` that does not exist — a `0` from `GetVehiclePedIsIn` on a ped
+      who is on foot is the usual one
+    - a `pos` that is not a `vector3`
+    - the resource already holding `Config.Markers.maxPerResource` markers
+  </Step>
+</Steps>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
+    A window on the home screen
+  </Card>
+  <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
+    Your page on a wall
+  </Card>
+  <Card title="Custom Games" icon="gamepad-2" href="/roadvr/custom-games">
+    A multiplayer session with a lobby
+  </Card>
+  <Card title="Client API" icon="code" href="/roadvr/api/client">
+    Every Lua export in one place
+  </Card>
+</CardGroup>

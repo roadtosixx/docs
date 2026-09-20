@@ -357,16 +357,47 @@ something you pass in, so one app cannot close another's window.
   player; taking one off is theirs to do.
 </Note>
 
+## RoadVr.usePointer()
+
+Who draws the pointer inside your page.
+
+```js
+RoadVr.usePointer(false)
+```
+
+Mouse events do not cross a frame boundary: while the mouse is inside your page
+the headset hears nothing from it, so it takes its own dot away rather than
+leave one standing still at your window's edge. The SDK draws that dot inside
+your page instead, and hides the system cursor itself as it does.
+
+<ParamField path="on" type="boolean" default="true">
+  `false` hands the cursor back to your page — for a crosshair, a brush, a game,
+  anything that draws a pointer of its own.
+</ParamField>
+
+<Warning>
+  Do **not** set `cursor: none` in your CSS instead. Without the SDK loaded the
+  system cursor is all your players have to aim with, and hiding it leaves them
+  aiming blind.
+</Warning>
+
 ## What the SDK cannot do
 
-By design, this version is **read plus events, plus two actions** — closing
-your own window and hanging buttons in its ornament. There is no way to play a
-sound, post a notification into the control centre, resize your own window, or
-open another app. Nor does it hand out game data — vehicle, health, position
-and the rest belong in your own Lua, and RoadVR is not a general game API.
+By design, this version is **read plus events, plus three actions** — closing
+your own window, hanging buttons in its ornament, and handing back the pointer.
+There is no way to play a sound, post a
+notification into the control centre, resize your own window, or open another
+app. Nor does it hand out game data — vehicle, health, position and the rest
+belong in your own Lua, and RoadVR is not a general game API.
 
 The message protocol is built so those can be added later without breaking
 anything already written against it.
+
+<Note>
+  A **game** connects through a different SDK. `RoadVrGame` covers the shared
+  room, the state every participant sees and the actions your page submits for
+  judgement — see the [Game SDK](/roadvr/api/game-sdk).
+</Note>
 
 ## Related
 
@@ -377,10 +408,10 @@ anything already written against it.
   <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
     Getting your page onto a wall
   </Card>
+  <Card title="Game SDK" icon="gamepad-2" href="/roadvr/api/game-sdk">
+    The other browser API, for multiplayer games
+  </Card>
   <Card title="Client API" icon="code" href="/roadvr/api/client">
     The Lua half
-  </Card>
-  <Card title="Discord Support" icon="discord" href="https://discord.gg/2nZrmmvM2q">
-    Questions about integrating
   </Card>
 </CardGroup>

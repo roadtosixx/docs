@@ -14,35 +14,54 @@ can move, resize and push away. **Widgets** stick into a wall and stay there.
 Press `F7` for the home screen and every app is one tile.
 
 <Note>
-  Two of the ones below are **not** tiles on the home screen: the **Cockpit**
-  and the **HUD** belong to the car and come up when you drive. A handful of
-  others — the single-photo viewer, the cinema bar — are opened by the app that
-  owns them rather than by you.
+  Two of the ones below are **not** tiles on the home screen: **Vehicle** and
+  the **Head-up display** belong to the car and come up when you drive. A
+  handful of others — the single-photo viewer, the cinema bar — are opened by
+  the app that owns them rather than by you.
 </Note>
+
+<Tip>
+  Hold an app, or press **Edit**, and drag tiles into your own order across
+  pages. The arrangement is saved per character; **Reset order** returns to
+  favourites first, then recent apps.
+</Tip>
 
 <CardGroup cols={3}>
   <Card title="Settings" icon="settings">
-    Theme, accent colour, interface language, default anchor. Each player's
-    own — a server setting does not override it.
+    Theme, accent colour, interface language, default anchor, and the **App
+    icons** tab — icon packs, round or square, glass on or off. Each player's
+    own; a server setting does not override it.
   </Card>
   <Card title="Control Centre" icon="sliders-horizontal">
-    One key for the things you reach for constantly: what is playing, what came
-    in, whether windows follow you, which environment is on.
+    One key for the things you reach for constantly: what came in, whether
+    windows follow you, which environment is on.
   </Card>
-  <Card title="Media" icon="music">
-    YouTube in a window, with the remote in the control centre. Ships as its
-    own resource in `examples/roadvr_mediaapp` — `ensure` it and it takes its
-    place on the home screen like any other app.
+  <Card title="Character studio" icon="user">
+    Build the character other players see: skin, eyes, hair, beard, glasses,
+    earrings, headphones, three outfits, and sliders for height, build and
+    face. The preview is the real 3D model. Saved per character.
   </Card>
-  <Card title="My Car" icon="car">
+  <Card title="Vehicles" icon="car">
     Your vehicle, plus **Valet** — have it brought to you.
   </Card>
-  <Card title="GPS" icon="map">
+  <Card title="Map" icon="map">
     A 3D map table you can lean over, not a flat minimap.
+  </Card>
+  <Card title="Destinations" icon="navigation">
+    Save places, find your way back, and meet friends at one.
+  </Card>
+  <Card title="Spaces" icon="layout-dashboard">
+    Save a room and open it again later. **Take anywhere** brings your windows,
+    nearby widgets and environment with you; **Stay here** reopens at its saved
+    location.
   </Card>
   <Card title="Environments" icon="image">
     Replaces the world around you with a panorama. Ships without images — see
     [Environments](/roadvr/environments).
+  </Card>
+  <Card title="Friends" icon="users">
+    Your RoadVR account tag, who is online, and the profile picture other
+    players see.
   </Card>
   <Card title="Weather" icon="cloud-sun">
     In-game weather, wind, sunrise and sunset.
@@ -67,11 +86,37 @@ Press `F7` for the home screen and every app is one tile.
   <Card title="Drone" icon="plane">
     Fly a drone and watch its camera feed in a window.
   </Card>
-  <Card title="Cockpit" icon="gauge">
+  <Card title="Vehicle" icon="gauge">
     Instruments that hang in front of you while you drive.
   </Card>
-  <Card title="HUD" icon="monitor">
+  <Card title="Head-up display" icon="monitor">
     A compact status strip in your field of view.
+  </Card>
+</CardGroup>
+
+### Games
+
+<CardGroup cols={3}>
+  <Card title="Minigolf" icon="flag">
+    Twelve holes for up to six players in a private room with a six-letter
+    code. The course opens full size in first person — walk, aim, hold and
+    release to putt, and everyone watches the same authoritative ball path.
+    `Config.Minigolf`.
+  </Card>
+  <Card title="Chess" icon="crown">
+    A private room against a friend or the computer at three strengths. The
+    host lays a 3D board on a table, a car roof or the ground, and everyone
+    sees it at that spot in the world. The rules and the engine live in Lua and
+    the server validates every move. `Config.Chess`.
+  </Card>
+  <Card title="Beat" icon="music">
+    Four difficulties up to Expert, with walls, stacks and a Modifiers panel
+    that changes the rules of a solo run. Each track carries its own room
+    colours.
+  </Card>
+  <Card title="Arena" icon="crosshair">
+    Build a squad, choose a class and take the arena. Lobby code, team
+    deathmatch, friend invitations.
   </Card>
   <Card title="Basketball" icon="circle-dot">
     Place a hoop and shoot.
@@ -79,8 +124,16 @@ Press `F7` for the home screen and every app is one tile.
 </CardGroup>
 
 <Info>
+  Games written by other resources appear in the same launcher, with RoadVR
+  providing the lobby, invitations and character models. See [Custom
+  Games](/roadvr/custom-games).
+</Info>
+
+<Info>
   Apps written by other resources appear on the same home screen, next to
-  these. See [Custom Apps](/roadvr/custom-apps).
+  these. See [Custom Apps](/roadvr/custom-apps) — and [Custom
+  Markers](/roadvr/custom-markers) for annotating the world itself, which needs
+  no app at all.
 </Info>
 
 ## Widgets
