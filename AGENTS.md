@@ -62,3 +62,10 @@ icon: 'lucide-icon-name'
 - Icons use the **Lucide** icon library.
 - Code blocks use language tags with optional labels: `` ```lua config.lua ``, `` ```cfg server.cfg ``.
 - Product docs consistently use tabs for framework-specific config (ESX vs QBCore vs Qbox).
+
+## Road Brain project context
+
+Read the relevant rule files before working in this project:
+- D:/Programming/road-brain/rules/web.md
+- D:/Programming/road-brain/rules/brand.md
+- D:/Programming/road-brain/products/docs.md (product facts, when this profile exists)

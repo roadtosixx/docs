@@ -7,7 +7,7 @@ icon: 'code'
 ## Overview
 
 RoadPhone can load your own web app inside the phone and exposes a global
-`window.roadphone` API (**v1.3.0**) with access to phone data, native UI,
+`window.roadphone` API (**v1.4.0**) with access to phone data, native UI,
 storage, permissions, events, and a server RPC bridge.
 
 This page covers the whole lifecycle:
@@ -25,7 +25,12 @@ This page covers the whole lifecycle:
 
 ## RoadPhone Fold compatibility
 
-RoadPhone Fold is included with Pro and uses the same custom-app registration and `window.roadphone` API. The current custom-app route stays in a centered phone-width column when Fold is unfolded. There is no public SDK method or Lua export for directly setting Fold state. See [Fold integration](/roadphonepro/fold#integration-and-exports).
+RoadPhone Fold is included with Pro and uses the same custom-app registration
+and API. Your app fills the available display or multitasking pane. Since API
+**1.4.0**, `rp.display.attach(window)` provides layout classes, stable sizing
+units and safe-area insets for one resource across all phone models. See
+[responsive layouts](#responsive-phone-and-fold-layouts-since-140) and
+[Fold integration](/roadphonepro/fold#integration-and-exports).
 
 ## Registering Your App (config.json)
 
@@ -213,6 +218,74 @@ renderWeather(lastCity)
 rp.on('appOpened', ({ app }) => app === 'custom_app:weather-pro' && refresh())
 rp.on('darkModeChanged', applyTheme)
 ```
+
+## Responsive phone and Fold layouts (since 1.4.0)
+
+Keep **one resource, one HTML entry point and one set of app state** for all
+devices. The display API measures your own iframe, including its size in a
+multitasking pane. Folding or rotating updates the layout without reloading
+the app or replacing form fields.
+
+```javascript html/js/app.js
+const rp = window.parent.roadphone
+// Older RoadPhone versions keep your CSS fallback.
+const display = rp.display?.attach(window)
+const stop = display?.subscribe(state => {
+  // Called immediately, then only when the display changes.
+  resizeChart(state.width, state.height)
+})
+// stop() removes this callback; iframe unload cleans up the connection.
+// display.destroy() explicitly disconnects all display observers/listeners.
+```
+
+`rp.hasFeature('responsiveDisplay')` detects support. `rp.display.get(window)`
+returns a fresh snapshot without subscribing or changing CSS. Always pass
+your iframe's `window`; simultaneous custom apps have separate measurements.
+
+| Field | Meaning |
+| --- | --- |
+| `width`, `height` | Iframe viewport in CSS pixels |
+| `unit` | One percent of the ordinary phone's reference height; follows phone size and resolution, independently of folding/rotation |
+| `layout` | `compact` below 68 units wide, `medium` from 68, `expanded` from 88 |
+| `heightClass` | `compact` below 60 units high, otherwise `regular` |
+| `orientation` | This app's available area: `portrait` or `landscape` |
+| `formFactor`, `unfolded` | `phone` or `fold`, and whether the Fold is open |
+| `split`, `pane` | Multitasking state; `top`, `bottom`, or `null` |
+| `safeArea` | Remaining `top`, `right`, `bottom`, `left` insets in iframe CSS pixels |
+
+`attach` sets `--rp-width`, `--rp-height`, `--rp-unit` and
+`--rp-safe-top/right/bottom/left` on your document root. It also sets
+`data-rp-layout`, `data-rp-height`, `data-rp-orientation`, `data-rp-device`,
+`data-rp-unfolded` and `data-rp-pane` (`full` outside multitasking).
+The host already excludes the Fold's side controls from the iframe width;
+do not reserve that space again.
+
+```css html/css/app.css
+:root { font-size: var(--rp-unit, 1vh); }
+html, body { width: 100%; height: 100%; margin: 0; }
+body { font-size: 2rem; }
+.screen {
+  box-sizing: border-box;
+  height: 100%;
+  overflow-y: auto;
+  padding: calc(var(--rp-safe-top, 6rem) + 1rem) 2rem
+    calc(var(--rp-safe-bottom, 2rem) + 1rem);
+}
+.cards { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
+html:is([data-rp-layout="medium"], [data-rp-layout="expanded"]) .cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+```
+
+Use `rem` for text, gaps and controls after setting the root size above.
+Use percentages, grid and flex for the page structure. Avoid scaling the whole
+body or tying text to `vh`: landscape otherwise shrinks text, while scaling by
+width makes Fold controls oversized. Select layouts by **available width**;
+an open Fold's split pane may still need the compact layout.
+
+The bundled **Custom App Demo** shows live measurements. Police MDT,
+Warnings, Reports, C-Net and Casino use this API in their existing resources.
+No Fold-specific resource or second app registration is needed.
 
 ## Getter Functions
 
@@ -816,6 +889,7 @@ window.roadphone.minVersion('1.3.0')
 | `bankRead` | 1.3.0 | `bank.getBalance/getIban/getAccounts` |
 | `alarmsAccess` | 1.3.0 | `alarms.list/create/delete` |
 | `lifecycleEvents` | 1.3.0 | `appOpened/appClosed/incomingCall/callEnded/...` |
+| `responsiveDisplay` | 1.4.0 | `display.attach/get`, layout classes, CSS sizing variables and change subscriptions |
 
 ## Permissions
 
@@ -1469,12 +1543,20 @@ ensure my-custom-app
     [`claimPhoto()`](#claimphoto).
   </Accordion>
 
-  <Accordion title="Size in vh, not px" icon="ruler">
-    RoadPhone scales the phone with CSS `zoom`, so the iframe's viewport grows
-    and shrinks with the player's phone-size setting. A `px` layout doesn't
-    follow — at 150% the text stays small while the screen around it grows.
-    Use `vh`: inside the iframe, `1vh` = 1% of the phone screen, whatever size
-    it currently is.
+  <Accordion title="Foldable layout" icon="tablet">
+    Folding and rotating resize the existing iframe without reloading it.
+    Call `rp.display.attach(window)` and use `data-rp-layout` to choose a layout
+    for the available width, including split panes. The host reserves the Fold
+    control rail; `safeArea` provides the remaining status and home bar insets.
+    See [responsive layouts](#responsive-phone-and-fold-layouts-since-140).
+  </Accordion>
+
+  <Accordion title="Stable text and control sizes" icon="ruler">
+    Set `:root { font-size: var(--rp-unit, 1vh); }` and use `rem` for text,
+    spacing and controls. The API keeps this unit stable when folding or
+    rotating, while the phone's size setting still scales the whole app.
+    Use flexible grids and percentages for content widths. Plain iframe `vh`
+    shrinks text on short displays; scaling by width enlarges it on the Fold.
   </Accordion>
 </AccordionGroup>
 
@@ -1482,7 +1564,7 @@ ensure my-custom-app
 
 Here's a complete example of a custom app that displays player information. This app is designed to fit perfectly within the phone's iframe.
 
-```html
+```html html/index.html
 <!DOCTYPE html>
 <html>
 <head>
@@ -1512,11 +1594,13 @@ Here's a complete example of a custom app that displays player information. This
       scrollbar-width: none;
     }
 
-    /* Size in vh: the phone scales with CSS zoom, so 1vh = 1% of the
-       phone screen at every phone-size setting. px would not scale. */
+    :root {
+      font-size: var(--rp-unit, 1vh);
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
-      font-size: 1.6vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF-Pro', sans-serif;
+      font-size: 2rem;
       transition: background-color 0.3s, color 0.3s;
     }
 
@@ -1533,25 +1617,27 @@ Here's a complete example of a custom app that displays player information. This
     .app-container {
       width: 100%;
       height: 100%;
-      padding: 1.4vh;
-      padding-top: 5vh; /* Space for phone status bar */
+      max-width: 88rem;
+      margin-inline: auto;
+      padding: calc(var(--rp-safe-top, 6rem) + 1rem) 2rem
+        calc(var(--rp-safe-bottom, 2rem) + 1rem);
       overflow-y: auto;
     }
 
     .header {
-      text-align: center;
-      padding: 1vh 0 1.8vh;
+      text-align: left;
+      padding: 1rem 0 1.8rem;
     }
 
     .header-title {
-      font-size: 2.2vh;
+      font-size: 3.2rem;
       font-weight: 700;
     }
 
     .card {
-      border-radius: 1.4vh;
-      padding: 1.6vh;
-      margin-bottom: 1.2vh;
+      border-radius: 1.4rem;
+      padding: 1.6rem;
+      margin-bottom: 1.2rem;
       text-align: left;
     }
 
@@ -1564,28 +1650,28 @@ Here's a complete example of a custom app that displays player information. This
     }
 
     .label {
-      font-size: 1.2vh;
+      font-size: 1.6rem;
       color: #86868b;
       text-transform: uppercase;
-      letter-spacing: 0.05vh;
-      margin-bottom: 0.5vh;
+      letter-spacing: 0.05rem;
+      margin-bottom: 0.5rem;
     }
 
     .value {
-      font-size: 1.8vh;
+      font-size: 2rem;
       font-weight: 600;
     }
 
     .button {
       width: 100%;
-      padding: 1.4vh;
+      padding: 1.4rem;
       border: none;
-      border-radius: 1.2vh;
-      font-size: 1.6vh;
+      border-radius: 1.2rem;
+      font-size: 2rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      margin-top: 1.8vh;
+      margin-top: 1.8rem;
       background: #007aff;
       color: #ffffff;
     }
@@ -1624,6 +1710,7 @@ Here's a complete example of a custom app that displays player information. This
   <script>
     // Access the API from the parent window (since we're in an iframe)
     const roadphone = window.parent.roadphone
+    roadphone?.display?.attach(window)
 
     function init() {
       // Check if API is available
@@ -1719,6 +1806,16 @@ starting point for your own app — it's MIT licensed.
 | `on(event, callback)` | `void` | Subscribe to an event |
 | `off(event, callback)` | `void` | Unsubscribe from an event |
 
+### Responsive display (1.4.0)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `display.attach(window)` | `DisplayConnection` | Apply CSS variables and layout attributes; observe this iframe |
+| `display.get(window)` | `DisplayState` | Read current dimensions, layout and safe-area insets without attaching |
+| `connection.get()` | `DisplayState` | Read the latest state from an attached connection |
+| `connection.subscribe(callback)` | `Function` | Notify immediately and on changes; returns an unsubscribe function |
+| `connection.destroy()` | `void` | Remove the connection's observers and listeners |
+
 ### Version & identity (1.3.0)
 
 | Function | Returns | Description |
@@ -1788,12 +1885,17 @@ starting point for your own app — it's MIT licensed.
 | `notificationReceived` | `{ appTitle, title, message, icon }` | 1.3.0 | Banner shown |
 
 <Card title="Version" icon="tag">
-  Current API Version: **1.3.0**
+  Current API Version: **1.4.0**
 
   Access via: `window.roadphone.version`
 
   **Changelog**
 
+  - **1.4.0**
+    - Added `display.attach(window)` and `display.get(window)` for per-app viewport and layout information
+    - Added stable sizing units, safe-area CSS variables and responsive layout attributes
+    - Added display subscriptions for folding, rotation and split-pane changes without reloading the app
+    - Updated all six bundled custom-app examples to adapt within their existing resources
   - **1.3.0**
     - Added **Version & feature negotiation**: `version`, `hasFeature`, `requireFeature`, `minVersion`
     - Added **App identity**: `app.setName/setNamespace/getName/getNamespace`
