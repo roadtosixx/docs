@@ -1,0 +1,170 @@
+---
+title: 'FAQ'
+description: 'Common questions and problems with Road Minigolf'
+icon: 'badge-info'
+---
+
+# FAQ
+
+## Installation
+
+<AccordionGroup>
+  <Accordion title="Where do I enter my transaction ID?">
+    Nowhere. Road Minigolf has no license key step and no `API.lua`. You
+    download it from the [cfx.re Portal](/license-system) and start it.
+  </Accordion>
+
+  <Accordion title="Do I have to import an SQL file?">
+    No. Road Minigolf has no database. Courses, leaderboards and statistics are
+    JSON files in `road_minigolf/data/`. See
+    [Data files](/roadminigolf/configuration#data-files).
+  </Accordion>
+
+  <Accordion title="Can I rename the resource?">
+    No. The folder must stay `road_minigolf`. The track kit and the demo map are
+    streamed from it, and other scripts call its exports by this name.
+  </Accordion>
+
+  <Accordion title="Which frameworks are supported?">
+    ESX, QBCore, Qbox and standalone. The framework is detected automatically
+    and used for character names, entry fees, rewards and admin groups.
+    Without a framework, everything except money works out of the box; for
+    money on other economies add your own
+    [money functions](/roadminigolf/configuration#custom-money-functions).
+  </Accordion>
+
+  <Accordion title="Do I need OneSync?">
+    It is recommended. The start guards (distance and vehicle checks), invites
+    of nearby players, lobby announcements and the bystander view read player
+    positions on the server and need OneSync. Without it these checks are
+    skipped and everything else works.
+  </Accordion>
+
+  <Accordion title="Will an update overwrite my config or my courses?">
+    No. `config.lua` and `config.server.lua` keep their values: new keys get
+    their defaults from `shared/defaults.lua`. Your courses live in `data/`.
+    When you update, keep your `data/` folder and do not copy the empty one from
+    the download over it.
+  </Accordion>
+</AccordionGroup>
+
+## Track kit and map
+
+<AccordionGroup>
+  <Accordion title="The track kit pieces are invisible or players fall through them">
+    The kit is streamed from `stream/` and registered by the
+    `data_file 'DLC_ITYP_REQUEST' 'stream/road_minigolf_kit.ytyp'` line in
+    `fxmanifest.lua`. Keep both, keep the resource name `road_minigolf`, and
+    restart the whole resource (not just `refresh`) after an update. Clients
+    need to download the stream files once.
+  </Accordion>
+
+  <Accordion title="The SkyGarden roof clashes with another map">
+    SkyGarden replaces the roof models of the Rockford Plaza mall. Another map
+    that replaces the same files conflicts with it.
+    [Leave the demo out](/roadminigolf/demo-map#leaving-the-demo-out) if you
+    already run a map there.
+  </Accordion>
+
+  <Accordion title="I deleted the demo course and want it back">
+    Open the editor → course list → **Admin** → **Deleted courses** and restore
+    it. A deleted demo is never installed again by itself.
+  </Accordion>
+
+  <Accordion title="A prop from the catalog is missing in the editor">
+    Models a game build does not have are hidden automatically. Many catalog
+    props come from the stunt DLCs (`stt_prop_*`).
+  </Accordion>
+</AccordionGroup>
+
+## Admins and the editor
+
+<AccordionGroup>
+  <Accordion title="F7 does nothing">
+    Only admins can open the editor. Check that you have the ACE
+    `minigolf.admin`, one of the ESX groups or QBCore permissions in
+    `Config.Permission`, or that your identifier is listed in
+    `config.server.lua`. Also check that no other resource took **F7**: the key
+    can be rebound under *Settings → Key Bindings → FiveM*, and `/mgedit` always
+    works.
+  </Accordion>
+
+  <Accordion title="Qbox admins are not recognised">
+    Qbox uses ACE groups. Either keep
+    `add_ace group.admin minigolf.admin allow` in `server.cfg` (works on every
+    framework) or make sure your admins are in `group.admin` / `group.god`,
+    which `Config.Permission.qbPermissions` checks.
+  </Accordion>
+
+  <Accordion title="The editor tool keys 1–6 clash with my inventory or another script">
+    They are FiveM key mappings. Rebind them under
+    *Settings → Key Bindings → FiveM* ("Minigolf editor: …"), or change the
+    server defaults in `Config.Editor.keys`. The hint bar always shows the
+    bound key.
+  </Accordion>
+
+  <Accordion title="Players cannot find my new course">
+    New courses are unpublished. Publish them in the editor's General tab or
+    with the button in the course list. To publish new courses automatically on
+    their first save, set `Config.Editor.publishNewCourses = true`.
+  </Accordion>
+
+  <Accordion title="Saving reset my leaderboard">
+    The leaderboard starts over when the number of playable holes or the total
+    par changes, because old scores would not be comparable. The editor asks
+    before such a save, and the old board is archived in `scores-*.json`.
+  </Accordion>
+
+  <Accordion title="Courses or scores are not saved">
+    The server must be able to write `road_minigolf/data/`. The console prints
+    which file could not be written. While both copies of a store are
+    unreadable, saving that store stays disabled on purpose, so nothing good
+    gets overwritten.
+  </Accordion>
+</AccordionGroup>
+
+## Playing
+
+<AccordionGroup>
+  <Accordion title="Players cannot start a game">
+    Players have to stand at the course start
+    (`Config.Game.startDistance`, 50 m) and be out of their vehicle. Your
+    `OpenHooks.CanPlay` hooks may also block dead, cuffed or jailed players.
+    Unpublished courses can only be played solo by admins.
+  </Accordion>
+
+  <Accordion title="Nearby players are missing in the invite list">
+    Nearby invites need OneSync. `/mginvite <server id>` works without it.
+  </Accordion>
+
+  <Accordion title="A player got the stroke limit although the ball dropped">
+    The server only accepts a holed ball when it counted a shot for that hole
+    and the ball had time to roll (`Config.AntiCheat.minRollMs`, and the
+    tee-to-cup distance for a hole-in-one). Very short tap-ins on a laggy
+    connection can trip this; lower `minRollMs` if it happens often.
+  </Accordion>
+
+  <Accordion title="Why was no reward paid?">
+    The results screen says why. Rewards are paid only when every hole was
+    holed, not during the cooldown per player and course
+    (`Config.Economy.rewardCooldownMin`), not for rounds faster than
+    `minSecondsPerHole` per hole, and the win reward only to a sole winner.
+  </Accordion>
+
+  <Accordion title="The putter meets the ball too early or too late">
+    Tune it with `/mgputter` while you address a ball in a test, practice or
+    solo round, then add the printed lines to `config.lua`. See
+    [Putting stance](/roadminigolf/configuration#putting-stance-and-ball-physics).
+  </Accordion>
+
+  <Accordion title="The player keeps their weapon in hand">
+    The weapon is put away for the putter and given back after the round. With
+    ox_inventory the inventory manages weapons itself.
+  </Accordion>
+</AccordionGroup>
+
+## Still stuck?
+
+<Card title="Discord" icon="message-circle" href="https://discord.gg/2nZrmmvM2q">
+  Open a ticket on our Discord
+</Card>

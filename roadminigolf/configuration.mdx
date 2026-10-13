@@ -1,0 +1,383 @@
+---
+title: 'Configuration'
+description: 'config.lua, config.server.lua, hooks and data files of Road Minigolf'
+icon: 'settings'
+---
+
+# Configuration
+
+Road Minigolf has two config files and two hook files. None of them is
+overwritten by an update.
+
+| File | Sent to players | What it holds |
+|---|---|---|
+| `config.lua` | Yes | The settings servers usually change |
+| `config.server.lua` | **No** | Admin identifiers, money functions, society account, Discord webhooks |
+| `server/open.lua` | No | Server hooks: who may play, what happens on anti-cheat flags |
+| `client/open.lua` | Yes | Client hooks: who may play, custom notifications |
+
+<Info>
+  `config.lua` only lists what servers usually change. Every other value (ball
+  physics, putting stance, camera feel, editor tools, timings) has its default
+  in `shared/defaults.lua`. To change one, copy the key into the matching table
+  of `config.lua`. Keys missing from `config.lua` always use the defaults, so
+  an update never breaks an older config.
+</Info>
+
+## General
+
+```lua config.lua
+Config.Locale = 'en'          -- 'en', 'de', 'fr', 'es', 'it', 'nl', 'pl', 'pt', 'tr', 'cs', 'ru', 'el' or 'zh'
+Config.Debug = false
+```
+
+## Permissions
+
+A player is admin (editor, import/export, admin commands) when **any** check
+matches.
+
+```lua config.lua
+Config.Permission = {
+    ace = 'minigolf.admin',
+    esxGroups = { 'admin', 'superadmin' },
+    qbPermissions = { 'admin', 'god' }, -- QBCore permissions; on Qbox the ACE group of the same name
+}
+```
+
+<Tabs>
+  <Tab title="ACE (every framework)">
+    ```cfg server.cfg
+    add_ace group.admin minigolf.admin allow
+    ```
+  </Tab>
+  <Tab title="ESX">
+    Players in one of the `esxGroups` are admins. Default: `admin`,
+    `superadmin`.
+  </Tab>
+  <Tab title="QBCore">
+    Players with one of the `qbPermissions` are admins. Default: `admin`,
+    `god`.
+  </Tab>
+  <Tab title="Qbox">
+    Qbox uses ACE groups: players in `group.admin` or `group.god` are admins.
+    The ACE line above works as well.
+  </Tab>
+  <Tab title="Identifiers / own check">
+    In `config.server.lua`:
+
+    ```lua config.server.lua
+    Server.Permission = {
+        identifiers = { 'license:abc…', 'discord:123…' },
+        custom = function(source) return false end, -- your own check
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Keys and commands
+
+```lua config.lua
+Config.Keys = {
+    editor = 'F7',
+    scoreboard = 'Z',     -- hold
+    gameMenu = 'F9',
+    accept = 'Y',         -- accept an invite or rematch offer
+    decline = 'BACK',     -- Backspace
+}
+```
+
+These are the **defaults** of FiveM key mappings. Players can rebind every key
+under *Settings → Key Bindings → FiveM*. The editor tool keys 1–6 are in
+`Config.Editor.keys`.
+
+Every command name can be changed in `Config.Commands`. See
+[Commands & Keybinds](/roadminigolf/commands).
+
+## Notifications
+
+```lua config.lua
+Config.NotifyProvider = 'auto'
+```
+
+| Value | Result |
+|---|---|
+| `'auto'` | ox_lib, okokNotify, mythic_notify, QBCore or ESX notifications when one is running, else the built-in ones |
+| `'nui'` | The built-in notifications |
+| `'native'` | GTA's own notifications |
+| `'ox_lib'`, `'okokNotify'`, `'mythic_notify'`, `'qb'`, `'esx'` | Always this one |
+
+For any other script, set `Config.Notify = function(message, kind) … end` in
+`config.lua` or use the `OpenHooks.Notify` [client hook](#client-hooks). The
+order is `Config.Notify`, then `OpenHooks.Notify`, then `Config.NotifyProvider`.
+
+## World
+
+```lua config.lua
+Config.World = {
+    streamDistance = 300.0,           -- m around a course in which its props exist
+    interaction = 'marker',           -- 'marker', 'ox_target' or 'qb-target'
+    startMarker = { type = 1, r = 48, g = 209, b = 88, a = 110, scale = 1.2 },
+    defaultBlip = { enabled = true, sprite = 109, color = 2, scale = 0.85, shortRange = true },
+    showBystanderBalls = true,        -- players near a running game see its balls
+    protectArea = true,               -- no ambient scenario peds on spawned courses
+    protectPeds = true,               -- no new ambient peds on the nearest spawned course
+    protectVehicleGenerators = true,  -- no parked or generated vehicles on spawned courses
+}
+```
+
+Each course can have its own blip sprite and colour, set in the editor's
+General tab.
+
+## Game
+
+```lua config.lua
+Config.Game = {
+    defaultPowerMode = 'timing',      -- 'timing' or 'drag' (Precision); players pick their own
+    ballCamera = true,                -- default of the player setting
+    showPlayerNamesOnBalls = true,    -- default of the player setting
+    holeIntroMs = 3000,               -- cup-to-tee flyover with the hole card, 0 = off
+    teleportToTee = true,
+    moveToBall = 'walk',              -- 'walk', 'teleport' or 'none'
+    maxStrokes = 10,                  -- per hole; courses can override
+    outOfBoundsPenalty = 1,
+    resetPenalty = 1,                 -- strokes for putting an unplayable ball back
+    holeTimeLimit = 180,              -- s per hole, 0 = off; courses can override
+    defaultMode = 'free',             -- lobby default: 'free' (everyone at once) or 'turns'
+    defaultOobMode = 'bounds',        -- new courses: 'bounds' (play area) or 'lane' (off the course props)
+    practiceMode = true,              -- players may practise single holes (no score, no money)
+    lobbyRules = { minStrokes = 3, maxStrokes = 15, minTime = 0, maxTime = 600 },
+    startDistance = 50.0,             -- m from the course start to open, join or start a game
+    lobbyLeaveDistance = 60.0,        -- m from the course start before a lobby member leaves, 0 = off
+    turnIdleTimeout = 90,             -- s without a shot before an idle player is moved on (turns mode), 0 = off
+    announceLobbies = true,           -- tell players near the course start about new lobbies
+}
+```
+
+## Economy
+
+Entry fees and rewards need ESX, QBCore, Qbox or your own money functions.
+Each course can override the fee and rewards in the editor.
+
+```lua config.lua
+Config.Economy = {
+    enabled = true,
+    useCharacterNames = true,
+    account = 'money',                -- ESX 'money'/'bank', QBCore/Qbox 'cash'/'bank'
+    defaultEntryFee = 0,
+    defaultFinishReward = 0,
+    defaultWinReward = 0,             -- extra for the sole winner of a game with 2+ players
+    rewardCooldownMin = 30,           -- per player and course
+    minSecondsPerHole = 5,            -- faster rounds pay no rewards
+    prizePot = false,                 -- true: the entry fees of a game go to its sole winner (ties split them)
+}
+```
+
+<Note>
+  `'money'` and `'cash'` mean the same wallet: the script maps one to the other
+  for the framework it finds.
+</Note>
+
+How money is handled:
+
+- Rewards are paid only for rounds where every hole was holed. The win reward
+  goes only to a sole winner (ties get none).
+- A cooldown per player and course (`rewardCooldownMin`) and a minimum round
+  duration (`minSecondsPerHole`) apply.
+- Entry fees are refunded whenever a game is cancelled.
+
+### Society account
+
+Entry fees of every finished game can go to a business account. Set it in
+`config.server.lua`:
+
+```lua config.server.lua
+Server.Economy = {
+    custom = nil,
+    society = 'society_minigolf',
+}
+```
+
+ESX addon accounts, qb-management, qbx_management and okokBanking are supported
+through the bundled bridge. With `prizePot = true` the fees go to the winner
+instead.
+
+### Custom money functions
+
+For any other economy, add your own functions in `config.server.lua`:
+
+```lua config.server.lua
+Server.Economy = {
+    custom = {
+        canPay = function(src, amount) return true end,
+        removeMoney = function(src, amount, reason) return true end, -- may wait for a database call
+        addMoney = function(src, amount, reason) return true end,
+        addSocietyMoney = function(account, amount, reason) return true end,
+    },
+    society = nil,
+}
+```
+
+## Anti-cheat
+
+The server is the referee: it counts the shots, a "holed" ball needs a counted
+shot and a plausible roll time, and the round is scored against the course
+layout captured at the start.
+
+```lua config.lua
+Config.AntiCheat = {
+    enabled = true,
+    minRollMs = 300,                  -- ms a holed ball must have rolled after the last shot
+    skipLeaderboardOnFlag = true,     -- flagged rounds do not enter the leaderboard
+}
+```
+
+<Info>
+  Flags **never punish on their own**. They fire the local server event
+  `road_minigolf:server:suspicious`, the `OpenHooks.OnSuspicious` hook and a
+  Discord log. Ban or warn there if you want to.
+</Info>
+
+## Discord logs
+
+Turn logging on in `config.lua` and put one webhook URL per category into
+`config.server.lua`. A category without a URL logs nothing.
+
+```lua config.lua
+Config.Logs = {
+    enabled = true,
+    categories = { admin = true, economy = true, anticheat = true, records = true },
+}
+```
+
+```lua config.server.lua
+Server.Logs = {
+    webhooks = {
+        admin = '',       -- course saves, deletes, imports, exports, score resets, publishing
+        economy = '',     -- entry fees, refunds, rewards
+        anticheat = '',   -- suspicious hole reports and ball positions
+        records = '',     -- course and hole records, holes-in-one
+    },
+    username = 'Minigolf',
+}
+```
+
+Every entry carries the player's identifier. Entries are queued and sent in
+batches, within Discord's rate limit.
+
+## Editor
+
+```lua config.lua
+Config.Editor = {
+    maxHoles = 36,
+    maxProps = 600,
+    maxCourses = 100,
+    allowCustomModels = true,         -- free model names besides the catalog
+    blockedModels = {},
+    keys = { quickBuild = '1', drawPath = '2', testHole = '3', cursor = '4', camera = '5', focus = '6' },
+    defaultHoleBounds = 45.0,         -- m radius around a hole the ball must stay in
+    publishNewCourses = false,        -- new courses are playable right after the first save
+    historySize = 10,                 -- saved revisions kept per course for restoring
+    trashSize = 20,                   -- deleted courses kept for restoring
+    demoCourses = true,               -- install the SkyGarden demo course
+}
+```
+
+`Config.PropCatalog` holds the editor's prop catalog. See
+[Track Kit → Other props](/roadminigolf/track-kit#other-props).
+
+## Sounds
+
+`Config.Sounds` lists the GTA sounds for hits, the cup, walls, water, birdie,
+eagle, records, the finish, errors, the countdown and lip-outs. Set one to
+`false` to turn it off.
+
+```lua config.lua
+Config.Sounds.countdown = false
+```
+
+## Putting stance and ball physics
+
+The putting stance (`Config.Anim`), the putter offset and the ball physics
+(`Config.Physics`) have their defaults in `shared/defaults.lua`.
+
+If the putter meets the ball too early or too late on your server, tune it live:
+address a ball in a test, practice or solo round and type `/mgputter`. Change
+the values with the arrow keys and **PgUp / PgDn**, switch groups with **Tab**
+(putter position, putter rotation, stance, ball contact), and press **Enter** to
+print the lines for `config.lua` to the F8 console. Changes are live on your
+client only until you add those lines.
+
+## Hooks
+
+`server/open.lua` and `client/open.lua` are not escrowed. Change them to fit
+your server.
+
+### Server hooks
+
+```lua server/open.lua
+-- Return false when a player may not open, join or start a game (dead, cuffed, jailed).
+function OpenHooks.CanPlay(src)
+    -- QBCore example:
+    -- local player = exports['qb-core']:GetCoreObject().Functions.GetPlayer(src)
+    -- local meta = player and player.PlayerData.metadata
+    -- if meta and (meta.isdead or meta.inlaststand or meta.ishandcuffed) then return false end
+    return true
+end
+
+-- Called for every anti-cheat flag. Prints to the console by default.
+-- reason: 'implausible_hole', 'hole_unreachable' or 'ball_speed'
+function OpenHooks.OnSuspicious(src, identifier, reason, data)
+end
+```
+
+The file ships with examples for ESX, QBCore and Qbox.
+
+### Client hooks
+
+```lua client/open.lua
+-- Return false when the local player may not start a round or practice.
+function OpenHooks.CanPlay()
+    local ped = PlayerPedId()
+    if IsEntityDead(ped) or IsPedCuffed(ped) then return false end
+    return true
+end
+
+-- Show the message with your own notification script and return true.
+-- Return false to use the built-in one. kind: 'info', 'success' or 'error'.
+function OpenHooks.Notify(message, kind)
+    return false
+end
+```
+
+<Note>
+  The state bag names in the shipped `CanPlay` examples (`isDead`, `isCuffed`,
+  …) differ between scripts. Check them against the ambulance and police
+  scripts you run.
+</Note>
+
+## Data files
+
+Road Minigolf has no database. It writes JSON files into `road_minigolf/data/`:
+
+| File | Content |
+|---|---|
+| `courses-a.json`, `courses-b.json` | All courses |
+| `scores-a.json`, `scores-b.json` | Leaderboards (all time, month, week), hole records, archived boards |
+| `players-a.json`, `players-b.json` | Player statistics and reward cooldowns |
+| `history-<courseId>-a.json`, `-b.json` | The last saved versions of a course |
+| `trash-a.json`, `trash-b.json` | Deleted courses that can be restored |
+| `demo-a.json`, `demo-b.json` | Which version of each demo course was installed |
+| `export/`, `import/` | Course export and import |
+
+Every store is written to two alternating files and read back byte for byte
+before it is trusted. A damaged file never overwrites the last good copy, and a
+failed write is retried. If no copy of a file can be read, saving that store
+stays disabled and the console says so.
+
+<Warning>
+  `data/` is your server's state: the courses your admins built. Back it up like
+  a database, and never replace it with the empty folder from an update.
+</Warning>
+
+Courses from version 1.0 (`courses.json`, `scores.json`) are taken over
+automatically on the first start.

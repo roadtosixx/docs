@@ -1,0 +1,199 @@
+---
+title: 'Commands & Keybinds'
+description: 'Every command and keybind Road Minigolf registers'
+icon: 'terminal'
+---
+
+Every command name can be changed in `Config.Commands` in `config.lua`. The
+names below are the defaults.
+
+## Keybinds
+
+All keybinds are registered through FiveM's key mapping system, so **every
+player can rebind them** under `Settings → Key Bindings → FiveM` without
+touching your config.
+
+| Default | What it does | Config key |
+|---|---|---|
+| **F7** | Opens and closes the editor (admins) | `Config.Keys.editor` |
+| **Z** (hold) | Scoreboard during a round | `Config.Keys.scoreboard` |
+| **F9** | Game menu during a round | `Config.Keys.gameMenu` |
+| **Y** | Accept an invite or rematch offer | `Config.Keys.accept` |
+| **Backspace** | Decline an invite or rematch offer | `Config.Keys.decline` |
+| **1** – **6** | Editor tools: quick build, draw path, test hole, mouse cursor, camera mode, focus | `Config.Editor.keys` |
+
+<Note>
+  The decline key defaults to Backspace because **N** is FiveM's push-to-talk
+  key. All other in-game keys (aiming, shooting, editor placement) are listed
+  on [Playing](/roadminigolf/playing#all-player-controls) and
+  [Course Editor](/roadminigolf/editor#all-editor-controls).
+</Note>
+
+---
+
+## Player commands
+
+### Course finder
+
+Lists every playable course, nearest first, with distance, holes, par, open
+lobbies, the record and your best, plus a waypoint button.
+
+```bash
+/minigolf
+```
+
+### Course menu
+
+Opens the menu of the nearest course start, or your lobby.
+
+```bash
+/mgmenu
+```
+
+### Leave
+
+Leaves the current game or lobby.
+
+```bash
+/mgleave
+```
+
+### Invite
+
+Invites a player into your lobby. Host only. The player accepts with **Y**.
+
+```bash
+/mginvite PLAYERID
+```
+
+<ParamField path="PLAYERID" type="number" required>
+  The server ID of the player to invite
+</ParamField>
+
+---
+
+## Admin commands
+
+<Warning>
+  Admin commands need [admin rights](/roadminigolf/configuration#permissions):
+  the ACE `minigolf.admin`, an ESX group, a QBCore permission, a Qbox ACE group,
+  a listed identifier or your own check.
+</Warning>
+
+### Editor
+
+Opens the course editor. Same as **F7**.
+
+```bash
+/mgedit
+```
+
+### List courses
+
+Lists every course with its ID, number of holes and whether it is open.
+
+```bash
+/mgcourses
+```
+
+### Teleport to a course
+
+Teleports you to a course's start point. In game only.
+
+```bash
+/mgtp COURSEID
+```
+
+<ParamField path="COURSEID" type="string" required>
+  The course ID from `/mgcourses`
+</ParamField>
+
+### Export a course
+
+Writes a course to `data/export/<courseId>.json`.
+
+```bash
+/mgexport COURSEID
+```
+
+<ParamField path="COURSEID" type="string" required>
+  The course ID from `/mgcourses`
+</ParamField>
+
+### Import a course
+
+Imports a course from `data/import/`. It gets a new ID, so importing the same
+file twice creates two courses.
+
+```bash
+/mgimport FILE
+```
+
+<ParamField path="FILE" type="string" required>
+  The file name inside `data/import/`, for example `skypark.json`
+</ParamField>
+
+<Tip>
+  Export on one server, copy the file from `data/export/` to `data/import/` on
+  the other server, import it there and move it with **Move course here** in
+  the editor.
+</Tip>
+
+### Reset a leaderboard
+
+Resets a course's leaderboard for everyone.
+
+```bash
+/mgresetscores COURSEID
+```
+
+<ParamField path="COURSEID" type="string" required>
+  The course ID from `/mgcourses`
+</ParamField>
+
+### Reload courses
+
+Reloads all courses from disk, for example after you edited a file in `data/`
+by hand. Pending scores are written first, and only new or changed courses are
+sent to players.
+
+```bash
+/mgreload
+```
+
+### Putter tuning
+
+Tunes the putter position, putter rotation, stance and ball contact while you
+address a ball in a test, practice or solo round. **Enter** prints the lines for
+`config.lua` to the F8 console; `/mgputter` again ends it. Changes are live on
+your client only.
+
+```bash
+/mgputter
+```
+
+### Showcase
+
+For trailers: works out strokes that play every hole of the nearest course (or
+the given one) into the cup with the real ball physics, and keeps them on your
+client. Stand at the course, outside any game or the editor. It takes about a
+minute, and runs again only when the course changed. Camera tools then start
+the balls with the [`ShowcaseCue`](/roadminigolf/api/client#showcasecue) export.
+
+```bash
+/mgshowcase [COURSEID]
+```
+
+<ParamField path="COURSEID" type="string">
+  Optional. The course to solve; the nearest course when left out
+</ParamField>
+
+### From the server console
+
+`/mgcourses`, `/mgexport`, `/mgimport`, `/mgresetscores` and `/mgreload` also
+work from the server console (without the slash). `/mgtp` is in game only.
+
+```bash Server console
+mgcourses
+mgexport demo_skygarden
+```

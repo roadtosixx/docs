@@ -1,0 +1,144 @@
+---
+title: 'Client API'
+description: 'Client-side exports, state bags and events for Road Minigolf integration'
+icon: 'monitor'
+---
+
+# Client API
+
+Every export below is client-side. Call them on `exports.road_minigolf`.
+
+## Exports
+
+### OpenCourseMenu
+
+Opens the course menu of a course, for example from your own target zone or a
+phone app.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+```lua
+exports.road_minigolf:OpenCourseMenu('demo_skygarden')
+```
+
+<Note>
+  The server still checks that the player stands at the course start and is
+  out of a vehicle before a game can be opened, joined or started.
+</Note>
+
+### IsInGame
+
+<ResponseField name="return" type="boolean">
+  `true` while the local player is in a round: a game, practice or an editor
+  test.
+</ResponseField>
+
+```lua
+if exports.road_minigolf:IsInGame() then return end
+```
+
+### OpenEditor
+
+Opens the course editor, as **F7** does. The server checks admin rights.
+
+```lua
+exports.road_minigolf:OpenEditor()
+```
+
+### IsEditorActive
+
+<ResponseField name="return" type="boolean">
+  `true` while the editor is open.
+</ResponseField>
+
+```lua
+if exports.road_minigolf:IsEditorActive() then
+    -- hide your HUD
+end
+```
+
+### ShowcaseCue
+
+For trailers and camera tools. After an admin ran
+[`/mgshowcase`](/roadminigolf/commands#showcase) at a course, this export plays
+a hole so that a chosen moment happens on time. Only the calling client sees
+these balls, and they wait for the windmill sails.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+<ParamField path="hole" type="number" required>
+  The hole number, starting at 1
+</ParamField>
+
+<ParamField path="moment" type="string" required>
+  `'start'`, `'loop'`, `'windmill'`, `'tunnel'`, `'ramp'` or `'cup'`
+</ParamField>
+
+<ParamField path="lead" type="number" required>
+  Seconds from now at which the moment should happen at the earliest
+</ParamField>
+
+<ResponseField name="return" type="number | nil">
+  Seconds until the moment, or `nil` when `/mgshowcase` found no stroke for that
+  hole or the hole has no such moment.
+</ResponseField>
+
+```lua
+-- the ball goes through the loop of hole 8 in about 3 seconds
+local seconds = exports.road_minigolf:ShowcaseCue('demo_skygarden', 8, 'loop', 3.0)
+```
+
+A shot cue for RoadEditor Studio looks like this:
+
+```lua
+cue = { resource = 'road_minigolf', export = 'ShowcaseCue', args = { courseId, hole, moment, lead }, lead = lead }
+```
+
+### ShowcaseStop
+
+Stops every showcase ball on this client.
+
+```lua
+exports.road_minigolf:ShowcaseStop()
+```
+
+---
+
+## State bags
+
+For HUD, phone and inventory scripts that should stay out of the way during a
+round.
+
+| State bag | Replicated | Meaning |
+|---|---|---|
+| `LocalPlayer.state.inMinigolf` | Yes | `true` while a round (game, practice, editor test) runs |
+| `LocalPlayer.state.invBusy` | Yes | `true` while aiming and swinging; the previous value comes back afterwards |
+
+```lua
+if LocalPlayer.state.inMinigolf then
+    -- don't open the phone now
+end
+```
+
+On the server, read the same bag with `Player(source).state.inMinigolf`.
+
+## Events
+
+Local client events, triggered with `TriggerEvent`. Listen with
+`AddEventHandler`.
+
+```lua
+AddEventHandler('road_minigolf:client:gameStarted', function(courseId) end)
+AddEventHandler('road_minigolf:client:gameEnded', function(courseId) end)
+AddEventHandler('road_minigolf:client:aimStart', function() end)
+AddEventHandler('road_minigolf:client:aimEnd', function() end)
+```
+
+<Info>
+  The weapon in the player's hands is put away for the putter and given back
+  after the round. With ox_inventory the inventory manages weapons itself.
+</Info>

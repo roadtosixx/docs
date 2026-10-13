@@ -1,0 +1,224 @@
+---
+title: 'Playing'
+description: 'How players find a course, start a round, play it and get on the leaderboard'
+icon: 'flag'
+---
+
+# Playing
+
+## Finding a course
+
+Every published course has a start point with a marker (or an ox_target /
+qb-target zone) and a blip on the map.
+
+- **`/minigolf`** opens the course finder: every open course, nearest first,
+  with holes, par, open lobbies, the course record, your own best and a
+  waypoint button.
+- At the start point, **E** opens the course menu. `/mgmenu` opens the menu of
+  the nearest course start, or your lobby.
+
+<Info>
+  To open, join or start a game you have to stand at the course start
+  (`Config.Game.startDistance`, 50 m by default) and be out of your vehicle.
+  Server owners can block players who are dead, cuffed or jailed through
+  [hooks](/roadminigolf/configuration#hooks).
+</Info>
+
+## The course menu
+
+| Option | What it does |
+|---|---|
+| **Play solo** | Starts a round on your own. It counts for the leaderboard. |
+| **Create lobby** | Opens a lobby you host. Other players join it from the same menu. |
+| **Open lobbies** | Lobbies on this course you can join. |
+| **Practice** | Play on your own from any hole: no score, no money, nothing sent to the server. Server owners can turn it off (`Config.Game.practiceMode`). |
+| **Leaderboard** | All time, this month and this week, plus the record of every hole. |
+
+The menu also shows the entry fee and rewards (if the course has any), the time
+limit per hole and your own statistics.
+
+## Lobbies
+
+The host starts the game and can remove players. A lobby holds up to 8
+players, and every player gets their own colour.
+
+### Inviting players
+
+- **Invite nearby players** from the lobby, or invite anyone with
+  `/mginvite <server id>`.
+- The invited player sees a prompt and accepts with **Y** or declines with
+  **Backspace**, no menu needed. Players who are too far away get a waypoint
+  to the course.
+- Players near the course start are told when a new lobby opens there
+  (`Config.Game.announceLobbies`).
+- Lobby members who walk away from the course leave the lobby automatically
+  (`Config.Game.lobbyLeaveDistance`, 60 m).
+
+### Game modes
+
+<CardGroup cols={2}>
+  <Card title="Everyone at once" icon="users">
+    Everybody plays their own ball at the same time. The fastest flow, and the
+    default.
+  </Card>
+  <Card title="Take turns" icon="repeat">
+    Classic rules: one player plays the hole out while the others watch. The
+    best score on a hole starts the next one.
+  </Card>
+</CardGroup>
+
+In **Take turns**, nobody waits forever: an idle player sees a countdown and is
+moved on after `Config.Game.turnIdleTimeout` (90 s), and the host can skip an
+idle turn after 30 seconds.
+
+### Lobby rules
+
+The host can change the **stroke limit**, the **time per hole** and the **aim
+guide**, and can make the lobby **private** (invite only). A lobby with changed
+rules is marked **unranked** and stays off the leaderboard.
+
+<Note>
+  The range the host may pick from is set in `Config.Game.lobbyRules`
+  (3 to 15 strokes, 0 to 600 seconds per hole by default).
+</Note>
+
+## Playing a hole
+
+<Steps>
+  <Step title="Hole intro">
+    A short camera flight from the cup to the tee with a hole card: par,
+    length and the hole record. Skip it with **E**, **Space** or **Backspace**,
+    or turn it off in your settings.
+  </Step>
+  <Step title="Address the ball">
+    Walk to your ball and press **E**. The player steps up beside the ball with
+    the putter.
+  </Step>
+  <Step title="Aim">
+    Aim with the **mouse**, fine-tune with **← →**, zoom with the **wheel**.
+    **C** shows an overview of the whole hole. The **aim guide** simulates the
+    real roll while you charge: slopes, ramps and walls bend the line, and it
+    ends in the cup when the putt drops. Courses can turn it off.
+  </Step>
+  <Step title="Shoot">
+    Hold **LMB** or **E** to charge and release to hit. **RMB** or
+    **Backspace** cancels a charged shot.
+  </Step>
+</Steps>
+
+### Power control
+
+Each player picks one in their settings. Server default:
+`Config.Game.defaultPowerMode`.
+
+| Mode | How it works |
+|---|---|
+| **Timing** (`'timing'`) | Hold to swing back, release at the right moment. The meter rises and falls. |
+| **Precision** (`'drag'`) | Hold, pull the mouse back to set the power, release to hit. Right click cancels. |
+
+### Rules and penalties
+
+| Rule | Default | Config key |
+|---|---|---|
+| Stroke limit per hole | 10 | `Config.Game.maxStrokes` |
+| Time limit per hole | 180 s (0 = off), with countdown beeps in the last 10 s | `Config.Game.holeTimeLimit` |
+| Out of bounds | +1 stroke | `Config.Game.outOfBoundsPenalty` |
+| Put ball back (unplayable lie, from the game menu) | +1 stroke | `Config.Game.resetPenalty` |
+
+Each course can override the stroke limit, time limit and penalty in the
+editor.
+
+**Out of bounds** works in one of two ways, set per course:
+
+- **Play area**: the ball is out when it leaves the hole's play area (a radius
+  around the hole).
+- **Lane only**: the ball is out as soon as it comes to rest on ground that is
+  not part of the course. The edge of the play area shows up when the ball gets
+  close.
+
+### Shot feedback
+
+Lip-outs, near misses, a last-stroke warning, a camera punch on full-power hits
+and a trail behind rolling balls in the player colour. Holes-in-one get a
+celebration, and the other players are told.
+
+## Track kit obstacles
+
+- **Windmill**: the sails block the tunnel in time with the network clock, so
+  every player sees them in the same place. A sail pushes a ball out of its
+  way.
+- **Loop**: the ball only makes it round with enough speed and comes out in the
+  channel beside the one it went in. Too slow and it rolls back or drops off.
+
+## During the round
+
+| Key | Action |
+|---|---|
+| **Z** (hold) | Scoreboard |
+| **F9** | Game menu: put the ball back, settings, leave |
+| **← →** | After finishing: spectate the others (stop with **Backspace**) |
+
+Players near a running game see its balls and the putters of the players
+(`Config.World.showBystanderBalls`, needs OneSync).
+
+## Results and leaderboards
+
+At the end, the results show your place, the course record, your personal best
+and the gap to your previous best, whether the round was ranked, and why a
+reward was not paid (if it wasn't). **Play again** offers a rematch to the whole
+group; the offer stays as a prompt after closing the results.
+
+<AccordionGroup>
+  <Accordion title="When does a round count for the leaderboard?">
+    Solo rounds and lobbies with the course's own rules count. Lobbies with
+    changed rules are unranked. Rounds flagged by the anti-cheat checks are
+    kept off the leaderboard by default (`Config.AntiCheat.skipLeaderboardOnFlag`).
+  </Accordion>
+  <Accordion title="Why did the leaderboard of a course start over?">
+    When an admin changes the number of playable holes or the total par of a
+    course, its leaderboard and hole records start over. The old board is
+    archived, and rounds that were running on the old layout do not enter the
+    new one.
+  </Accordion>
+  <Accordion title="When are rewards paid?">
+    Only when the server owner set rewards, and only for rounds where every hole
+    was holed. The win reward goes to a sole winner only (ties get none). A
+    cooldown per player and course and a minimum round duration apply. Entry
+    fees are refunded whenever a game is cancelled.
+  </Accordion>
+</AccordionGroup>
+
+## Player settings
+
+Open the game menu (**F9**) → **Settings**. Settings are stored per player.
+
+| Setting | What it changes |
+|---|---|
+| Power control | Timing or Precision |
+| Aim sensitivity / Pull sensitivity | How fast aiming and pulling back react |
+| Ball camera | The camera follows your ball after the shot |
+| Names above other balls | Player names over other players' balls |
+| Hole intro | Camera flight over each new hole and its hole card |
+| Ball trail | A short trail behind rolling balls |
+| Ball | Your golf ball design, used from your next game |
+
+## All player controls
+
+All keys are FiveM key mappings. Players can change them under
+*Settings → Key Bindings → FiveM*.
+
+| Action | Key |
+|---|---|
+| Open the course menu at the start point | **E** (or ox_target / qb-target) |
+| Address the ball | **E** near your ball |
+| Aim | **Mouse**, fine with **← →**, zoom with the **wheel** |
+| Overview of the hole | **C** |
+| Shoot (Timing) | Hold **LMB** or **E**, release |
+| Shoot (Precision) | Hold **LMB** or **E**, pull the mouse back, release |
+| Cancel a charged shot / step back | **RMB** or **Backspace** |
+| Scoreboard | Hold **Z** |
+| Game menu | **F9** |
+| Spectate after finishing / watch in Take turns | **← →**, stop with **Backspace** |
+| Skip the hole intro | **E**, **Space** or **Backspace** |
+| Accept / decline an invite or rematch | **Y** / **Backspace** |
+| Leave | Game menu or `/mgleave` |

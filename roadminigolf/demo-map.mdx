@@ -1,0 +1,94 @@
+---
+title: 'SkyGarden Demo Map'
+description: 'The roof garden map and nine-hole course that come with Road Minigolf'
+icon: 'map'
+---
+
+# SkyGarden Demo Map
+
+Road Minigolf comes with **SkyGarden**: a streamed roof garden on the Rockford
+Plaza mall in Burton, with a finished nine-hole course built from the
+[track kit](/roadminigolf/track-kit). Players can play it the moment the server
+is up.
+
+## The map
+
+A limestone terrace with glass balustrade, a greenhouse, a pergola lounge with
+bar, a fountain and planting. Players reach the roof by the mall's roof stairs
+or your own teleport tools; the resource adds no elevator.
+
+## The course
+
+| # | Hole | Par |
+|---|---|---|
+| 1 | Warm-Up | 2 |
+| 2 | Windmill | 3 |
+| 3 | Zigzag | 4 |
+| 4 | Tunnel | 3 |
+| 5 | Island | 3 |
+| 6 | Waves | 3 |
+| 7 | Ramp | 4 |
+| 8 | Loop | 3 |
+| 9 | Grand Finale | 6 |
+| | **Total** | **31** |
+
+Each hole has its own colour theme. The course uses the **lane only**
+out-of-bounds rule and is free to play (no entry fee, no rewards).
+
+## How the demo course is installed
+
+- On the first start, SkyGarden is installed as an **ordinary published
+  course**. Edit it, move it or delete it like any other course.
+- A later version of the demo replaces it **only while nobody has changed it**.
+  Once you edit it, it is yours.
+- A deleted demo stays deleted. Restore it from the trash in the editor's
+  [Admin tab](/roadminigolf/editor#admin-console).
+
+## Conflicts with other maps
+
+The map lives in `stream/skygarden/`. It replaces the roof equipment of the mall
+models (`bt1_04_mall01`, `bt1_04_mall01_dt01`, `bt1_04_roof_dtl01`, collision
+`bt1_04_0`) and streams edited copies of `bt1_04_strm_0` and the `ss1_rd1` maps
+(base, `hei_` and `apa_` variants) without the props that stood on that roof.
+
+<Warning>
+  Another resource that replaces one of these files conflicts with SkyGarden.
+  If you already run a map on the Rockford Plaza roof, leave the demo out.
+</Warning>
+
+## Leaving the demo out
+
+<Steps>
+  <Step title="Turn the demo course off">
+    ```lua config.lua
+    Config.Editor = {
+        -- …
+        demoCourses = false,
+    }
+    ```
+  </Step>
+  <Step title="Delete the map files">
+    Delete the folder `stream/skygarden/`.
+  </Step>
+  <Step title="Remove the map lines from the manifest">
+    Remove these two lines from `fxmanifest.lua`:
+
+    ```lua fxmanifest.lua
+    this_is_a_map 'yes'
+    data_file 'DLC_ITYP_REQUEST' 'stream/skygarden/road_skygarden.ytyp'
+    ```
+
+    <Warning>
+      Keep the line with `stream/road_minigolf_kit.ytyp`. That one registers
+      the track kit.
+    </Warning>
+  </Step>
+  <Step title="Restart">
+    Restart the whole resource (`restart road_minigolf`), not just `refresh`.
+  </Step>
+</Steps>
+
+<Note>
+  `demoCourses = false` stops the course from being installed. A SkyGarden
+  course that is already installed stays until you delete it in the editor.
+</Note>

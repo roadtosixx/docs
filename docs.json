@@ -97,6 +97,19 @@
             ]
           },
           {
+            "group": "Road Minigolf",
+            "pages": [
+              "roadminigolf/installation",
+              "roadminigolf/playing",
+              "roadminigolf/editor",
+              "roadminigolf/track-kit",
+              "roadminigolf/demo-map",
+              "roadminigolf/configuration",
+              "roadminigolf/commands",
+              "roadminigolf/faq"
+            ]
+          },
+          {
             "group": "RoadPods",
             "pages": [
               "roadpods/installation"
@@ -161,6 +174,13 @@
             "group": "RoadCarRadio",
             "pages": [
               "roadcarradio/api/client"
+            ]
+          },
+          {
+            "group": "Road Minigolf",
+            "pages": [
+              "roadminigolf/api/server",
+              "roadminigolf/api/client"
             ]
           }
         ]

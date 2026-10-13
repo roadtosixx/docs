@@ -1,0 +1,349 @@
+---
+title: 'Server API'
+description: 'Server-side exports and events for Road Minigolf integration'
+icon: 'server'
+---
+
+# Server API
+
+Every export below is server-side. Call them on `exports.road_minigolf`.
+
+## Courses
+
+### GetCourses
+
+All courses with their full data, props included.
+
+<ResponseField name="return" type="table">
+  `id -> course`. Large: prefer `GetCourseList` when you only need names and
+  numbers.
+</ResponseField>
+
+```lua
+local courses = exports.road_minigolf:GetCourses()
+```
+
+### GetCourse
+
+One course with its full data.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+<ResponseField name="return" type="table | nil">
+  The course, or `nil` when the ID does not exist.
+</ResponseField>
+
+```lua
+local course = exports.road_minigolf:GetCourse('demo_skygarden')
+```
+
+### GetCourseList
+
+A light list of every course, without props, sorted by ID.
+
+<ResponseField name="return" type="table">
+  <Expandable title="entry">
+    <ResponseField name="id" type="string">Course ID</ResponseField>
+    <ResponseField name="name" type="string">Course name</ResponseField>
+    <ResponseField name="enabled" type="boolean">`true` when the course is published</ResponseField>
+    <ResponseField name="author" type="string">Who created it</ResponseField>
+    <ResponseField name="holes" type="number">Number of playable holes</ResponseField>
+    <ResponseField name="par" type="number">Total par</ResponseField>
+    <ResponseField name="start" type="table | nil">`{ x, y, z, h }` of the start point</ResponseField>
+    <ResponseField name="revision" type="number">Saved version of the course</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+for _, c in ipairs(exports.road_minigolf:GetCourseList()) do
+    print(c.id, c.name, c.holes, c.par, c.enabled)
+end
+```
+
+## Players and sessions
+
+### IsPlayerInGame
+
+<ParamField path="source" type="number" required>
+  Player server ID
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` while the player's game is running (not in a lobby that has not
+  started yet).
+</ResponseField>
+
+```lua
+if exports.road_minigolf:IsPlayerInGame(source) then
+    -- don't open the phone camera now
+end
+```
+
+### GetPlayerSession
+
+The game or lobby the player is in.
+
+<ParamField path="source" type="number" required>
+  Player server ID
+</ParamField>
+
+<ResponseField name="return" type="table | nil">
+  Public session info, or `nil` when the player is in no game or lobby.
+
+  <Expandable title="fields">
+    <ResponseField name="id" type="string">Session ID</ResponseField>
+    <ResponseField name="courseId" type="string">Course ID</ResponseField>
+    <ResponseField name="courseName" type="string">Course name</ResponseField>
+    <ResponseField name="hostId" type="number">Server ID of the host</ResponseField>
+    <ResponseField name="state" type="string">`'lobby'`, `'playing'` or `'finished'`</ResponseField>
+    <ResponseField name="solo" type="boolean">`true` for a solo round</ResponseField>
+    <ResponseField name="mode" type="string">`'free'` (everyone at once) or `'turns'`</ResponseField>
+    <ResponseField name="players" type="table">The players with name, colour, ball, strokes, current hole and total</ResponseField>
+    <ResponseField name="maxPlayers" type="number">Lobby size</ResponseField>
+    <ResponseField name="holeCount" type="number">Number of holes</ResponseField>
+    <ResponseField name="pars" type="table">Par per hole</ResponseField>
+    <ResponseField name="maxStrokes" type="number">Stroke limit per hole</ResponseField>
+    <ResponseField name="timeLimit" type="number">Seconds per hole, 0 = off</ResponseField>
+    <ResponseField name="entryFee" type="number">Entry fee</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+local session = exports.road_minigolf:GetPlayerSession(source)
+if session and session.state == 'playing' then
+    print(('%s plays %s'):format(GetPlayerName(source), session.courseName))
+end
+```
+
+### GetActiveSessions
+
+Every running game and open lobby.
+
+<ResponseField name="return" type="table">
+  <Expandable title="entry">
+    <ResponseField name="id" type="string">Session ID</ResponseField>
+    <ResponseField name="courseId" type="string">Course ID</ResponseField>
+    <ResponseField name="state" type="string">`'lobby'`, `'playing'` or `'finished'`</ResponseField>
+    <ResponseField name="mode" type="string">`'free'` or `'turns'`</ResponseField>
+    <ResponseField name="ranked" type="boolean">`false` when the host changed the rules</ResponseField>
+    <ResponseField name="startedAt" type="number">Unix time of the start, 0 while in the lobby</ResponseField>
+    <ResponseField name="players" type="table">`{ { id, identifier, name }, ... }`</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+local sessions = exports.road_minigolf:GetActiveSessions()
+print(('%d minigolf sessions running'):format(#sessions))
+```
+
+### IsAdmin
+
+Whether a player has minigolf admin rights.
+
+<ParamField path="source" type="number" required>
+  Player server ID
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  Player server IDs only: `nil`, strings, `0` (console) and negative numbers
+  return `false`.
+</ResponseField>
+
+```lua
+if exports.road_minigolf:IsAdmin(source) then
+    -- show admin options
+end
+```
+
+## Leaderboards and statistics
+
+### GetLeaderboard
+
+The all-time leaderboard of a course.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Number of rows
+</ParamField>
+
+<ResponseField name="return" type="table">
+  Rows, best first. Empty when the course does not exist.
+
+  <Expandable title="row">
+    <ResponseField name="name" type="string">Player name</ResponseField>
+    <ResponseField name="strokes" type="number">Total strokes of the round</ResponseField>
+    <ResponseField name="par" type="number">Total par of the course</ResponseField>
+    <ResponseField name="date" type="number">Unix time of the round</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+local top = exports.road_minigolf:GetLeaderboard('demo_skygarden', 5)
+for i, row in ipairs(top) do
+    print(i, row.name, row.strokes)
+end
+```
+
+### GetLeaderboards
+
+All three leaderboards of a course.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+<ParamField path="limit" type="number" default="10">
+  Number of rows per board
+</ParamField>
+
+<ResponseField name="return" type="table">
+  `{ all = rows, month = rows, week = rows }` with the same rows as
+  `GetLeaderboard`.
+</ResponseField>
+
+```lua
+local boards = exports.road_minigolf:GetLeaderboards('demo_skygarden', 3)
+local best = boards.week[1]
+```
+
+### GetHoleRecords
+
+The record of every hole.
+
+<ParamField path="courseId" type="string" required>
+  The course ID
+</ParamField>
+
+<ResponseField name="return" type="table">
+  One entry per hole: `{ strokes, name }`. `strokes = 0` means no record yet.
+</ResponseField>
+
+```lua
+for hole, rec in ipairs(exports.road_minigolf:GetHoleRecords('demo_skygarden')) do
+    if rec.strokes > 0 then print(hole, rec.name, rec.strokes) end
+end
+```
+
+### GetPlayerStats
+
+Statistics of an online player.
+
+<ParamField path="source" type="number" required>
+  Player server ID
+</ParamField>
+
+<ResponseField name="return" type="table | nil">
+  `nil` when the player is offline or never played.
+
+  <Expandable title="fields">
+    <ResponseField name="name" type="string">Last name used</ResponseField>
+    <ResponseField name="rounds" type="number">Rounds played</ResponseField>
+    <ResponseField name="wins" type="number">Games won</ResponseField>
+    <ResponseField name="holesInOne" type="number">Holes-in-one</ResponseField>
+    <ResponseField name="holesPlayed" type="number">Holes played</ResponseField>
+    <ResponseField name="strokes" type="number">Strokes in total</ResponseField>
+    <ResponseField name="lastPlayed" type="number">Unix time of the last round</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+local stats = exports.road_minigolf:GetPlayerStats(source)
+if stats then print(stats.rounds, stats.holesInOne) end
+```
+
+### GetPlayerStatsByIdentifier
+
+The same as `GetPlayerStats`, for offline players.
+
+<ParamField path="identifier" type="string" required>
+  The identifier the events on this page carry: the framework's player
+  identifier, or the FiveM license without a framework
+</ParamField>
+
+```lua
+local stats = exports.road_minigolf:GetPlayerStatsByIdentifier(identifier)
+```
+
+---
+
+## Events
+
+All server events are **local events**: listen with `AddEventHandler`. Clients
+cannot trigger them. New arguments are always added at the end, so existing
+handlers keep working after updates.
+
+### Games
+
+```lua
+AddEventHandler('road_minigolf:server:gameStarted', function(sessionId, courseId, players, ranked)
+    -- players = { { id, identifier, name }, ... }
+end)
+
+AddEventHandler('road_minigolf:server:gameFinished', function(sessionId, courseId, payload, players)
+    -- payload.results = { { id, name, total, rank, strokes = { ... }, holed, record, personalBest, previousBest, reward, rewardBlocked }, ... }
+    -- players = { { id, identifier, name, total, rank }, ... }
+end)
+```
+
+<Note>
+  Identifiers are only in the `players` argument. The `payload` is the same
+  table the clients get, so it never carries identifiers.
+</Note>
+
+### Records
+
+```lua
+AddEventHandler('road_minigolf:server:holeInOne', function(src, courseId, holeIndex, identifier) end)
+AddEventHandler('road_minigolf:server:recordSet', function(src, identifier, courseId, strokes, name) end)
+AddEventHandler('road_minigolf:server:holeRecordSet', function(src, identifier, courseId, holeIndex, strokes, name) end)
+```
+
+### Money
+
+```lua
+AddEventHandler('road_minigolf:server:entryFeePaid', function(src, identifier, amount, courseId, sessionId) end)
+AddEventHandler('road_minigolf:server:entryFeeRefunded', function(src, identifier, amount, courseId, sessionId) end)
+AddEventHandler('road_minigolf:server:rewardPaid', function(src, identifier, amount, courseId, sessionId) end)
+```
+
+### Anti-cheat
+
+```lua
+AddEventHandler('road_minigolf:server:suspicious', function(src, identifier, reason, data)
+    -- reason: 'implausible_hole', 'hole_unreachable' or 'ball_speed'
+    -- data: courseId, sessionId, hole and details
+end)
+```
+
+Flags never punish on their own. The `OpenHooks.OnSuspicious` hook in
+`server/open.lua` gets the same call.
+
+### Admin actions
+
+`src` is `0` when the action came from the server console.
+
+| Event | Arguments |
+|---|---|
+| `road_minigolf:server:courseSaved` | `src, courseId, revision, layoutChanged, identifier, name` |
+| `road_minigolf:server:courseDeleted` | `src, courseId, identifier, name` |
+| `road_minigolf:server:courseImported` | `src, courseId, identifier, name` |
+| `road_minigolf:server:courseExported` | `src, courseId, identifier, fileName` |
+| `road_minigolf:server:scoresReset` | `src, courseId, identifier, name` |
+| `road_minigolf:server:scoreRemoved` | `src, courseId, identifier, name` |
+| `road_minigolf:server:coursesReloaded` | `src, identifier, count, changed` |
+| `road_minigolf:server:sessionEnded` | `src, sessionId, identifier` |
+
+`identifier` is the admin's identifier. `name` is the course name.
+
+```lua
+AddEventHandler('road_minigolf:server:courseSaved', function(src, courseId, revision, layoutChanged)
+    if layoutChanged then
+        print(('Course %s changed its layout, the leaderboard starts over'):format(courseId))
+    end
+end)
+```

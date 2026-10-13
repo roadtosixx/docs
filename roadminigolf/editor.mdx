@@ -1,0 +1,297 @@
+---
+title: 'Course Editor'
+description: 'Build, test and publish minigolf courses in game'
+icon: 'pencil-ruler'
+---
+
+# Course Editor
+
+Admins build courses directly in the world: up to 36 holes per course, anywhere
+on the map, from the bundled [track kit](/roadminigolf/track-kit) or from any
+game prop.
+
+Open the editor with **F7** or `/mgedit`. Only [admins](/roadminigolf/configuration#permissions)
+can open it.
+
+## The two modes
+
+| Mode | What you do there | Switch |
+|---|---|---|
+| **Panel** | Course list, course settings, holes, props, admin tools | **Tab** opens the panel |
+| **World** | Place, select, move and turn props with the crosshair or the mouse cursor | **Tab** or **Esc** goes back to the world |
+
+The panel opens on the course list, with the tabs **Courses** and
+[**Admin**](#admin-console). An open course has the tabs **General** (name,
+description, start point, blip, publishing), **Holes** (holes, tee, cup, par,
+play area, build tools, course check), **Props** (catalog and placed props) and
+**Settings** (rules and money of this course).
+
+The top of the panel holds a **world toolbar** with the camera mode and the
+most used tools (world mode, kit pieces, quick build, draw path, camera, test
+the open hole), so most work needs no Tab.
+
+## Your first course
+
+<Tabs>
+  <Tab title="Prebuilt hole (fastest)">
+    <Steps>
+      <Step title="New course">
+        Click **New course** in the course list.
+      </Step>
+      <Step title="Start point">
+        Tab **General** → **Start point** → **Set here**. Players open the
+        course menu here.
+      </Step>
+      <Step title="Place a prebuilt hole">
+        Tab **Holes** → **Prebuilt holes** → **Place**. The hole follows the
+        crosshair; click to put it down. Tee, cup and par are already set.
+      </Step>
+      <Step title="Test and save">
+        **Test** plays the hole right away. Then **Save**, and **Publish** when
+        players should see it.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Track kit, piece by piece">
+    <Steps>
+      <Step title="Start point">
+        Tab **General** → **Start point** → **Set here**.
+      </Step>
+      <Step title="Tee">
+        Tab **Props** → category **Track kit** → place a **Tee**. This creates
+        the hole and sets its tee.
+      </Step>
+      <Step title="Lanes and obstacles">
+        Add lanes, curves and obstacles. Each piece **locks onto the open lane
+        end** by itself; the wheel picks the connector.
+      </Step>
+      <Step title="Cup">
+        Finish with a **Cup** piece. The hole's cup is set by the piece.
+      </Step>
+      <Step title="Test and save">
+        **Test**, then **Save** and **Publish**.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Any game prop">
+    <Steps>
+      <Step title="Add a hole">
+        Tab **Holes** → **Add hole**, then place its **Tee** and **Cup**.
+      </Step>
+      <Step title="Build the lane">
+        Tab **Props** → pick props from the catalog or type any model name.
+        **X** snaps a prop flush against its neighbour, **Shift + click** keeps
+        placing the same prop.
+      </Step>
+      <Step title="Test and save">
+        **Test** the hole, then **Save** and **Publish**.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Building faster
+
+### Quick build (1)
+
+A whole hole in the world, without the panel.
+
+1. A tee ghost follows the pointer. **Wheel** or **← →** turns it, **LMB** /
+   **Enter** sets it. This creates a new hole with its tee.
+2. The next piece waits on the open lane end. **← →** (or the wheel) steps
+   through the pieces, **↑ ↓** picks another open end when there are several.
+   **LMB** / **Enter** places the piece, **Backspace** removes the newest one,
+   **B** recolours the whole hole.
+3. A cup piece finishes the hole: tee and cup are set, and the par and play area
+   are suggested from the lane. **3** tests the hole right away; afterwards the
+   editor comes back in world mode with the same camera.
+4. **RMB** / **Esc** leaves quick build, **Tab** opens the panel. Everything
+   placed stays.
+
+A bar at the bottom right shows the piece, the pieces so far, the lane length
+and the suggested par.
+
+### Draw path (2)
+
+Click the lane on the ground, and the hole is built from kit pieces.
+
+- **LMB** adds a point (the first one is the tee), **Backspace** removes the
+  last one, **Enter** places the hole. The finished hole shows as ghosts while
+  you draw.
+- The lane runs in 45° steps. Straights come from 4, 2 and 1 m pieces, corners
+  from 45° and 90° curves, and a height step of 0.4 m or more between two
+  points becomes ramps when the run is long enough.
+- **Wheel** / **← →** turns the tee away from the automatic direction, **R**
+  goes back to automatic, **B** picks the colour.
+- The bar warns when a corner is too tight or a ramp does not fit, and shows
+  how far the cup is off the last click.
+
+### Blueprint
+
+A 2D hole builder inside the panel: tab **Holes** → **Blueprint**.
+
+- **Click** a piece in the palette to continue the lane at the open end, or
+  **drag** it onto the grid; it snaps to the nearest open lane end.
+- **Drag** a piece to move it, **drag** the background to pan, **Wheel** zooms,
+  **F** fits the hole. **R** turns a piece, **Del** removes it,
+  **Ctrl + Z / Y** undo and redo inside the blueprint, **Esc** closes it.
+- Open lane ends show as white arrows; ramps show their rise and every raised
+  piece its height. The side panel has the label, colour theme, par, lane
+  length and the check (one tee, a cup, no open lane end, no overlapping
+  pieces).
+- **Place in the world** turns the blueprint into a new hole that follows the
+  crosshair. **Edit in blueprint** on an existing hole opens its track pieces,
+  and **Apply to hole** rebuilds it in place in one undo step.
+- **Save as own blueprint** keeps it on your client (24 slots) next to the
+  prebuilt holes, where you can place, open, rename or delete it.
+
+<Tip>
+  Quick build, drawn paths, blueprints and prebuilt holes get a **suggested par
+  and play area** automatically. Both stay editable in the Holes tab. See
+  [Track kit](/roadminigolf/track-kit#suggested-par-and-play-area) for how they
+  are worked out.
+</Tip>
+
+## Moving things
+
+### Mouse cursor and cameras
+
+- **Mouse cursor (4)**: point at props and click instead of aiming the
+  crosshair. On by default and remembered per admin. Hold **RMB** to look
+  around; a short right click cancels a placement.
+- **Camera modes (5)**: *orbit* circles the selection or the hole
+  (**RMB + mouse** orbits, **Q/E** zooms, **WASD** moves the focus),
+  *top-down* looks straight down on the whole hole, *free* is the fly camera.
+- **Focus (6)** flies to the selection and frames it.
+- **Freecam (F)**: **WASD** moves, **Q/E** down and up, **Shift** fast,
+  **Alt** slow. **H** moves your player to the camera.
+
+### Gizmo
+
+A selected prop or group shows three arrows (X red, Y green, Z blue) and a
+yellow ring. Drag an arrow with **LMB** to slide along it, or the ring to turn
+it. **Shift** makes it fine, the grid (**V**) snaps it. Every drag is one undo
+step; kit pieces never tilt, and their tees and cups move along.
+
+### Groups
+
+**Ctrl + click** (in the world or in the prop list) adds props to a group. The
+group turns around its centre, lifts, moves (**G**), duplicates (**C**) and
+deletes as one; kit tees and cups take their holes along.
+
+### Whole holes and courses
+
+- **Copy, paste and duplicate holes** with all their props, also into other
+  courses.
+- **Duplicate a course** from the course list.
+- **Move course here** moves the whole course so its start point sits where you
+  stand, turned to your facing direction. It can be undone.
+
+## Testing
+
+**Test** on a hole (or **3** in the world) plays it right away with the real
+ball physics:
+
+| Key | Action |
+|---|---|
+| **R** | Put the ball back on the tee |
+| **Enter** | After holing: next hole |
+| **Backspace** | Back to the editor |
+
+## Course check and saving
+
+The **course check** in the Holes tab lists holes without tee or cup, cups
+outside the play area, open lane ends of the track kit, a par above the stroke
+limit and stray props. It is summarised before saving and never blocks a save.
+
+<Warning>
+  A save that changes the **number of holes or the total par** asks first,
+  because it starts a new leaderboard for that course. The old board is
+  archived.
+</Warning>
+
+- **Undo / redo**: **Ctrl + Z** / **Ctrl + Y** for every change.
+- **Drafts**: unsaved work survives crashes and restarts. Every working copy
+  keeps its own draft, and only you delete it (**Discard**).
+- **Two admins on one course**: saving detects when another admin saved the
+  same course in the meantime and asks before overwriting their changes.
+- **Running rounds are safe**: saving never pulls the props from under a
+  running round. Its players keep the layout they are scored on; the new one
+  appears after the round.
+
+## Publishing
+
+New courses are **unpublished** (unless `Config.Editor.publishNewCourses` is
+on). Players cannot start unpublished courses; admins can still play them solo
+to test. Publish in the **General** tab or with the button in the course list.
+
+## Course settings
+
+Every course can override the server defaults in its **Settings** tab:
+
+| Setting | Server default |
+|---|---|
+| Max. players | 8 |
+| Max. strokes per hole | `Config.Game.maxStrokes` |
+| Time per hole | `Config.Game.holeTimeLimit` |
+| Out-of-bounds penalty | `Config.Game.outOfBoundsPenalty` |
+| Out of bounds: play area or lane only | `Config.Game.defaultOobMode` |
+| Entry fee, finish reward, win reward | `Config.Economy` |
+| Aim guide with roll preview | On |
+| Teleport players to each tee | `Config.Game.teleportToTee` |
+| Flags at the cups | On |
+
+## Admin console
+
+The **Admin** tab of the course list:
+
+- **Live games and lobbies**: end any session; paid entry fees are refunded.
+- **Leaderboards**: remove single entries or reset a course's board.
+- **History**: restore an older saved version of a course
+  (`Config.Editor.historySize`, 10 per course). It is saved as a new version.
+- **Deleted courses**: restore a deleted course from the trash
+  (`Config.Editor.trashSize`, 20).
+
+## Export and import
+
+| Command | What it does |
+|---|---|
+| `/mgexport <courseId>` | Writes the course to `data/export/<courseId>.json` |
+| `/mgimport <file.json>` | Imports `data/import/<file.json>` as a new course with a new ID |
+
+`/mgcourses` lists every course with its ID.
+
+## All editor controls
+
+The tool keys **1–6** are FiveM key mappings. If another resource uses the same
+key, rebind them under *Settings → Key Bindings → FiveM* ("Minigolf editor: …");
+the hint bar always shows the bound key. Server defaults:
+`Config.Editor.keys`.
+
+| Action | Key |
+|---|---|
+| Open / close | **F7** or `/mgedit` |
+| Panel / world | **Tab** (panel) / **Tab** or **Esc** (world) |
+| Freecam | **F**; **WASD**, **Q/E** down/up, **Shift** fast, **Alt** slow |
+| Quick build | **1** |
+| Draw path | **2** |
+| Test the hole | **3** |
+| Mouse cursor on / off | **4** (hold **RMB** to look around) |
+| Camera mode: orbit → top-down → free | **5** |
+| Fly to the selection | **6** |
+| Player to camera | **H** |
+| Select a prop | **LMB** |
+| Move / duplicate / delete the selection | **G** / **C** / **Del** |
+| Gizmo: slide / turn | Drag an arrow / the ring with **LMB** (**Shift** fine) |
+| Rotate | **Wheel** or **← →** (**Shift** fine, **Ctrl** coarse) |
+| Tilt / roll | **↑ ↓** / **Alt + ↑ ↓** |
+| Height | **PgUp** / **PgDn** |
+| Reset rotation and height | **R** |
+| Align to the surface (placing) | **G** |
+| Snap to the nearest prop (placing) | **X**, the wheel then turns in 90° steps |
+| Grid for position and heading | **V** |
+| Add to / remove from the group | **Ctrl + LMB** (world) or **Ctrl + click** (prop list) |
+| Track kit: connect to an open lane end | Automatic, **X** toggles; the wheel picks the connector |
+| Track kit: colour theme | **B** (**Shift + B** backwards) |
+| Place / place and keep going / cancel | **LMB** or **Enter** / **Shift + LMB** / **RMB** or **Backspace** |
+| Undo / redo | **Ctrl + Z** / **Ctrl + Y** |

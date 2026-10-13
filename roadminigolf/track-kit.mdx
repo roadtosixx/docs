@@ -1,0 +1,146 @@
+---
+title: 'Track Kit'
+description: 'The streamed minigolf pieces, colour themes, prebuilt holes and other props'
+icon: 'blocks'
+---
+
+# Track Kit
+
+Road Minigolf streams its own modular track kit: felt lanes with rounded walls
+and real cup holes, obstacles and two moving pieces. Every piece takes one of
+**16 colour themes**. In the editor you find it in tab **Props** → category
+**Track kit**.
+
+## Pieces
+
+<Tabs>
+  <Tab title="Lanes">
+    | Piece | Notes |
+    |---|---|
+    | Lane 1 m, 2 m, 4 m | Straight lanes |
+    | Curve 45°, Curve 90° | Turn left or right, picked with the wheel |
+    | Ramp 0.5 m | Up onto a raised section, or down |
+    | Hill | A bump in the lane |
+    | Waves | Several bumps in a row |
+    | Narrow | The lane gets tighter |
+    | Island split | The lane splits around an island |
+    | Dead end | Closes a lane |
+  </Tab>
+  <Tab title="Tee & cup">
+    | Piece | Notes |
+    |---|---|
+    | Tee | Tee mat set into the felt. Placing it sets the hole's tee. |
+    | Cup (end) | Cup at the end of the lane. Placing it sets the hole's cup. |
+    | Cup (lane) | Cup inside a lane the ball can roll past. |
+  </Tab>
+  <Tab title="Obstacles">
+    | Piece | Notes |
+    |---|---|
+    | Windmill | The sails turn in front of the house and block the tunnel through it |
+    | Tunnel | A roofed section of lane |
+    | Loop | A spiral loop the ball rides only with enough speed |
+    | Bumper post, Block, Deflector, Pyramid | Free-standing obstacles to put on a lane |
+  </Tab>
+</Tabs>
+
+### Moving pieces
+
+- **Windmill**: the sails turn in time with the network clock, so every player
+  sees them in the same place. A sail pushes a ball out of its way.
+- **Loop**: the ball enters in one channel and comes out in the channel beside
+  it. Too slow and it rolls back or drops off. Players cannot walk through the
+  loop.
+
+## Colour themes
+
+Fairway, Ocean, Cherry, Grape, Tangerine, Lagoon, Bubblegum, Sunshine, Stone,
+Midnight, Sand, Mint, Coral, Royal, Forest and Arctic.
+
+**B** cycles the theme of the piece you are placing or the selected piece
+(**Shift + B** backwards). In quick build, **B** recolours the whole hole.
+
+## Building with the kit
+
+- Pieces **lock onto open lane ends** by themselves. The wheel picks the
+  connector (turn left or right, flip a piece); **X** turns locking off and on.
+- Placing a **Tee** or a **Cup** piece sets the hole's tee or cup.
+- Kit pieces stay level: only the heading turns.
+- The **course check** lists open lane ends where the ball could roll off.
+
+<Card title="Course editor" icon="pencil-ruler" href="/roadminigolf/editor#building-faster">
+  Quick build, draw path and blueprint build whole holes from kit pieces
+</Card>
+
+## Prebuilt holes
+
+Six complete holes are ready to place: tab **Holes** → **Prebuilt holes** →
+**Place**, then put it down with the crosshair. Tee, cup and par are set.
+
+| Hole | Par | Features |
+|---|---|---|
+| Windmill | 3 | Curve onto a windmill |
+| Ramp | 3 | Ramp onto a raised section, curve and hill |
+| Loop | 3 | Loop, island split, narrow lane and waves |
+| Tunnel | 3 | Post, block and pyramid in front of a tunnel |
+| Zigzag | 3 | 45° and 90° curves with a deflector and waves |
+| Hills | 2 | Hills and waves |
+
+The prebuilt holes also open in the [blueprint](/roadminigolf/editor#blueprint)
+as a starting point for your own.
+
+## Suggested par and play area
+
+Quick build, drawn paths, blueprints and prebuilt holes without their own
+values get a suggested par and play area. Both stay editable in the Holes tab.
+
+**Par**: 2, plus one stroke for every full 6 m of lane beyond the first 4 m,
+plus one for every two of loop, windmill, tunnel and uphill ramp, at most 6.
+
+**Play area**: the farthest piece from the hole centre plus 4 m, at least 8 m.
+
+<Accordion title="Change the formula">
+  The values live in `shared/defaults.lua` and can be added to `Config.Editor`
+  in `config.lua`:
+
+  ```lua config.lua
+  Config.Editor.autoParBase = 2         -- par of a short hole
+  Config.Editor.autoParFreeLength = 4.0 -- m of lane before length adds strokes
+  Config.Editor.autoParPerLength = 6.0  -- m of lane per extra stroke
+  Config.Editor.autoParMax = 6
+  Config.Editor.boundsMargin = 4.0      -- m around the farthest piece
+  Config.Editor.boundsMin = 8.0
+  ```
+
+  Add these lines **after** the `Config.Editor = { … }` table, or put the keys
+  inside it.
+</Accordion>
+
+## Other props
+
+Besides the kit, the editor has a catalog of base-game and stunt DLC props in
+four categories: **Lanes & ramps**, **Borders & walls**, **Obstacles** and
+**Decoration**. With `Config.Editor.allowCustomModels = true` admins can also
+type any model name.
+
+- Models a game build does not have are hidden automatically.
+- `Config.Editor.blockedModels` blocks model names you do not want on courses.
+- `Config.PropCatalog` in `config.lua` is the catalog itself: add, remove or
+  rename entries and categories.
+
+```lua config.lua
+Config.PropCatalog = {
+    {
+        label = 'Obstacles',
+        items = {
+            { model = 'prop_mp_cone_01', label = 'Cone red' },
+            { model = 'prop_haybale_01', label = 'Hay bale 1' },
+        },
+    },
+}
+```
+
+<Note>
+  The ball rolls on every prop with the same raycast physics: slopes, ramps,
+  walls and drops all work. **X** snaps a prop flush against its nearest neighbour, which
+  makes lanes from stunt tracks or barriers piece by piece much easier.
+</Note>

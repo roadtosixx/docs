@@ -1,0 +1,153 @@
+---
+title: 'Installation'
+description: 'Complete setup guide for the Road Minigolf script'
+icon: 'download'
+---
+
+# Installation
+
+Road Minigolf lets your admins build minigolf courses anywhere on the map with
+an in-game editor, and lets players play them alone or with friends: aim
+camera, power meter, raycast ball physics, par scoring, lobbies, leaderboards
+and rematches. It ships with its own streamed track kit and a finished demo
+course on a roof garden.
+
+It runs standalone. ESX, QBCore and Qbox are detected automatically for
+character names, entry fees, rewards and admin groups.
+
+<Danger>
+  **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
+  We recommend **WinSCP**.
+</Danger>
+
+<Note>
+  **There is no SQL file and no transaction ID to enter.** Road Minigolf stores
+  courses, leaderboards and statistics in JSON files inside its own `data/`
+  folder. The download comes from the
+  [cfx.re Portal](/license-system).
+</Note>
+
+## 📋 Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="FiveM server" icon="server">
+    Any recent server artifact (Lua 5.4).
+  </Card>
+  <Card title="OneSync" icon="radio-tower">
+    Recommended. Needed for start guards, nearby invites, lobby announcements
+    and the bystander view. Everything else works without it.
+  </Card>
+  <Card title="Framework" icon="layers">
+    Optional: ESX, QBCore or Qbox for character names, entry fees and rewards.
+  </Card>
+  <Card title="Target script" icon="crosshair">
+    Optional: ox_target or qb-target for the course start points.
+  </Card>
+</CardGroup>
+
+## 🚀 Setup Instructions
+
+<Steps>
+  <Step title="Extract the resource">
+    Put the folder into your resources. We recommend a `[road]` folder
+    alongside our other scripts:
+
+    ```bash
+    resources/
+    └── [road]/
+        ├── road_minigolf/
+        └── other_scripts/
+    ```
+
+    <Warning>
+      The folder name must stay `road_minigolf`. The track kit and the demo map
+      are streamed from this resource, and exports are called by this name.
+    </Warning>
+  </Step>
+
+  <Step title="Start it and give your admins access">
+    ```cfg server.cfg
+    ensure road_minigolf
+    add_ace group.admin minigolf.admin allow
+    ```
+
+    The ACE line works on every framework. Admins are also recognised from ESX
+    groups (`admin`, `superadmin`), QBCore permissions (`admin`, `god`), the Qbox
+    ACE group of the same name (`group.admin`), fixed identifiers or your own
+    function. See [Configuration](/roadminigolf/configuration#permissions).
+  </Step>
+
+  <Step title="Make sure the data folder is writable">
+    The server writes courses, leaderboards and statistics into
+    `road_minigolf/data/`. If it cannot write there, the console says which
+    file failed and nothing is overwritten.
+  </Step>
+
+  <Step title="Optional: fill in config.server.lua">
+    Admin identifiers, custom money functions, a society account and Discord
+    webhooks go into `config.server.lua`. This file is loaded on the server
+    only and never sent to players.
+
+    For a first start you can leave it as it is.
+  </Step>
+
+  <Step title="Build your first course">
+    Start the server, press **F7** in game (or type `/mgedit`) and build a
+    course. New courses are **unpublished** until you publish them in the
+    General tab or the course list; admins can playtest unpublished courses
+    alone.
+
+    <Card title="Course editor" icon="pencil-ruler" href="/roadminigolf/editor">
+      From an empty spot to a playable hole in a few clicks
+    </Card>
+  </Step>
+</Steps>
+
+## 🌐 Language
+
+Set the server language in `config.lua`:
+
+```lua config.lua
+Config.Locale = 'en'
+```
+
+13 languages are built in: English (`en`), German (`de`), French (`fr`),
+Spanish (`es`), Italian (`it`), Dutch (`nl`), Polish (`pl`), Portuguese
+(`pt`), Turkish (`tr`), Czech (`cs`), Russian (`ru`), Greek (`el`) and Chinese
+(`zh`). Missing text falls back to English.
+
+## 🏙️ The demo map
+
+Road Minigolf comes with **SkyGarden**: a streamed roof garden on the Rockford
+Plaza mall with a finished nine-hole course built from the track kit. The
+course is installed on the first start.
+
+<Card title="SkyGarden demo map" icon="map" href="/roadminigolf/demo-map">
+  What it changes on the map, and how to leave it out
+</Card>
+
+## ✅ Verification
+
+1. The server console shows no `road_minigolf` errors on start. On the very
+   first start it prints that the demo course "SkyGarden" was installed.
+2. In game, the SkyGarden course has a blip and a start marker on the Rockford
+   Plaza roof (unless you turned the demo off).
+3. As an admin, **F7** opens the editor. As a player, `/minigolf` opens the
+   course finder with every published course.
+
+## 📚 Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Playing" icon="flag" href="/roadminigolf/playing">
+    Lobbies, game modes, controls and scoring
+  </Card>
+  <Card title="Course editor" icon="pencil-ruler" href="/roadminigolf/editor">
+    Build, test and publish courses
+  </Card>
+  <Card title="Configuration" icon="settings" href="/roadminigolf/configuration">
+    Permissions, economy, logs and hooks
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadminigolf/faq">
+    Any problems or questions?
+  </Card>
+</CardGroup>
