@@ -178,6 +178,49 @@ Config.RearCamera = {
   `autoReverseDelay` stops the camera flipping up every time someone taps **S** while manoeuvring. Set it to `0` for the old behaviour of switching instantly.
 </Note>
 
+### Vehicle controls
+
+The Actions app shows the real state of the car and lets occupants control it. Who may use what is set per control:
+
+```lua config.lua
+-- 'driver', 'own' (doors/windows: passengers only their own), 'all' or false (hidden)
+Config.VehicleControl = {
+    lock = 'driver',
+    engine = 'driver',
+    lights = 'driver',
+    indicators = 'driver',
+    interiorLight = 'all',
+    doors = 'own',
+    hood = 'driver',
+    trunk = 'driver',
+    windows = 'own',
+    roof = 'driver',
+    xenon = 'driver',
+    seats = 'all'
+}
+Config.SeatSwitchMaxSpeed = 5.0   -- km/h; above this the driver cannot switch seats
+```
+
+The values above are the defaults: the driver controls everything, passengers their own door and window, the interior light and their seat. A key you leave out keeps its default, so an older `config.lua` without this block works unchanged.
+
+<Note>
+  Seat switching follows GTA: only the front passenger can slide over to the wheel, and nobody in the back can move to a front seat. To refuse more, for example for handcuffed players, edit `CarRadioCanSwitchSeat` in `server/serverAPI/vehicleseats.lua` — see the [Server API](/roadcarradio/api/client#vehicle-controls).
+</Note>
+
+Locking goes through your vehicle key script when one is running, so the car and the key script never disagree. Supported out of the box:
+
+| Key script | How it locks |
+|------------|--------------|
+| `qbx_vehiclekeys` | Its `SetLockState` export |
+| `Renewed-Vehiclekeys` | Its `vehicleLock` state bag |
+| `MrNewbVehicleKeys` | Its `SetVehicleLock` export |
+| `t1ger_keys`, `cd_garage` | Their client API, on the player's client |
+| `qb-vehiclekeys`, `wasabi_carlock`, `vehicles_keys`, `okokGarage`, none | The game's own lock, which these scripts follow |
+
+<Warning>
+  These integrations are written from each script's code or documentation and have not all been tested in game. If locking does not match your key script, add or adjust it in `server/serverAPI/vehiclelock.lua` — see the [Server API](/roadcarradio/api/client#vehicle-controls).
+</Warning>
+
 ### Autopilot
 
 ```lua config.lua
@@ -217,6 +260,12 @@ Config.Debug = false              -- true registers /rearcamdebug
     New tables and columns are added automatically on start. There is no SQL file to import for an update.
   </Step>
 </Steps>
+
+### Updating to 2.6.0
+
+<Warning>
+  `lockDoors()` is gone from `client/clientAPI.lua`. If you had added your key script there, move it to `server/serverAPI/vehiclelock.lua` and read the lock state in `CarRadioIsLocked` — see [Vehicle controls](/roadcarradio/api/client#vehicle-controls). A copy of `client/clientAPI.lua` from an older version keeps working, but then locking only uses the game's own lock.
+</Warning>
 
 ### Coming from RoadCarPlay?
 

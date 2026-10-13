@@ -140,6 +140,75 @@ end
 
 ---
 
+## Vehicle Controls
+
+The Actions app checks every request on the server: the vehicle and seat come from the player's ped, never from the message, and the rights come from `Config.VehicleControl`. The three files below are `escrow_ignore`, so you can adapt them to your server.
+
+### VehicleLock (server)
+
+`server/serverAPI/vehiclelock.lua` decides how a lock request reaches your key script. The first script in `VehicleLock.SYSTEMS` that is started is used; scripts without an entry in `SETTERS` use the game's own lock.
+
+```lua server/serverAPI/vehiclelock.lua
+VehicleLock.SYSTEMS = {
+    'qbx_vehiclekeys',
+    'my_keys',            -- your script, above the ones it should win against
+    -- ...
+}
+
+local SETTERS = {
+    my_keys = function(vehicle, locked)
+        exports.my_keys:SetLocked(vehicle, locked)
+    end,
+    -- ...
+}
+```
+
+<Note>
+  A setter that throws falls back to the game's own lock and prints the error to the server console, so a renamed export never leaves the car unlockable. A setter set to `'client'` is called on the requesting player's client instead (see `roadcarradio:client:vehicle:lock` in `client/clientAPI.lua`).
+</Note>
+
+### CarRadioIsLocked (client)
+
+`client/clientAPI.lua`. The lock state the Actions app shows. If your key script keeps its own state (a state bag, an export), read it here as well.
+
+<ParamField path="vehicle" type="number" required>
+  Vehicle entity handle
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the vehicle is locked
+</ResponseField>
+
+### CarRadioCanSwitchSeat (server)
+
+`server/serverAPI/vehicleseats.lua`. Called before a player switches seats, after the built-in checks (seat free, only the front passenger slides to the wheel, nobody climbs from the back to the front, speed limit for the driver). Return `false` to refuse.
+
+<ParamField path="source" type="number" required>
+  Server id of the player
+</ParamField>
+<ParamField path="vehicle" type="number" required>
+  Vehicle entity handle
+</ParamField>
+<ParamField path="fromSeat" type="number" required>
+  Current seat, GTA numbering: `-1` driver, `0` front passenger, `1` and up the rear
+</ParamField>
+<ParamField path="toSeat" type="number" required>
+  Requested seat
+</ParamField>
+
+```lua server/serverAPI/vehicleseats.lua
+function CarRadioCanSwitchSeat(source, vehicle, fromSeat, toSeat)
+    -- e.g. no seat switching while handcuffed
+    return not Player(source).state.isCuffed
+end
+```
+
+<Warning>
+  **Changed in 2.6.0.** `lockDoors()` no longer exists in `client/clientAPI.lua`. Move a key script you added there into `VehicleLock` above.
+</Warning>
+
+---
+
 ## Related
 
 <CardGroup cols={2}>
