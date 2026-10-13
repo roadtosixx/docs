@@ -12,12 +12,6 @@ screen. Opening it loads your page into a window.
 **RoadVR is not modified in the process**, so an update overwrites nothing of
 yours.
 
-<Card title="Working examples" icon="folder-code">
-  Complete, running resources ship in `examples/`: **`roadvr_exampleapp`** for
-  this page, plus **`roadvr_examplewidget`**, **`roadvr_examplemarkers`** and
-  **`roadvr_examplegame`** for the other three shapes a resource can take.
-</Card>
-
 <Info>
   An app is one of four. A [widget](/roadvr/custom-widgets) hangs in a wall, a
   [marker](/roadvr/custom-markers) annotates the world itself, and a
@@ -95,16 +89,21 @@ exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
 
 <ParamField path="hidden" type="boolean" default="false">
   Keep it off the home screen and open it yourself with
-  `openRoadVrPanel(id)`.
+  `openRoadVrPanel(id)`. The registered `size` only applies when the app is
+  opened from the home screen — pass `{ size = ... }` to `openRoadVrPanel`, or
+  the window opens at 1.2 × 0.75.
 </ParamField>
 
 <ResponseField name="ok" type="boolean">
   `false` when the id already belongs to another resource — nobody gets to
-  replace someone else's window.
+  replace someone else's window. Registering the same id again from **your
+  own** resource replaces your earlier definition.
 </ResponseField>
 
 <ResponseField name="err" type="string">
-  Why it failed, when it did.
+  Why it failed, when it did: `'definition is not a table'`, `'missing id'`,
+  `'missing page'`, `'reserved built-in id'` or `'id "<id>" already belongs to
+  <resource>'`.
 </ResponseField>
 
 ### Two icons, if you want the setting to work
@@ -137,8 +136,10 @@ with a white glyph.
 ### sendToRoadVrApp
 
 <ResponseField name="return" type="boolean">
-  `false` while the window is closed. **That is normal, not an error** — your
-  resource has no idea whether the player has your app open.
+  `true` when the id is yours, `false` when it is not. Whether the window is
+  open is not part of the answer: a message to a closed window is dropped
+  quietly. **That is normal, not an error** — your resource has no idea whether
+  the player has your app open, and does not need to.
 </ResponseField>
 
 ## Building the resource
@@ -272,7 +273,7 @@ so there is no copy in your resource that can go stale.
 | `world` | weather and clock tick — only after `watch('world')` |
 | `placement` | how far your window stands away — only after `watch('placement')` |
 | `focus` / `blur` | your window became, or stopped being, the focused one |
-| `visible` / `hidden` | pause menu, map, cinema screen, fast head turn |
+| `visible` / `hidden` | pause menu, big map, third person, drone flight, cinema screen |
 | `resize` | your window was dragged to a new size |
 | `anchor` | your window switched between following the player and staying put |
 | `action` | one of your ornament buttons was pressed |
@@ -289,8 +290,8 @@ off()
 ### Two things worth knowing about
 
 **`watch('placement')`** tells you how far your window is standing from the
-player's head, in metres, four times a second and only while it changes. It is
-what the Media app turns its volume down with as somebody walks away.
+player's head, in metres, four times a second and only while it changes — the
+value to turn a sound down with as somebody walks away.
 
 ```js
 RoadVr.watch('placement')
@@ -321,9 +322,10 @@ RoadVr.setActions([
 
 ## Writing the page
 
-The window renders at a fixed **1280×800 CSS pixels** whatever its size in
-metres. Sizes look oversized in a browser on purpose; that is the same scale
-every built-in app uses.
+The window renders at a fixed width of **1280 CSS pixels** whatever its size in
+metres; the height follows the window's proportions — `1280 × h / w`, so the
+default 1.2 × 0.75 is 1280×800 and 1.1 × 0.7 is 1280×815. Sizes look oversized
+in a browser on purpose; that is the same scale every built-in app uses.
 
 <AccordionGroup>
   <Accordion title="Keep the background transparent">
@@ -357,8 +359,7 @@ every built-in app uses.
 
   <Accordion title="Do not scroll">
     Set `overflow: hidden` and make your page fit its window. A scrollbar down
-    the side of a floating pane looks like a fault, and the wheel is taken
-    anyway — it moves the window closer and further away.
+    the side of a floating pane looks like a fault.
 
     ```css
     html, body { overflow: hidden; height: 100%; margin: 0; }
@@ -409,17 +410,6 @@ Registration survives the headset being taken off and put back on. The list is
 kept on the Lua side and pushed to the interface again on every boot, so a
 resource that started long before anyone put a headset on still shows up.
 
-## Trying the examples
-
-```cfg server.cfg
-ensure roadvr_exampleapp
-```
-
-Put the headset on and the **Example** icon is on the home screen. It shows
-your street, health and armour on request, receives a speed reading pushed once
-a second, honks the horn of the vehicle you are in — and, in its second column,
-reports everything the headset tells it through the SDK.
-
 RoadVR does not have to be restarted for a resource that registers after it, and
 nothing else has to be started alongside.
 
@@ -436,14 +426,13 @@ nothing else has to be started alongside.
 <CardGroup cols={3}>
   <Card title="Custom Widgets" icon="frame" href="/roadvr/custom-widgets">
     A page that hangs in a wall and belongs to the player rather than to your
-    resource. `examples/roadvr_examplewidget`.
+    resource.
   </Card>
   <Card title="Custom Markers" icon="map-pin" href="/roadvr/custom-markers">
     Labels, arrows, outlines and paths on the world itself — no page at all.
-    `examples/roadvr_examplemarkers`.
   </Card>
   <Card title="Custom Games" icon="gamepad-2" href="/roadvr/custom-games">
     A multiplayer session: RoadVR brings the lobby, invitations and characters,
-    you bring the rules. `examples/roadvr_examplegame`.
+    you bring the rules.
   </Card>
 </CardGroup>

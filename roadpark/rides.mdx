@@ -1,0 +1,383 @@
+---
+title: 'Rides'
+description: 'The six RoadPark rides: what they do, how to ride them and what you can configure'
+icon: 'ferris-wheel'
+---
+
+# Rides
+
+All six rides are synchronised for every player through OneSync, run on their
+own and need no operator. Each ride is a separate resource with its own
+`config.lua`.
+
+<CardGroup cols={2}>
+  <Card title="Breakdance" icon="disc-3" href="#breakdance">32 seats, light show</Card>
+  <Card title="Highlander" icon="arrow-down-to-line" href="#highlander">120 m drop tower</Card>
+  <Card title="Grand Prix" icon="car" href="#grand-prix-bumper-cars">10 bumper cars</Card>
+  <Card title="Ferris Wheel" icon="ferris-wheel" href="#ferris-wheel">12 capsules</Card>
+  <Card title="Klabautermann" icon="sailboat" href="#klabautermann-swing-ship">Swing ship</Card>
+  <Card title="Himmelsflieger" icon="wind" href="#himmelsflieger">Wave swinger</Card>
+</CardGroup>
+
+## How riding works
+
+1. Walk to the ride entrance. A prompt shows the free seats.
+2. Choose a seat with the **arrow keys** and press **E** to board. If
+   `roadpark_tickets` runs, the [chips](/roadpark/tickets) are taken now.
+3. A countdown runs while other players board. Getting off before the start
+   refunds the chips.
+4. The ride runs and lets everybody off at the end.
+
+Breakdance, the swing ship and the Himmelsflieger have an **onboard camera**
+on **V**. The choice is remembered per player.
+
+---
+
+## Breakdance
+
+A spinning ride with four crosses and 16 two-seat gondolas, neon lights,
+lasers, fog, a light show and music.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_breakdance` |
+| Seats | 32 |
+| Price | 2 chips |
+| Round | 20 s countdown, 90 s ride (automatic mode) |
+| Space | 40 × 40 m |
+
+The ride runs **automatically** with an operator NPC at the console. Players
+can also take over the console themselves and drive the show.
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| **← / →** | Switch seat (at a gondola: between its two seats) |
+| **↑ / ↓** | Next / previous gondola (at the front entry) |
+| **E** | Board |
+| **F** or **X** | Get off (while the ride stands and the restraints are open) |
+| **V** | Onboard camera, look around with the mouse |
+
+Players who walk into the spinning ride are pushed out of the way.
+
+### Operator console
+
+Press **E** at the console to open it. With `Config.OperatorAce = false` every
+player may use it; set an ACE name to restrict it.
+
+| Key | Action |
+| --- | --- |
+| **1** / **2** / **3** | Program Gentle / Dynamic / Intense |
+| **K** | Swing boost |
+| **F** | Fog |
+| **H** | Horn |
+| **G** | Restraints |
+| **S** | End the ride / cancel the start |
+| **X** | Emergency stop |
+| **ESC** | Close the console |
+
+A manually started ride ends after three minutes at the latest.
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/bdmute` | — | Mutes ride audio and announcements for yourself |
+| `/bdlights` | — | Reduced light effects for yourself |
+| `/breakdance editor [id]` | `roadpark.editor` | Places a new ride or moves an existing one |
+| `/breakdance remove <id>` | `roadpark.editor` | Removes an editor-placed ride |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Locale` | `'en'` | `'en'` or `'de'` |
+| `EditorAce` | `'roadpark.editor'` | ACE for the editor commands |
+| `OperatorAce` | `false` | ACE for the console; `false` = every player |
+| `MaxEditorRides` | `4` | Extra rides placed with the editor (0–16) |
+| `KeepRunningOnWalkAway` | `true` | `false` brakes the ride when the operator leaves |
+| `AutoOperate` | `true` | Runs rounds automatically |
+| `AutoStartDelay` | `20` | Countdown in seconds (5–120) |
+| `AutoRideSeconds` | `90` | Automatic round length in seconds (30–170) |
+| `OperatorNpc` | `true` | Shows the operator NPC |
+| `Music` | `true` | Ride music |
+| `Announcements` | `true` | Operator announcements (German speech) |
+| `Volume` | `0.7` | 0–1 |
+| `AudioDistance` | `40.0` | Metres |
+| `RideCamera` | `true` | Allows the onboard camera |
+| `ShowHaze`, `ShowJets`, `ShowLasers` | `true` | Show effects |
+| `FogDensity` | `1.6` | 1.0–2.5 |
+| `StreamDistance` | `180.0` | Metres (60–400) |
+| `TestNpcs` | `false` | Console buttons that fill seats with NPCs — keep off on a live server |
+
+---
+
+## Highlander
+
+A 120 m drop tower. Riders are lifted 103 m, enjoy a panorama at the top and
+drop at up to 120 km/h.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_highlander` |
+| Seats | 24 |
+| Price | 2 chips |
+| Round | 15 s boarding, then about 88 s ride |
+| Space | 16 × 21 m flat ground and 120 m clear height |
+
+The ride starts by itself after the boarding countdown. There is no manual
+start.
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| **← / →** | Choose a seat (1–24) |
+| **E** | Board |
+| **X** | Get off (during boarding only) |
+
+### Ride programs
+
+| `defaultMode` | Behaviour |
+| --- | --- |
+| `'super'` | The seats tilt 30° at the top and stay tilted through the drop |
+| `'tilt'` | The seats tilt at the top and return upright before the drop |
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/highlander editor` | `roadpark.admin` | Places or moves the tower (run again to cancel) |
+| `/highlander remove` | `roadpark.admin` | Removes the tower placed with the editor |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `defaultMode` | `'super'` | `'super'` or `'tilt'`; read when the resource starts |
+| `panoramaSeconds` | `30.0` | Time at the top (0–120 s) |
+| `adminAce` | `'roadpark.admin'` | ACE for the editor |
+| `replacementMusic` | `''` | Your own WAV track, for example `'audio/my-track.wav'` placed in `html/audio/`; empty = built-in ride sounds |
+| `audioVolume` | `0.7` | 0–1 |
+| `audioDistance` | `60.0` | Metres (10–200) |
+
+<Note>
+  The Highlander prompts are currently German only; the resource has no
+  `Locale` option.
+</Note>
+
+---
+
+## Grand Prix bumper cars
+
+A bumper car arena with ten cars. Every car has a driver and a
+passenger seat; the driver steers, the passenger rides along.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_autoscooter` |
+| Seats | 20 (10 cars) |
+| Price | 1 chip per rider |
+| Round | 15 s boarding, 90 s driving, 3 s braking |
+| Space | 42 × 32 m ground, 9 m height (driving surface 34 × 20 m) |
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| **E** | Board a car as driver |
+| **G** | Board a car as passenger |
+| **W** / **S** | Accelerate / reverse |
+| **A** / **D** | Steer |
+| **Space** | Brake |
+| **X** | Get off (any time) |
+
+A gamepad's left stick steers and accelerates analogue.
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/autoscooter editor` | `roadpark.editor` | Places or moves the arena |
+| `/autoscooter remove` | `roadpark.editor` | Removes the arena placed with the editor |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `managedParkResource` | `'roadpark'` | Takes its position from the park; `false` = editor placement only |
+| `streamDistance` | `180` | Metres |
+| `boardingMs` | `15000` | Boarding time in milliseconds |
+| `runningMs` | `90000` | Driving time in milliseconds |
+| `stoppingMs` | `3000` | Braking time in milliseconds |
+
+<Warning>
+  The driving values below this block (speed, grip, steering, bounce) are tuned
+  to the cars — change them deliberately and test. Never change the fixed
+  values for car count, collision, arena, layout, seats and networking: they
+  belong to the shipped models.
+</Warning>
+
+<Note>
+  The Grand Prix prompts are currently German only; the resource has no
+  `Locale` option.
+</Note>
+
+---
+
+## Ferris Wheel
+
+A Ferris wheel with twelve capsules. Players can sit or walk around
+inside their capsule while it turns.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_riesenrad` |
+| Seats | 48 (12 capsules × 4) |
+| Price | 1 chip |
+| Round | Each rider gets up to 3 full turns (one turn takes 3 min 36 s) |
+| Space | 40 × 16 m ground, 38 m height |
+
+The wheel turns in 30° steps and only stops at the bottom when somebody gets in
+or out, or calls a capsule.
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| *walk in* | Walking into the open capsule at the bottom takes a free seat |
+| **← / →** | Choose a seat at the station |
+| **E** | Board — or call a capsule while none is open (press again to cancel) |
+| **E** (in the capsule) | Sit down / stand up |
+| **W A S D** | Walk inside the capsule while standing |
+| **X** | Get off at the station, or book your exit for the next stop at the bottom |
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/riesenrad editor` | `roadpark.editor` | Places or moves the wheel |
+| `/riesenrad remove` | `roadpark.editor` | Removes the wheel placed with the editor |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `EditorAce` | `'roadpark.editor'` | ACE for the editor |
+| `StreamDistance` | `300.0` | Metres (100–1000) |
+| `BoardingSeconds` | `12` | Stop at the station (5–120 s) |
+| `StepSeconds` | `18` | Seconds per 30° step (5–120) |
+| `MaxLaps` | `3` | Full turns per rider (1–10) |
+| `CallDistance` | `6.0` | Metres from which a capsule can be called (2–20) |
+
+<Note>
+  The Ferris Wheel prompts are currently German only; the resource has no
+  `Locale` option.
+</Note>
+
+---
+
+## Klabautermann swing ship
+
+A swing ship for 40 riders that swings up to 75° each way.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_swingboat` |
+| Seats | 40 |
+| Price | 1 chip |
+| Round | 10 s countdown, 70 s ride |
+| Space | about 14 × 24 m flat ground |
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| **← / →** | Next free seat |
+| **E** | Board |
+| **G** | Start early (during the countdown) |
+| **X** | Get off (during the countdown) |
+| **Space** (hold) | Hands up |
+| **V** | Onboard camera |
+
+Before the ship starts, anybody inside the fence without a seat is moved to the
+exit. With `ShipImpact` on, players standing in the swing path get knocked
+over.
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/shipmute` | — | Mutes the ship for yourself |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Locale` | `'en'` | `'en'` or `'de'` |
+| `RideSeconds` | `70` | Ride length (40–180 s) |
+| `BoardingSeconds` | `10` | Countdown (3–60 s) |
+| `MaxAngle` | `75.0` | Maximum swing angle (30–80°) |
+| `RideCamera` | `true` | Allows the onboard camera |
+| `Music` | `true` | Ride music |
+| `Volume` | `0.7` | 0–1 |
+| `AudioDistance` | `40.0` | Metres (10–150) |
+| `MusicDistance` | `25.0` | Metres (5–150, never beyond `AudioDistance`) |
+| `BarOpenAngle` | `75.0` | Lap bar angle when open (-90–90) |
+| `ShipImpact` | `true` | Knocks over players in the swing path |
+| `StreamDistance` | `250.0` | Metres (80–500) |
+
+---
+
+## Himmelsflieger
+
+A wave swinger: 40 chairs on 5.6 m chains fly a 22 m circle and rise up to
+14.6 m while the canopy tilts in waves.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_wellenflug` |
+| Seats | 48 (32 single and 8 double chairs) |
+| Price | 1 chip |
+| Round | 20 s countdown, about 73 s ride |
+| Space | a flat circle of 26 m and 15 m height |
+
+### Riding
+
+| Key | Action |
+| --- | --- |
+| **E** | Take the nearest free chair (on the podium) |
+| **G** | Start early (during the countdown) |
+| **X** or **F** | Get off (during the countdown) |
+| **Space** (hold) | Hands up |
+| **V** | Onboard camera |
+| **E** (hold, during the wave) | Grab the chair in front of you — release to throw it forward |
+
+### Commands
+
+| Command | Permission | Effect |
+| --- | --- | --- |
+| `/wellenflugmute` | — | Mutes the ride for yourself |
+| `/wellenflug place` | `roadpark.editor` | Places the ride at your position, turned to your heading |
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Locale` | `'en'` | `'en'` or `'de'` |
+| `BoardingSeconds` | `20` | Countdown (5–60 s) |
+| `WaveSeconds` | `35` | Length of the wave part (15–90 s) |
+| `TopRpm` | `10.2` | Top speed (6–11 rpm) |
+| `LiftMeters` | `3.0` | Canopy lift (2.5–3 m) |
+| `MaxTiltDeg` | `8.0` | Canopy tilt (0–10°) |
+| `PushEnabled` | `true` | Allows grabbing and throwing chairs |
+| `PushCooldownSeconds` | `5` | 2–30 s |
+| `RideCamera` | `true` | Allows the onboard camera |
+| `Music` | `true` | Ride music |
+| `Volume` | `0.7` | 0–1 |
+| `AudioDistance` | `40.0` | Metres (10–150) |
+| `MusicDistance` | `25.0` | Metres (5–150) |
+| `BarOpenAngle` | `80.0` | Lap bar angle when open (-90–90) |
+| `RiderSeatOffset` | `0.0` | Lifts riders in the seat (0–0.35 m) |
+| `StreamDistance` | `250.0` | Metres (100–500) |

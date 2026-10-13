@@ -1,0 +1,198 @@
+---
+title: 'Integration'
+description: 'Ticket exports, placement exports, hooks and events of the RoadPark resources'
+icon: 'plug'
+---
+
+# Integration
+
+RoadPark exposes server exports for chips and placements, `open/` hooks for
+your own rules and notifications, and a few events.
+
+## 🎟️ Ticket exports
+
+`roadpark_tickets` lets your own scripts charge Park Chips — for example for a
+ride or a game of your own. All exports are **server-side** and return plain
+tables.
+
+### redeem
+
+Takes the chips for a ride from the player's inventory.
+
+```lua server.lua
+local result = exports.roadpark_tickets:redeem(source, 'my_ride')
+if not result.ok then
+    -- result.reason: 'no_tickets', 'busy' or 'unavailable'
+    print(('needs %d chips, has %d'):format(result.need, result.have))
+    return
+end
+-- keep result.receipt to refund the chips if the ride does not start
+```
+
+<ParamField path="source" type="number" required>
+  Server ID of the player.
+</ParamField>
+
+<ParamField path="rideId" type="string" required>
+  Ride ID — lowercase letters, digits and `_`. The price is `Config.Rides[rideId].tickets`,
+  or `Config.DefaultTickets` for unknown IDs.
+</ParamField>
+
+<ResponseField name="ok" type="boolean">
+  `true` when the chips were taken. Without a framework, or when the price is
+  0, `ok` is `true` and nothing is taken.
+</ResponseField>
+
+<ResponseField name="receipt" type="string">
+  Receipt ID for `refund`. Valid for 30 minutes, once.
+</ResponseField>
+
+<ResponseField name="count" type="number">
+  Chips taken.
+</ResponseField>
+
+<ResponseField name="left" type="number">
+  Chips the player has left.
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  On failure: `no_tickets`, `busy` (another chip transaction is running for
+  this player) or `unavailable`.
+</ResponseField>
+
+<ResponseField name="need, have" type="number">
+  On failure: chips needed and chips the player has.
+</ResponseField>
+
+### refund
+
+Gives the chips of a receipt back.
+
+```lua server.lua
+local back = exports.roadpark_tickets:refund(source, receipt)
+-- back.ok, back.count, back.left — or back.reason
+```
+
+A receipt can be refunded once, within 30 minutes, to the same player in the
+same session. A player who reconnected gets `unknown_receipt`. Other reasons:
+`busy`, `expired`, `unavailable`.
+
+### quote
+
+```lua server.lua
+local chips = exports.roadpark_tickets:quote('my_ride') -- number of chips
+```
+
+### announce
+
+Lists your ride on the price board of every booth while your resource runs.
+
+```lua server.lua
+exports.roadpark_tickets:announce('my_ride')
+```
+
+Call it when your resource starts and again when `roadpark_tickets` starts.
+The price and label come from `Config.Rides` in `roadpark_tickets/config.lua`.
+
+## 📍 Placement exports
+
+The park map places attractions through server exports. You can use the same
+exports to place attractions from your own resource.
+
+### SetParkPlacements
+
+```lua server.lua
+local ok, reason = exports.roadpark_pizza:SetParkPlacements({
+    { id = 'pier', coords = { x = -1650.0, y = -1000.0, z = 13.0 }, heading = 140.0 },
+})
+```
+
+| Resource | Entries per caller |
+| --- | --- |
+| `roadpark_breakdance` | No limit |
+| `roadpark_highlander`, `roadpark_swingboat`, `roadpark_wellenflug` | 1 (one caller at a time, otherwise `occupied`) |
+| `roadpark_pizza`, `roadpark_icecream` | No limit |
+| `roadpark_sweets`, `roadpark_ducks` | 20 |
+| `roadpark_drinks` | 16 |
+
+<ParamField path="id" type="string" required>
+  Letters, digits, `_` and `-`, up to 32 characters, unique in the list.
+</ParamField>
+
+<ParamField path="coords" type="table" required>
+  `{ x, y, z }` in world coordinates.
+</ParamField>
+
+<ParamField path="heading" type="number" required>
+  Heading in degrees.
+</ParamField>
+
+<ParamField path="bucket" type="number">
+  Routing bucket, default `0`.
+</ParamField>
+
+Each calling resource owns one complete set: a new valid list replaces it, an
+invalid list keeps the previous one, an empty list removes it, and the set is
+removed automatically when the calling resource stops. A ride that is in use
+moves only once it is empty.
+
+### SetParkDevices
+
+Places the games of `roadpark_games`:
+
+```lua server.lua
+local ok, reason = exports.roadpark_games:SetParkDevices({
+    { key = 'cans_pier', game = 'cans', coords = { x = -1650.0, y = -1005.0, z = 13.0 }, heading = 90.0, price = 50 },
+})
+```
+
+`game` is one of `cans`, `range`, `lukas` (High Striker), `hoops` or `hoops2`
+(Moving Hoop). `price` is optional (0–100,000, default `Config.DefaultPrice`)
+and an optional `settings` table overrides the game's `Settings` defaults.
+Up to 64 devices per caller. Failure reasons: `invalid_list`, `invalid_device`,
+`invalid_position`, `invalid_settings`, `duplicate_position`,
+`position_occupied`.
+
+### Reloading park_addons.json
+
+The Ferris Wheel, the Grand Prix, the Claw Arcade and the ticket booth read
+their park position from `roadpark/park_addons.json` every five seconds. To
+apply a change at once, trigger this **server** event:
+
+```lua server.lua
+TriggerEvent('roadpark:addons:reload')
+```
+
+## 🪝 Hooks
+
+The `open/` files stay editable in the encrypted download.
+
+| Resource | Hook | Side | Purpose |
+| --- | --- | --- | --- |
+| `roadpark_games` | `Open.CanPlay(source, device)` | Server | Must return `true` to allow the round — `false` refuses it (job, whitelist, event). `device` has `id`, `game`, `coords`, `heading`, `price`, `settings`, `bucket`, `occupied` |
+| `roadpark_ducks` | `Open.CanPlay(source, booth)` | Server | Return `false` to refuse a round |
+| `roadpark_ducks` | `Open.OnPrize(source, class, item, count, booth)` | Server | After a prize item was added; `class` is `small`, `mid`, `big` or `lucky` |
+| `roadpark_claw` | `Open.CanPlay(source, machine)` | Server | Must return `true` to allow the game — `false` refuses it. `machine` has `id`, `row`, `theme`, `coords`, `heading` |
+| `roadpark_claw` | `Open.OnPrize(source, theme, variant, machine)` | Server | After a plush was added |
+| `roadpark_sweets` | `Open.CheckText(source, lines)` | Server | Return `false` to refuse a lettering |
+| `roadpark_sweets` | `Open.OnInscribe(source, lines, size, color)` | Server | After a heart was lettered and paid, for example for a Discord log |
+| `roadpark_pizza`, `roadpark_icecream` | `OpenServer.Nourish(source, hunger, thirst)` | Server | Adds hunger and thirst in percent; replace it for your own needs system |
+| `roadpark_pizza` | `OpenClient.CanUsePizza()` | Client | Return `false` to block biting, giving and the hold pose (phone open, cuffed) |
+| `roadpark_icecream` | `OpenClient.CanUseIceCream()` | Client | Same for the ice cream |
+| `roadpark_drinks` | `OpenClient.OnDrink(product)` | Client | After a finished drink; adds ESX thirst and fires `roadpark_drinks:consumed` |
+| Tickets, ducks, claw, pizza, ice cream, sweets | `OpenClient.Notify(message)`, `OpenClient.HelpText(message)` | Client | Replace with your notification and help text resources |
+| `roadpark_drinks` | `OpenClient.Notify(message)`, `OpenClient.Help(message)` | Client | Same for the drinks kiosk |
+
+## 📡 Events
+
+### roadpark_drinks:consumed
+
+Client-side, local. Fired after a player finished a drink.
+
+```lua client.lua
+AddEventHandler('roadpark_drinks:consumed', function(product)
+    -- product: 'water', 'lemonade' or 'cola'
+end)
+```
+
+Use it to add thirst on QBCore, Qbox or your own needs system.

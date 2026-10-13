@@ -17,9 +17,8 @@ submits to the server for judgement.
 
 ## Loading it
 
-Copy `public/sdk/game.js` out of the built RoadVR resource into your own game
-and load it **before** your application. The source copy is at
-`ui/public/sdk/game.js`, with `game.d.ts` beside it.
+Copy `public/sdk/game.js` out of the RoadVR resource into your own game and
+load it **before** your application. `game.d.ts` sits beside it.
 
 ```html ui/index.html
 <script src="./sdk/game.js"></script>
@@ -39,9 +38,11 @@ and load it **before** your application. The source copy is at
 const game = await RoadVrGame.connect()
 ```
 
-Negotiates API version 1 and resolves to the connection. It rejects when the
-host answers with a different version, and it times out when nothing answers at
-all — which is what happens if you open the page outside RoadVR.
+Negotiates API version 1 and resolves to the connection. It rejects with the
+code `version` when the host answers with a different version, with
+`unavailable` while this game's immersive view is not open, and with `timeout`
+when nothing answers within eight seconds — which is what happens if you open
+the page outside RoadVR.
 
 <ResponseField name="game" type="object">
   The connection: `state`, `on`, `send`, `pause`, `leave`.
@@ -152,26 +153,33 @@ Submits an action for the server to judge. It resolves **after** the server has
 accepted it, and rejects with an `Error` whose `code` says why it did not.
 
 <ParamField path="action" type="string" required>
-  The action name your `onAction` handler switches on.
+  The action name your `onAction` handler switches on. Letters, digits, `_` and
+  `-`, at most 48 bytes — anything else is rejected as `invalid` before your
+  rules see it.
 </ParamField>
 
 <ParamField path="payload" type="object">
-  Plain data, held to the same content limits as the state itself.
+  Plain data, held to the same content limits as the state itself. It has to be
+  an object.
 </ParamField>
 
 ### The error codes
 
 | `error.code` | Meaning |
 |---|---|
-| `invalid` | Your own rules rejected the move |
+| `invalid` | Your own rules rejected the move, or the action name or payload was malformed |
 | `stale` | The snapshot you acted on was out of date |
 | `rate_limited` | More than one mutating action per 100 ms |
 | `busy` | A request is already in flight |
-| `timeout` | The host did not answer |
-| `state` | The room is not in a phase that accepts actions |
+| `timeout` | The host did not answer within eight seconds |
+| `state` | The room is not playing, the view is paused, or the player is dead, in a vehicle or has closed the lobby window |
 | `closed` | The room is gone |
 | `unavailable` | The game or RoadVR is not available right now |
-| `game_error` | Your handler raised |
+| `game_error` | Your handler raised or returned something that is not a table |
+
+Any other `reason` string your `onAction` returns, up to 48 bytes, arrives as
+`error.code` unchanged — `{ reason = 'not_your_turn' }` becomes
+`'not_your_turn'`. Longer or non-string reasons become `game_error`.
 
 <Note>
   On `stale`, RoadVR asks for a fresh snapshot by itself — but the rejected

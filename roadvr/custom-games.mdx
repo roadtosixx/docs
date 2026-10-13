@@ -15,12 +15,6 @@ game and the rules that decide what a move means.
 **RoadVR is not modified in the process.** You register from your own server
 script; there is no RoadVR source edit and no custom RoadVR client script.
 
-<Card title="Working example" icon="folder-code">
-  **Target Garden** ships in `examples/roadvr_examplegame` — a cooperative
-  Three.js game for up to four players. Both players see the same active target
-  and the same score, and the server awards every point.
-</Card>
-
 <Note>
   This is **Game SDK v1**. It runs on a single FiveM server and covers games
   that exchange discrete actions and one small shared state. A distribution
@@ -42,33 +36,6 @@ script; there is no RoadVR source edit and no custom RoadVR client script.
     `onStart` and `onAction` — that hold the rules. That is the whole contract.
   </Card>
 </CardGroup>
-
-## Try the example first
-
-From the RoadVR source checkout, with the UI dependencies already installed:
-
-```sh
-node scripts/build-game-example.mjs
-```
-
-This refreshes the SDK, the TypeScript declarations, the font and the licenses,
-then builds the example. Copy the complete `roadvr_examplegame` folder beside
-`roadvr` in your server resources.
-
-```cfg server.cfg
-ensure roadvr
-ensure roadvr_examplegame
-```
-
-Put the headset on, open **Target Garden** from the launcher, create a lobby and
-invite an online RoadVR friend — or read them the six-letter code. Everyone
-selects **Ready**, the host starts, and **Enter game** opens the 3D view. One
-player can also test it alone.
-
-<Warning>
-  The example is a developer example. RoadVR's main deploy and the customer
-  package do **not** install it.
-</Warning>
 
 ## Register from the server
 
@@ -256,9 +223,9 @@ than an exact encoded-JSON guarantee.
 
 ## The page
 
-Copy `public/sdk/game.js` out of the built RoadVR resource into your game and
-load it before your application. The source copy lives at
-`ui/public/sdk/game.js`, with the TypeScript declarations beside it.
+Copy `public/sdk/game.js` out of the RoadVR resource into your game and load it
+before your application. The TypeScript declarations, `game.d.ts`, sit beside
+it.
 
 ```html ui/index.html
 <script src="./sdk/game.js"></script>
@@ -395,8 +362,7 @@ character.update(elapsedSeconds, { moving: 0, reducedMotion: false })
 
 Use the original RoadVR model rather than maintaining a second character
 implementation. Copy `public/sdk/character.js`, `character.d.ts` and the whole
-`public/sdk/character/` directory into your game's SDK folder — the example
-build does it for you.
+`public/sdk/character/` directory into your game's SDK folder.
 
 <Info>
   A saved look broadcasts a new room revision to everyone, **including during
@@ -411,28 +377,12 @@ build does it for you.
 
 ## Checking your work
 
-The example can be rebuilt on its own with `npm install` and `npm run build`
-inside its folder. It bundles Three.js and needs no CDN. Opening its page
-outside RoadVR times out, because there is no SDK host to answer.
+Opening your page outside RoadVR times out in `connect()`, because there is no
+SDK host to answer — test inside the headset.
 
-For a real two-player browser test from the source checkout:
-
-```sh
-node scripts/build-game-example.mjs
-node scripts/game-review-server.mjs
-```
-
-Open `http://127.0.0.1:5186/game-review.html?player=1` and the same address with
-`player=2`. The fixture uses synthetic friends and runs the **real** Lua lobby,
-registration and example rules through wasmoon. Walk the whole path: create →
-invite → accept → ready both → start → enter both → hit → pause/resume → back to
-lobby → leave. Add `&lang=de` for German. **Customize character** opens the
-actual studio, and fixture saves stay in memory rather than touching the
-database.
-
-```sh
-node scripts/check.mjs
-```
+Walk the whole path with two players: create → invite → accept → ready both →
+start → enter both → play → pause and resume → back to lobby → leave.
+**Customize character** opens the real studio from your lobby.
 
 <Warning>
   Browser evidence does not replace a real FiveM check. Before you ship, verify

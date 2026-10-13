@@ -7,13 +7,13 @@ icon: 'frame'
 # Custom Widgets
 
 A widget is not a small app. It sits flat in a wall, it does not turn towards
-the player, it has no title bar and cannot be focused, and outside the edit mode
+the player, it has no window bar and cannot be focused, and outside the edit mode
 it takes no clicks at all — it is something you glance at, not something you
 use. It is also **saved in the player's profile**, so a widget somebody hangs
 today is still on that wall tomorrow.
 
 Write your own resource, register a kind, and it turns up in the widget bar next
-to the clock. A complete, running example is in `examples/roadvr_examplewidget/`.
+to the clock.
 
 <Note>
   **Why a page and not a component.** RoadVR's interface is one compiled Vue
@@ -70,7 +70,7 @@ to the clock. A complete, running example is in `examples/roadvr_examplewidget/`
   </Step>
 
   <Step title="Write the page">
-    Transparent background, no cursor, no scrolling. See
+    Transparent background, no selection, no scrolling. See
     [Writing the page](#writing-the-page) below.
   </Step>
 </Steps>
@@ -90,6 +90,7 @@ local ok, err = exports.roadvr:registerRoadVrWidget({
 
 ```lua Unregister
 -- Widgets already hanging are LEFT ON THE WALL. They belong to the player.
+-- Returns false when the id is not yours.
 exports.roadvr:unregisterRoadVrWidget('myres_gauge')
 ```
 
@@ -259,7 +260,8 @@ widgets render at 512 px across.
 **Keep the background transparent.** RoadVR's mount sits behind your page. A
 background colour on `body` shows up as a rectangle inside a round recess.
 
-**Hide the cursor** with `cursor: none`. The headset draws its own pointer.
+**Leave the cursor alone.** A widget's frame takes no mouse input at all, so a
+`cursor` rule in your page is never seen — the headset draws its own pointer.
 
 **Nothing can be selected.** Set `user-select: none` on `html, body`.
 
@@ -301,7 +303,7 @@ The same SDK the apps use, with one difference in what it reports:
 what a piece on the wall has:
 
 ```js
-{ kind: 'yourresource_kind', id: 'w7', size: 0.34, aspect: 1, mount: 'recess' }
+{ kind: 'yourresource_kind', id: 'w_7', size: 0.34, aspect: 1, mount: 'recess' }
 ```
 
 `size` is metres of width — one number, because the height follows from
@@ -319,13 +321,13 @@ Everything else — `theme`, `locale`, `world`, `visible` / `hidden`, `message`,
 the counterpart returned by every `on()` — works exactly as it does for an app.
 The full table is in [Custom Apps](/roadvr/custom-apps), and every field and function in the [SDK reference](/roadvr/api/sdk).
 
-## Trying the example
+## Trying it
 
-```
-ensure roadvr_examplewidget
+```cfg server.cfg
+ensure myres_gauge
 ```
 
-Put the headset on, press the widget key, and "Speed" is in the bar. Hang it,
-get in a car, and the number follows you. Hang a second one and both show the
-same reading. Stop the resource and they both say *"Widget unavailable"* without
+Put the headset on, open the widget editor with the **Widgets** button under
+the home screen, and your kind is in the bar. Hang two and both receive the
+same pushes. Stop the resource and they both say *"Widget unavailable"* without
 leaving the wall; start it again and they come back.

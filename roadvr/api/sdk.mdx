@@ -62,12 +62,6 @@ newer headset.
 })()
 ```
 
-<Card title="Working examples" icon="folder-code">
-  Three complete resources ship in `examples/`: `roadvr_exampleapp`,
-  `roadvr_examplewidget` and `roadvr_mediaapp` — the last one is the Media app
-  itself, and it uses `watch('placement')` and `setActions()` for real.
-</Card>
-
 ## RoadVr.ready()
 
 <ResponseField name="return" type="Promise<context>">
@@ -82,9 +76,11 @@ Calling it twice is free: once it has settled it resolves immediately.
 
 ## RoadVr.context
 
-The same object `ready()` resolves with, kept up to date. Every event updates
-it **before** the handlers run, so a handler that would rather read the whole
-picture finds it already current.
+The same object `ready()` resolves with, kept up to date. Events update it
+**before** the handlers run, so a handler that would rather read the whole
+picture finds it already current — with two exceptions: `placement` does not
+write `window.distance`, and `headset.state` keeps the value it had at
+`ready()`.
 
 ```js
 {
@@ -101,9 +97,12 @@ picture finds it already current.
 ```
 
 <ResponseField name="version" type="string | null">
-  The SDK contract version, not the resource version. It moves when a field is
-  added, so you can check whether the headset you happen to be running in knows
-  about something. `null` means nothing answered.
+  The SDK contract version the headset speaks, not the resource version. It
+  moves when a field is added, so you can check whether the headset you happen
+  to be running in knows about something. `null` means nothing answered.
+
+  `RoadVr.version`, on the global, is the version of the script file you
+  loaded.
 </ResponseField>
 
 <ResponseField name="surface" type="string | null">
@@ -112,10 +111,12 @@ picture finds it already current.
 
 <ResponseField name="window" type="object | null">
   Apps only. `width` and `height` are **metres**, not pixels — your page always
-  lays out at 1280×800 CSS pixels however large the window stands in the world.
-  Reading these as pixels gives you a layout that changes with window size.
+  lays out 1280 CSS pixels wide however large the window stands in the world,
+  and `1280 × height / width` tall. Reading these as pixels gives you a layout
+  that changes with window size.
 
-  `anchor` is `'body'` (follows the player) or `'world'` (stays put).
+  `anchor` is `'body'` (follows the player), `'world'` (stays put) or
+  `'group'` (the player's windows are following as a group).
 </ResponseField>
 
 <ResponseField name="widget" type="object | null">
@@ -136,15 +137,17 @@ picture finds it already current.
 </ResponseField>
 
 <ResponseField name="headset" type="object">
-  `state` is `off`, `booting`, `passthrough`, `focus` or `shutdown`. `focus` is
-  the mode in which the player can actually click things.
+  `state` is `off`, `passthrough`, `focus` or `shutdown`, as it was when
+  `ready()` settled. `focus` is the mode in which the player can actually click
+  things.
 
   `focused` is **this window** being the focused one, not some window being
   focused.
 
-  `visible` is false while the pause menu, the map or the cinema screen is up,
-  and during a fast head turn. One field for all four, because the answer is
-  the same in all four: stop animating.
+  `visible` is false while the pause menu or the big map is up, the camera is
+  out of first person, the drone is flying, or the cinema screen is up. One
+  field for all of them, because the answer is the same in all of them: stop
+  animating.
 </ResponseField>
 
 <ResponseField name="world" type="object | null">
@@ -182,7 +185,7 @@ off()
 | `focus` | `{}` | your window became the focused one |
 | `blur` | `{}` | your window stopped being it |
 | `visible` | `{}` | the layer came back |
-| `hidden` | `{}` | pause menu, map, cinema screen, fast head turn |
+| `hidden` | `{}` | pause menu, big map, third person, drone flight, cinema screen |
 | `resize` | `{ width, height }` for apps, `{ size }` for widgets | dragged to a new size, or the wheel turned |
 | `anchor` | `{ anchor }` | switched between following the player and staying put |
 | `action` | `{ id }` | one of your ornament buttons was pressed |
@@ -218,7 +221,8 @@ The names are the ones the interface uses itself: `--vr-text`,
 `--vr-text-dim`, `--vr-text-3`, `--vr-glass-top`, `--vr-glass-bottom`,
 `--vr-chrome-top`, `--vr-chrome-bottom`, `--vr-separator`, `--vr-stroke`,
 `--fill-idle`, `--fill-hover`, `--fill-selected`, `--on-selected`,
-`--view-recessed`, plus `--vr-accent`.
+`--view-recessed`, `--view-thin`, `--view-regular`, `--view-thick`, plus
+`--vr-accent`.
 
 Point your own variables at them with a fallback and the page still opens in a
 browser:
@@ -267,8 +271,8 @@ RoadVr.unwatch('placement')
 ```
 
 `distance` is metres from the player's head to your window, four times a second
-and only while it actually changes. It is what the Media app turns its volume
-down with as you walk away, and what a display carrying too much detail to read
+and only while it actually changes. It is the value to turn a volume down with
+as the player walks away, and what a display carrying too much detail to read
 from across the room can simplify itself on.
 
 <Info>
@@ -337,8 +341,9 @@ pointer events.
 
 <Warning>
   **Three at most, and apps only.** The ornament also holds the window's own
-  controls, and a fourth button would push those off the bar. A widget has no
-  ornament — it hangs in a wall.
+  controls, and a fourth button would push those off the bar — so anything past
+  the third is dropped without a word. An item without an `id` gets its index in
+  the list as its id. A widget has no ornament — it hangs in a wall.
 </Warning>
 
 ## RoadVr.close()
@@ -385,10 +390,11 @@ your page instead, and hides the system cursor itself as it does.
 
 By design, this version is **read plus events, plus three actions** — closing
 your own window, hanging buttons in its ornament, and handing back the pointer.
-There is no way to play a sound, post a
-notification into the control centre, resize your own window, or open another
-app. Nor does it hand out game data — vehicle, health, position and the rest
-belong in your own Lua, and RoadVR is not a general game API.
+There is no way to play a sound, resize your own window, or open another app
+from the page. A notification goes through your own Lua and
+[`showRoadVrNotification`](/roadvr/api/client#showroadvrnotification). Nor does
+the SDK hand out game data — vehicle, health, position and the rest belong in
+your own Lua, and RoadVR is not a general game API.
 
 The message protocol is built so those can be added later without breaking
 anything already written against it.

@@ -1,0 +1,164 @@
+---
+title: 'FAQ'
+description: 'Common questions and problems with RoadPark'
+icon: 'badge-info'
+---
+
+# FAQ
+
+## Start here
+
+Look at your **server console** right after start. Every RoadPark resource with
+payments or items prints one line with what it found:
+
+```bash
+[Bridge] ESX + ox_inventory
+```
+
+If a resource prints `No framework found, running standalone`, your framework
+started after RoadPark or is not running — start it before the RoadPark
+resources.
+
+## Installation
+
+<AccordionGroup>
+  <Accordion title="Where do I enter my transaction ID?">
+    Nowhere. RoadPark has no license key step. Download it from the
+    [cfx.re Portal](/license-system) and start it.
+  </Accordion>
+
+  <Accordion title="Do I have to import an SQL file?">
+    No. RoadPark uses no database. Placements, leaderboards and prepaid claw
+    games live in JSON files inside the resource folders and in server KVP.
+    Only ESX users with the default inventory insert the item rows — see
+    [Inventory items](/roadpark/installation#inventory-items).
+  </Accordion>
+
+  <Accordion title="Which frameworks are supported?">
+    ESX, QBCore, Qbox and standalone. The framework and the inventory are
+    detected automatically.
+  </Accordion>
+
+  <Accordion title="Do I need ox_lib, oxmysql or ox_target?">
+    No. ox_target is used by the games row when it is running; otherwise
+    players press **E**.
+  </Accordion>
+
+  <Accordion title="The ground has holes, objects float or I still see the old construction site">
+    Reconnect. Streamed map files are cached by the client, and copying new
+    files does not reload them.
+
+    If it stays broken, another map on your server replaces the same files of
+    the Mirror Park construction site. Only one of them can run — see
+    [Map compatibility](/roadpark/installation#map-compatibility).
+  </Accordion>
+
+  <Accordion title="A ride or a stand is missing in the park">
+    - Is the resource started? A slot stays empty until its resource runs.
+    - Is the slot set to `false` in `roadpark/config.lua`?
+    - Check the server console for `[RoadPark] <slot>: refused: <reason>` or
+      `data/placements.json missing or invalid`. In the second case, restore the
+      bundled `roadpark/data/placements.json`.
+  </Accordion>
+</AccordionGroup>
+
+## Tickets
+
+<AccordionGroup>
+  <Accordion title="All rides are free">
+    That happens when `roadpark_tickets` is not running, when no framework is
+    found (standalone) or when a ride is set to `tickets = 0` in
+    `roadpark_tickets/config.lua`.
+  </Accordion>
+
+  <Accordion title="A player lost chips">
+    Chips are used as soon as the ride starts. They come back only when the
+    player gets off **before** the start. A player who disconnects while
+    waiting gets no refund.
+
+    If `roadpark_tickets` was stopped while players were already seated, those
+    refunds could not be paid — the server console lists them.
+  </Accordion>
+
+  <Accordion title="Lucky Ducks shows up as “ducks” on the price board">
+    Add it to `Config.Rides` in `roadpark_tickets/config.lua`:
+
+    ```lua config.lua
+    ducks = { label = 'Lucky Ducks', tickets = 1 },
+    ```
+  </Accordion>
+
+  <Accordion title="The booth says it is closed">
+    The booth only sells chips when a framework is running. Check the
+    `[Bridge]` line in the console.
+  </Accordion>
+</AccordionGroup>
+
+## Games and prizes
+
+<AccordionGroup>
+  <Accordion title="A player won but got no item">
+    - The item must exist in your inventory — see
+      [Inventory items](/roadpark/installation#inventory-items).
+    - **Lucky Ducks** keeps the prize at the booth for ten minutes when the
+      inventory is full. Press **E** at the booth to collect it.
+    - **Claw Arcade** keeps the prize in the chute. After two minutes it is
+      added automatically; if the inventory is still full, it is lost.
+    - Without a framework no item prizes are handed out.
+  </Accordion>
+
+  <Accordion title="The Shooting Gallery complains about the item “teddy”">
+    The Shooting Gallery gives a plush duck with the item name `teddy` from
+    1,600 points. Add the item to your inventory, or switch the item prize off
+    with `R.Prize.item = ''` in `roadpark_games/config/range.lua`.
+  </Accordion>
+
+  <Accordion title="A jackpot was reached but no money was paid">
+    Each booth pays money prizes out of the admission it has taken since the
+    last restart. Right after a restart a booth may not have enough yet.
+  </Accordion>
+
+  <Accordion title="The claw machines make no sound">
+    Their sounds need game build 2060 or newer. Set a newer
+    `sv_enforceGameBuild` on your server.
+  </Accordion>
+</AccordionGroup>
+
+## Rides
+
+<AccordionGroup>
+  <Accordion title="Why are some ride prompts German?">
+    The Highlander, the Grand Prix and the Ferris Wheel currently show German
+    prompts and have no language option yet. All other RoadPark resources are
+    English by default and can be switched to German.
+  </Accordion>
+
+  <Accordion title="Do the rides need staff?">
+    No. Every ride runs by itself: players board, a countdown runs and the ride
+    starts. On the Breakdance players can also take over the console.
+  </Accordion>
+
+  <Accordion title="Random players drive the Breakdance console">
+    Set `Config.OperatorAce` in `roadpark_breakdance/config.lua` to a permission
+    name, for example `'roadpark.operator'`, and give it to your staff with
+    `add_ace`.
+  </Accordion>
+
+  <Accordion title="Can I have a second Ferris Wheel or Highlander?">
+    No — the Highlander, the Grand Prix, the Ferris Wheel, the swing ship and
+    the Himmelsflieger exist once per server. The Breakdance can be placed up
+    to four more times (`MaxEditorRides`).
+  </Accordion>
+
+  <Accordion title="I removed the park, but the Ferris Wheel and the bumper cars are still there">
+    Both remember their park position. Stop `roadpark_riesenrad` and
+    `roadpark_autoscooter` as well, or move them with their editors — see
+    [Placing attractions outside the park](/roadpark/configuration#placing-attractions-outside-the-park).
+  </Accordion>
+
+  <Accordion title="Players get knocked over next to the swing ship">
+    That is `ShipImpact`: whoever stands in the swing path gets hit. Set
+    `Config.ShipImpact = false` in `roadpark_swingboat/config.lua` to turn it
+    off.
+  </Accordion>
+</AccordionGroup>

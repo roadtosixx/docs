@@ -10,9 +10,9 @@ icon: 'download'
   <img src="/images/roadvr/room.jpg" alt="A player wearing the RoadVR headset" />
 </Frame>
 
-RoadVR is a spatial AR interface for FiveM: world-anchored HTML panels the
-player can place in the room, carry along and interact with. It runs on ESX,
-QBCore, Qbox and standalone.
+RoadVR is a spatial AR interface for FiveM: world-anchored windows the player
+can place in the room, carry along and interact with. It runs on ESX, QBCore,
+Qbox and standalone.
 
 <Danger>
   **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
@@ -20,15 +20,19 @@ QBCore, Qbox and standalone.
 </Danger>
 
 <Note>
-  **There is no transaction ID to enter and no SQL file to import.** Unlike our
-  other scripts, RoadVR has no `API.lua` key step — in RoadVR, `API.lua` is the
-  exports file for other developers. The database sets itself up on first
-  start. If you came here looking for the license step, there isn't one.
+  **There is no transaction ID to enter.** Unlike our other scripts, RoadVR has
+  no `API.lua` key step — in RoadVR, `API.lua` is the exports file for other
+  developers. The database sets itself up on first start. If you came here
+  looking for the license step, there isn't one.
 </Note>
 
 ## 📋 Prerequisites
 
 <CardGroup cols={2}>
+  <Card title="OneSync" icon="network">
+    Required. RoadVR declares `/onesync` as a dependency and will not start
+    without it.
+  </Card>
   <Card title="ox_lib" icon="package">
     Required. Must be started before RoadVR.
   </Card>
@@ -39,28 +43,43 @@ QBCore, Qbox and standalone.
     WinSCP or similar (not FileZilla)
   </Card>
   <Card title="Inventory" icon="backpack">
-    Optional — only if you want the headset to be a real item
+    Optional — only if you want the headset and the drone to be real items
+  </Card>
+  <Card title="RoadPhone" icon="smartphone">
+    Optional, version **2.6.0 or newer**. Adds messages, music, shared notes,
+    the photo gallery and phone notifications. Older versions are treated as
+    no RoadPhone at all.
   </Card>
 </CardGroup>
 
 ## 🚀 Setup Instructions
 
 <Steps>
-  <Step title="Extract the resource">
-    Extract `roadvr` into your resources folder. We recommend a `[road]`
-    folder alongside our other scripts:
+  <Step title="Extract both resources">
+    The download contains two resources. Put both into your resources folder —
+    we recommend a `[road]` folder alongside our other scripts:
 
     ```bash
     resources/
     └── [road]/
         ├── roadvr/
+        ├── roadvr_models/
         └── other_scripts/
     ```
+
+    `roadvr_models` streams the headset itself: the wearable visor for the
+    freemode bodies and the `rs_visionpro` prop that is carried between hands
+    and head. Without it the headset falls back to whatever glasses a ped
+    already has.
   </Step>
 
-  <Step title="Register the item">
-    Add an item called `roadvr_headset` to your inventory. The name is
-    configurable through `Config.Item`.
+  <Step title="Register the items">
+    Two items, both with configurable names:
+
+    | Item | Config | What it does |
+    |---|---|---|
+    | `roadvr_headset` | `Config.Item` | Usable. Puts the headset on and takes it off. |
+    | `roadvr_drone` | `Config.Drone.item` | Not usable. The Drone app only opens while the player carries one. |
 
     <Tabs>
       <Tab title="ox_inventory">
@@ -72,23 +91,42 @@ QBCore, Qbox and standalone.
             close = true,
             description = 'Put it on and the room fills with windows.',
         },
+
+        ['roadvr_drone'] = {
+            label = 'Camera Drone',
+            weight = 1500,
+            stack = false,
+            close = true,
+        },
         ```
       </Tab>
-      <Tab title="ESX / QBCore">
-        Add `roadvr_headset` to your items table the same way you add any
-        other usable item. RoadVR registers the usable item itself — you only
-        have to make the item exist.
+      <Tab title="ESX / QBCore / Qbox">
+        Add `roadvr_headset` and `roadvr_drone` to your items table the same
+        way you add any other item. RoadVR registers the headset as usable
+        itself — you only have to make the items exist.
+
+        Detected automatically: ox_inventory, one_inventory, jaksam_inventory,
+        tgiann-inventory, qb-inventory, codem-inventory and core_inventory.
+        Anything else uses the framework's own inventory.
       </Tab>
-      <Tab title="No item at all">
-        Leave `Config.Item` empty:
+      <Tab title="No items at all">
+        Leave both names empty:
 
         ```lua config.lua
         Config.Item = ''
+
+        Config.Drone = {
+            item = '',
+            -- the rest of the block stays as it is
+        }
         ```
 
-        Everybody can then use the headset without carrying anything. The way
-        in is `/roadvr_toggle` or the FiveM keybind of the same name, which
-        the player assigns themselves.
+        Everybody can then use the headset and fly the drone without carrying
+        anything. The way in is `/roadvr_toggle` or the FiveM keybind of the
+        same name, which the player assigns themselves.
+
+        **Standalone servers have no usable items**, so this is the setting to
+        use there.
       </Tab>
     </Tabs>
   </Step>
@@ -98,32 +136,33 @@ QBCore, Qbox and standalone.
     touch more than the top:
 
     ```lua config.lua
-    Config.Locale    = 'en'                -- server-wide language for Lua messages
-    Config.Item      = 'roadvr_headset'    -- empty string = no item needed
-    Config.FocusKey  = 'E'                 -- focuses the panel you are looking at
-    Config.MaxPanels = 4
-    Config.Debug     = false               -- keep this false on a live server
+    Config.Locale          = 'en'               -- 'en', 'de', 'es' or 'it'
+    Config.Item            = 'roadvr_headset'   -- empty string = no item needed
+    Config.FocusKey        = 'E'                -- E, G, X, F or H
+    Config.MaxPanels       = 4
+    Config.FirstPersonOnly = true
+    Config.Debug           = false              -- keep this false on a live server
     ```
 
-    `Config.Locale` ships as `'en'`. The German translation is included —
-    set it to `'de'` and the Lua-side notifications switch over.
+    `Config.Locale` sets the language of the Lua-side notifications and is the
+    interface language for every player who has not picked their own in
+    Settings. English, German, Spanish and Italian are included.
 
     <Warning>
       Ship with `Config.Debug = false`. It enables `/roadvr_calib` and the
-      in-game tuning keys, which players should not have.
+      in-game tuning commands, which players should not have.
     </Warning>
 
-    <Info>
-      Interface language is **not** `Config.Locale`. Each player picks their
-      own in the headset's Settings app. `Config.Locale` only covers Lua-side
-      messages — notifications and errors.
-    </Info>
+    <Card title="Configuration" icon="sliders-horizontal" href="/roadvr/configuration">
+      Every other block in `config.lua`, explained
+    </Card>
   </Step>
 
-  <Step title="Start the resource">
+  <Step title="Start the resources">
     ```cfg server.cfg
     ensure ox_lib
     ensure oxmysql
+    ensure roadvr_models
     ensure roadvr
     ```
   </Step>
@@ -131,13 +170,30 @@ QBCore, Qbox and standalone.
 
 ## 🗄️ About the database
 
-The four tables are created on first start, and an older installation has
+RoadVR creates its tables on first start, and an older installation has
 missing columns added automatically. You do not have to prepare anything.
 
-`sql/roadvr.sql` ships for two cases only:
+| Table | Holds |
+|---|---|
+| `roadvr_profiles` | Settings, window layout and widgets per character |
+| `roadvr_accounts`, `roadvr_friends` | RoadVR account tags and friend lists |
+| `roadvr_spaces` | Saved Spaces |
+| `roadvr_characters` | Character Studio looks |
+| `roadvr_notes` | Notes, when they are not shared with RoadPhone |
+| `roadvr_beat`, `roadvr_basketball` | Scores |
+| `roadshop_vr_reminders` | Reminders |
+| `roadshop_vr_shooter_loadouts` | Arena classes |
+| `roadshop_data` | Shared with RoadPhone; RoadVR adds a `vrsetup` column |
+
+The SQL files ship for two cases only:
 
 - your database user has no `CREATE` permission
 - you want to read the schema before a script touches your database
+
+`sql/roadvr.sql` contains every table. If you are updating an existing install
+without `CREATE` permission, import the newer files on their own:
+`sql/migrations/2026-09-20-shooter-loadouts.sql` and
+`sql/2026-10-12-reminders.sql`.
 
 ## ✅ Verification
 
@@ -147,34 +203,68 @@ Run this in your **server console**:
 roadvr diag
 ```
 
-It checks the bridge, ox_lib, oxmysql, your inventory, the locale, the
-database table, and the optional xsound and RoadPhone integrations.
+It checks the bridge and framework, ox_lib, oxmysql, your inventory, the
+locale, the valet price, `Config.FirstPersonOnly`, the `roadvr_profiles`
+table, whether every Beat song file is in place, and the optional integrations.
 
-Then in game: use the item, and the visor should open onto the launcher.
+Then in game: use the item in first person. The first time a character puts
+the headset on, a short setup assistant asks for language, look and how new
+windows should behave, and offers the window tutorial at the end.
 
-## 🖼️ One thing that is deliberately missing
+## 🏔️ Environments work out of the box
 
-RoadVR ships **without panorama images** for the Environments app. An 8192px
-equirectangular JPG is around 36 MB, downloaded once by every player, and
-which ones those should be is the server owner's call.
+The Environments app ships with three built-in 3D landscapes — **Alpine Lake**,
+**Sand Dunes** and **Lunar Surface**. They are generated in the interface, so
+there is nothing to download or add.
 
-<Card title="Setting up environments" icon="image" href="/roadvr/environments">
-  Where to get panoramas and how to add them
+<Card title="Environments" icon="mountain" href="/roadvr/environments">
+  How landscapes behave and how to switch them off
 </Card>
 
-## 📦 What else is in the download
+## 🔄 Updating
 
-`examples/` carries three ready-to-run resources you can `ensure` as they are:
+<Steps>
+  <Step title="Replace everything except config.lua">
+    Replace every file of `roadvr` except your `config.lua`, and
+    `roadvr_models` with it. Mixing old and new files breaks the messages
+    between game and interface.
+  </Step>
 
-| Resource | What it is |
-|---|---|
-| `roadvr_mediaapp` | The **Media** app — YouTube in a window. Start it and it appears on the home screen. |
-| `roadvr_exampleapp` | A worked example of an app that reads the game through its own Lua. |
-| `roadvr_examplewidget` | A worked example of a wall widget. |
+  <Step title="Keep your config.lua and merge new blocks">
+    Copy new blocks from the shipped `config.lua` into yours. Anything you do
+    not add falls back to the shipped default, and the server console names the
+    blocks that are missing:
 
-<Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
-  How the examples are built, and how to write your own
-</Card>
+    ```
+    missing from config.lua: ... defaults apply
+    ```
+  </Step>
+
+  <Step title="Check the environments list">
+    An older `config.lua` may still carry `Config.Environments.list = {}` from
+    the panorama days. An empty list switches the Environments app off — replace
+    it with the three built-in landscapes:
+
+    ```lua config.lua
+    list = {
+        { id = 'alpine', scene = 'alpine' },
+        { id = 'dunes', scene = 'dunes' },
+        { id = 'moon', scene = 'moon' },
+    },
+    ```
+  </Step>
+
+  <Step title="Restart">
+    New tables are created on start. Restart `roadvr_models` and `roadvr`.
+  </Step>
+</Steps>
+
+<Tip>
+  Players see the installed and the newest version under **Settings → Updates**,
+  and the server console announces a new release. Checks only read public
+  version metadata — nothing is downloaded or installed. See
+  `Config.Updates` in [Configuration](/roadvr/configuration).
+</Tip>
 
 ## 📚 Next Steps
 
@@ -185,8 +275,8 @@ which ones those should be is the server owner's call.
   <Card title="Apps & Widgets" icon="layout-grid" href="/roadvr/apps">
     What comes with the headset
   </Card>
-  <Card title="Custom Apps" icon="pickaxe" href="/roadvr/custom-apps">
-    Put your own resource on the home screen
+  <Card title="Games" icon="gamepad-2" href="/roadvr/games">
+    Minigolf, Chess, Darts, Arena, Beat and Basketball
   </Card>
   <Card title="FAQ" icon="badge-info" href="/roadvr/faq">
     Any problems or questions?

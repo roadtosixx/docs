@@ -10,12 +10,6 @@ Call four exports and a label, arrow, outline or path appears in the world for
 the player wearing the headset. There is nothing to register up front — a marker
 exists from the moment you add it.
 
-<Card title="Working example" icon="folder-code">
-  `examples/roadvr_examplemarkers` is a complete, runnable resource. `/track`
-  annotates the nearest vehicle with all four kinds at once, and every line of
-  it is commented.
-</Card>
-
 ## What a marker is
 
 An annotation on the world, not a window. It has no buttons, no page and no
@@ -203,8 +197,11 @@ end)
     - `pos` and `entity` passed together
     - an `entity` that does not exist — a `0` from `GetVehiclePedIsIn` on a ped
       who is on foot is the usual one
-    - a `pos` that is not a `vector3`
+    - a `pos` that is not a `vector3`, `vector4` or `{ x, y, z }` table
+    - a `path` point that is not a `vector3`
+    - a `fadeDistance` that is not a number, or a `text` that is not a string
     - the resource already holding `Config.Markers.maxPerResource` markers
+    - markers switched off in `config.lua`
   </Step>
 </Steps>
 

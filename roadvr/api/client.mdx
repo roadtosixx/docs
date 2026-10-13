@@ -6,18 +6,23 @@ icon: 'code'
 
 # Client API
 
-Every export below is client-side and lives in `API.lua` inside the resource.
-That file is in `escrow_ignore`, so you can read the source of anything on this
-page.
+Every export below is client-side. Apart from the three headset exports, they
+live in `API.lua` inside the resource. That file is in `escrow_ignore`, so you
+can read the source of everything from [Panels](#panels) down.
+
+The one server-side export, `registerRoadVrGame`, is documented in the [Game
+SDK](/roadvr/api/game-sdk).
 
 ## Headset
 
 ### isRoadVrActive
 
-Is the headset currently on?
+Is RoadVR running for this player?
 
 <ResponseField name="return" type="boolean">
-  `true` while the player is wearing it.
+  `true` whenever the state is anything but `off` — including while the headset
+  is still booting or already shutting down. Test `getRoadVrState()` for
+  `'passthrough'` if you need to know the player can act right now.
 </ResponseField>
 
 ```lua
@@ -29,15 +34,19 @@ local active = exports.roadvr:isRoadVrActive()
 The state machine, as a string.
 
 <ResponseField name="return" type="string">
-  One of `off`, `booting`, `passthrough`, `focus`, `shutdown`.
+  `off`, `booting`, `passthrough`, `focus` or `shutdown` — and a few more that
+  hold the cursor while a feature runs: `widgets` (the widget editor), `beat`,
+  `minigolf`, `shooter` and `game`. More may be added.
 
   `passthrough` is windows floating while the player moves normally. `focus` is
   the mode in which the mouse is free and the player can click.
 </ResponseField>
 
 ```lua
-if exports.roadvr:getRoadVrState() == 'focus' then
-    -- the player is clicking something right now
+-- Test for the one state you need rather than listing the others: the next
+-- state RoadVR adds would otherwise be a bug in your code.
+if exports.roadvr:getRoadVrState() == 'passthrough' then
+    -- the player can move and act normally
 end
 ```
 
@@ -75,6 +84,50 @@ if not handle then return end
 exports.roadvr:takeVisorOff(handle)
 ```
 
+## Notifications
+
+### showRoadVrNotification
+
+Shows a notification card in the headset — the same card RoadVR's own messages
+use, collected in the Control Centre.
+
+<ParamField path="data" type="table" required>
+  <Expandable title="Properties">
+    <ParamField path="title" type="string">
+      Up to 160 bytes.
+    </ParamField>
+    <ParamField path="message" type="string">
+      Up to 4000 bytes. `description` is accepted as another name for it.
+    </ParamField>
+    <ParamField path="duration" type="number">
+      Milliseconds, held between 1000 and 30000.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="handled" type="boolean">
+  `true` when the headset took the notification. `false` when nobody is wearing
+  one, the headset is still booting or shutting down, or there is no text — show
+  your normal notification then.
+</ResponseField>
+
+```lua
+local handled = exports.roadvr:showRoadVrNotification({
+    title = 'Garage',
+    message = 'Your car has been repaired.',
+    duration = 6000,
+})
+
+if not handled then
+    -- your usual notification
+end
+```
+
+<Note>
+  Text is plain. GTA colour codes such as `~r~` and HTML tags are removed;
+  `~n~` and `<br>` become line breaks. Over-long text is cut at the limit.
+</Note>
+
 ## Panels
 
 ### openRoadVrPanel
@@ -93,7 +146,8 @@ Opens a window for a registered app.
     </ParamField>
 
     <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
-      Window size in **metres**.
+      Window size in **metres**. The size an app was registered with is not
+      used here — only the home screen applies it — so pass it again.
     </ParamField>
 
     <ParamField path="distance" type="number">
@@ -103,11 +157,13 @@ Opens a window for a registered app.
 </ParamField>
 
 <ResponseField name="panelId" type="string | nil">
-  `nil` when the headset is off.
+  `nil` when the headset is off. If the same app is already open, that window
+  is closed and the new one gets a new id. At `Config.MaxPanels` the oldest
+  window is closed to make room.
 </ResponseField>
 
 ```lua
-local panelId = exports.roadvr:openRoadVrPanel('media', {
+local panelId = exports.roadvr:openRoadVrPanel('myres_shop', {
     anchor   = 'world',
     size     = { w = 1.6, h = 0.9 },
     distance = 2.5,
@@ -126,14 +182,15 @@ exports.roadvr:closeRoadVrPanel(panelId)
 
 ## Custom apps
 
-Full guide with a working example: [Custom Apps](/roadvr/custom-apps).
+Full guide: [Custom Apps](/roadvr/custom-apps).
 
 ### registerRoadVrApp
 
 <ParamField path="def" type="table" required>
   <Expandable title="Properties">
     <ParamField path="id" type="string" required>
-      Unique. Prefix it with your resource name.
+      Unique. Prefix it with your resource name, and never reuse the id of a
+      built-in app — `shooter`, `reminders` and `darts` are refused outright.
     </ParamField>
     <ParamField path="page" type="string" required>
       A file in **your** resource, e.g. `'ui/index.html'`.
@@ -148,10 +205,7 @@ Full guide with a working example: [Custom Apps](/roadvr/custom-apps).
       pass in your own `files {}` block.
     </ParamField>
     <ParamField path="size" type="table" default="{ w = 1.2, h = 0.75 }">
-      Metres.
-    </ParamField>
-    <ParamField path="anchor" type="string">
-      `'body'` or `'world'`.
+      Metres. Applied when the app is opened from the home screen.
     </ParamField>
     <ParamField path="hidden" type="boolean" default="false">
       Keep it off the home screen and open it yourself.
@@ -160,11 +214,13 @@ Full guide with a working example: [Custom Apps](/roadvr/custom-apps).
 </ParamField>
 
 <ResponseField name="ok" type="boolean">
-  `false` when the id already belongs to another resource.
+  `false` when the id already belongs to another resource or is refused.
+  Registering again from your own resource replaces your earlier definition.
 </ResponseField>
 
 <ResponseField name="err" type="string">
-  Why it failed.
+  `'definition is not a table'`, `'missing id'`, `'missing page'`,
+  `'reserved built-in id'` or `'id "<id>" already belongs to <resource>'`.
 </ResponseField>
 
 ```lua
@@ -177,7 +233,12 @@ local ok, err = exports.roadvr:registerRoadVrApp({
 
 ### unregisterRoadVrApp
 
-Not needed on resource stop — that is cleaned up on its own.
+Removes the app and closes its window if it is open. Not needed on resource
+stop — that is cleaned up on its own.
+
+<ResponseField name="return" type="boolean">
+  `false` when the id is not yours.
+</ResponseField>
 
 ```lua
 exports.roadvr:unregisterRoadVrApp('myres_shop')
@@ -189,8 +250,9 @@ Sends data into your app's window. It arrives as a `message` event carrying
 `{ source: 'roadvr', ...payload }`.
 
 <ResponseField name="return" type="boolean">
-  `false` while the window is closed — **normal, not an error**. Your resource
-  has no idea whether the player has your app open.
+  `true` when the id is yours, `false` when it is not. A message to a closed
+  window is dropped quietly — **normal, not an error**. Your resource has no idea
+  whether the player has your app open.
 </ResponseField>
 
 ```lua
@@ -199,7 +261,7 @@ exports.roadvr:sendToRoadVrApp('myres_shop', { type = 'tick', speed = 42 })
 
 ## Custom widgets
 
-Full guide with a working example: [Custom Widgets](/roadvr/custom-widgets).
+Full guide: [Custom Widgets](/roadvr/custom-widgets).
 
 ### registerRoadVrWidget
 
@@ -238,6 +300,14 @@ Full guide with a working example: [Custom Widgets](/roadvr/custom-widgets).
   </Expandable>
 </ParamField>
 
+<ResponseField name="ok" type="boolean">
+  `false` when the id already belongs to another resource.
+</ResponseField>
+
+<ResponseField name="err" type="string">
+  Why it failed, when it did.
+</ResponseField>
+
 ```lua
 local ok, err = exports.roadvr:registerRoadVrWidget({
     id   = 'myres_gauge',
@@ -253,6 +323,10 @@ local ok, err = exports.roadvr:registerRoadVrWidget({
   profile, and a resource going away is not a reason to clear somebody's room —
   they fall back to an *unavailable* plate until it returns.
 </Warning>
+
+<ResponseField name="return" type="boolean">
+  `false` when the kind is not yours.
+</ResponseField>
 
 ```lua
 exports.roadvr:unregisterRoadVrWidget('myres_gauge')
@@ -287,6 +361,90 @@ local ids = exports.roadvr:getRoadVrWidgetInstances('myres_gauge')
 -- and that check is the difference between a widget that costs nothing when
 -- unused and one that does not.
 if #ids == 0 then return end
+```
+
+## World markers
+
+Full guide: [Custom Markers](/roadvr/custom-markers). Markers do not survive a
+RoadVR restart — add them again in `onClientResourceStart` for `roadvr`.
+
+### addRoadVrMarker
+
+<ParamField path="def" type="table" required>
+  <Expandable title="Properties">
+    <ParamField path="kind" type="string" required>
+      `'label'`, `'arrow'`, `'outline'` or `'path'`. Fixed once created.
+    </ParamField>
+    <ParamField path="pos" type="vector3">
+      A fixed point in the world. `pos` or `entity`, never both.
+    </ParamField>
+    <ParamField path="entity" type="number">
+      An existing entity the marker follows. Required for `'outline'`.
+    </ParamField>
+    <ParamField path="points" type="table">
+      `'path'` only: at least two `vector3`.
+    </ParamField>
+    <ParamField path="text" type="string">
+      `'label'` needs one, `'arrow'` may have one. Your text, localised by you.
+    </ParamField>
+    <ParamField path="color" type="string" default="the player's accent">
+      `'#rrggbb'`.
+    </ParamField>
+    <ParamField path="throughWalls" type="boolean" default="false">
+      `false` hides it behind geometry the way a window is hidden.
+    </ParamField>
+    <ParamField path="fadeDistance" type="number">
+      Metres, capped by `Config.Markers.cullDistance`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="id" type="string | nil">
+  The marker's handle, or `nil` with a reason as the second value.
+</ResponseField>
+
+```lua
+local id, err = exports.roadvr:addRoadVrMarker({
+    kind = 'label',
+    pos = vector3(215.8, -810.1, 30.7),
+    text = 'Meeting point',
+})
+```
+
+### updateRoadVrMarker
+
+Patches any field except `kind`. A patch follows the same rules as a definition
+and fails with the same kind of reason.
+
+<ResponseField name="ok" type="boolean">
+  `false` for an unknown handle — normal after a RoadVR restart — or a patch
+  that breaks a rule, with the reason as the second value.
+</ResponseField>
+
+```lua
+exports.roadvr:updateRoadVrMarker(id, { text = 'Meeting point — 2 min' })
+```
+
+### removeRoadVrMarker
+
+<ResponseField name="return" type="boolean">
+  `false` for an unknown handle, quietly.
+</ResponseField>
+
+```lua
+exports.roadvr:removeRoadVrMarker(id)
+```
+
+### clearRoadVrMarkers
+
+Removes all markers of your resource. Not needed on resource stop.
+
+<ResponseField name="return" type="number">
+  How many were removed.
+</ResponseField>
+
+```lua
+exports.roadvr:clearRoadVrMarkers()
 ```
 
 ## Talking to a page from inside the frame

@@ -1,0 +1,146 @@
+---
+title: 'Tickets'
+description: 'Park Chips, packages, ride prices and refunds'
+icon: 'ticket'
+---
+
+# Tickets
+
+Players buy **Park Chips** at the ticket booth by the entrance. The rides take
+chips when a player boards. Chips are a normal inventory item
+(`park_ticket`), so players can carry them, trade them or get them from your
+own scripts.
+
+The ticket booth comes from `roadpark_tickets`. Without it running, every ride
+is free.
+
+## 🎟️ Buying chips
+
+1. Walk up to the booth window and press **E**.
+2. Pick a package and pay. The money comes from the first account that can
+   cover the price — cash first, then bank.
+3. The chips land in the inventory. If the inventory has no room, nothing is
+   charged.
+
+The booth closes when the player walks away or dies. **ESC** closes it as well.
+
+### Packages
+
+| Package | Chips | Price |
+| --- | --- | --- |
+| `single` | 1 | $25 |
+| `five` | 5 | $110 |
+| `ten` | 10 | $200 |
+
+The booth shows the saving on bigger packages automatically (12 % and 20 % with
+the defaults).
+
+## 🎢 Ride prices
+
+| Ride | Ride ID | Chips |
+| --- | --- | --- |
+| Grand Prix bumper cars | `autoscooter` | 1 per rider |
+| Ferris Wheel | `ferris_wheel` | 1 |
+| Klabautermann swing ship | `swing_ship` | 1 |
+| Himmelsflieger | `wellenflug` | 1 |
+| Highlander | `highlander` | 2 |
+| Breakdance | `breakdance` | 2 |
+| Lucky Ducks | `ducks` | 1 (`DefaultTickets`) |
+
+The price board on the booth lists every ride whose resource is running,
+sorted by price. Lucky Ducks is not in `Config.Rides` by default, so it costs
+`Config.DefaultTickets` and appears as `ducks`. Add it to give it a proper
+label:
+
+```lua config.lua
+Config.Rides = {
+    -- …
+    ducks = { label = 'Lucky Ducks', tickets = 1 },
+}
+```
+
+Set a ride to `tickets = 0` to make it free while the booth keeps running.
+
+## ↩️ When chips are used and refunded
+
+- Chips are taken **when the player boards**.
+- A player who gets off **before the ride starts** gets the chips back.
+- Once the ride starts, the chips are used.
+- A player who **disconnects** while waiting gets no refund.
+- On the Grand Prix bumper cars the driver and the passenger each pay.
+
+If `roadpark_tickets` is stopped while players already sit in a ride, refunds
+for those players are not possible — the server console logs them instead.
+
+<Info>
+  Without a framework the booth shows as closed and every ride lets players on
+  for free.
+</Info>
+
+## ⚙️ Configuration
+
+```lua roadpark_tickets/config.lua
+Config.Locale = 'en'                    -- 'en' or 'de'
+
+Config.Item = 'park_ticket'             -- inventory item for one chip
+Config.PayAccounts = { 'cash', 'bank' } -- charged from the first account that can pay
+
+Config.Packages = {                     -- sold at the booth; price in whole dollars
+    { id = 'single', chips = 1,  price = 25 },
+    { id = 'five',   chips = 5,  price = 110 },
+    { id = 'ten',    chips = 10, price = 200 },
+}
+
+Config.DefaultTickets = 1               -- chips for rides not listed in Config.Rides
+Config.Rides = {                        -- chips per ride; 0 = free
+    autoscooter  = { label = 'Grand Prix',     tickets = 1 },
+    ferris_wheel = { label = 'Ferris Wheel',   tickets = 1 },
+    swing_ship   = { label = 'Swing Ship',     tickets = 1 },
+    wellenflug   = { label = 'Himmelsflieger', tickets = 1 },
+    highlander   = { label = 'Highlander',     tickets = 2 },
+    breakdance   = { label = 'Breakdance',     tickets = 2 },
+}
+
+Config.EditorAce = 'roadpark.editor'    -- ACE permission for /tickets
+Config.Command = 'tickets'
+Config.ManagedParkResource = 'roadpark' -- read booths from this resource's park_addons.json; false = off
+Config.StreamDistance = 150.0           -- metres; booths spawn inside this range
+Config.InteractDistance = 1.5           -- metres from the stand point in front of the window
+Config.VendorModel = 's_f_m_shop_high'  -- ped model behind the booth window
+```
+
+<AccordionGroup>
+  <Accordion title="Limits">
+    - Package `id`: lowercase letters, digits and `_`, up to 24 characters.
+    - Package `chips`: 1–1000. Package `price`: 0–10,000,000.
+    - Ride `tickets`: 0–100. `DefaultTickets`: 0–100.
+    - Invalid packages are skipped. If no package is valid, the three defaults are used.
+  </Accordion>
+  <Accordion title="Changing the chip item">
+    Rename the item in your inventory and set `Config.Item` to the same name.
+    Both must always match, otherwise the booth cannot hand out chips and the
+    rides cannot take them.
+  </Accordion>
+</AccordionGroup>
+
+## 🏗️ More booths
+
+The park places its booth at the entrance. To add more booths anywhere on the
+map, use the editor (ACE `roadpark.editor`):
+
+| Command | Effect |
+| --- | --- |
+| `/tickets` | Opens or closes the placement editor |
+| `/tickets remove` | Removes your nearest own booth within 5 m |
+
+| Key | Action |
+| --- | --- |
+| Arrow keys | Move |
+| **Q** / **E** | Rotate |
+| **Page Up** / **Page Down** | Height |
+| **G** | Snap to the ground |
+| **Shift** | Move faster |
+| **Enter** | Save (within 25 m of you) |
+| **Backspace** | Cancel |
+
+Booths you place are saved in `roadpark_tickets/placement.json`.

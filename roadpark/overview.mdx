@@ -1,0 +1,112 @@
+---
+title: 'Overview'
+description: 'What is inside RoadPark, the fun fair on the Mirror Park hillside'
+icon: 'ferris-wheel'
+---
+
+# RoadPark
+
+RoadPark is a complete fun fair for FiveM. It turns the construction site on
+the Mirror Park hillside into a park with paved paths, planting, festoon
+lights, a fountain, a restroom pavilion and ambient visitors — and it
+fills the park with six rideable attractions, seven fairground games and four
+food stands.
+
+Every attraction is its own resource. The map resource `roadpark` knows the
+park slots and hands each attraction its position when that attraction starts.
+Stop a resource and its slot simply stays empty.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/roadpark/installation">
+    Resources, start order, permissions and inventory items
+  </Card>
+  <Card title="Tickets" icon="ticket" href="/roadpark/tickets">
+    Park Chips, packages, ride prices and refunds
+  </Card>
+  <Card title="Rides" icon="ferris-wheel" href="/roadpark/rides">
+    Six rides, their controls and their settings
+  </Card>
+  <Card title="Games" icon="gamepad-2" href="/roadpark/games">
+    Games row, Lucky Ducks and Claw Arcade
+  </Card>
+  <Card title="Food & drinks" icon="utensils" href="/roadpark/food">
+    Pizza, gelato, gingerbread hearts and drinks
+  </Card>
+  <Card title="Configuration" icon="sliders-horizontal" href="/roadpark/configuration">
+    Languages, permissions, park slots and editors
+  </Card>
+</CardGroup>
+
+## 🎢 Rides
+
+| Ride | Resource | Seats | Default price |
+| --- | --- | --- | --- |
+| Breakdance | `roadpark_breakdance` | 32 (16 two-seat gondolas) | 2 chips |
+| Highlander drop tower | `roadpark_highlander` | 24 | 2 chips |
+| Grand Prix bumper cars | `roadpark_autoscooter` | 20 (10 cars, driver and passenger) | 1 chip per rider |
+| Ferris Wheel | `roadpark_riesenrad` | 48 (12 capsules with 4 seats) | 1 chip |
+| Klabautermann swing ship | `roadpark_swingboat` | 40 | 1 chip |
+| Himmelsflieger wave swinger | `roadpark_wellenflug` | 48 (32 single and 8 double chairs) | 1 chip |
+
+Rides take [Park Chips](/roadpark/tickets) while `roadpark_tickets` runs. Without
+the ticket resource every ride is free.
+
+## 🎯 Games
+
+| Game | Resource | Default price |
+| --- | --- | --- |
+| Can Toss, Shooting Gallery, High Striker, Basketball, Moving Hoop | `roadpark_games` | $50 per round |
+| Lucky Ducks | `roadpark_ducks` | 1 chip ($25 without the ticket resource) |
+| Claw Arcade (six themed machines) | `roadpark_claw` | $50 per game |
+
+## 🍕 Food & drinks
+
+| Stand | Resource | Default prices |
+| --- | --- | --- |
+| RoadPark Pizza | `roadpark_pizza` | Slices $6–7, baguettes $8 |
+| RoadPark Gelato | `roadpark_icecream` | $4 per scoop, 1–3 scoops |
+| RoadPark Sweets | `roadpark_sweets` | Lettered gingerbread hearts $15 / $25 / $40 |
+| RoadPark Drinks | `roadpark_drinks` | Water $4, lemonade $6, cola $6 |
+
+## 🏛️ Park services
+
+| Part | Resource | What it does |
+| --- | --- | --- |
+| Park map | `roadpark` | Ground, paths, planting, lights, restrooms, visitors, road closures and the ride slots |
+| Ticket booth | `roadpark_tickets` | Sells Park Chips at the entrance |
+| Entrance sign | `roadpark_entrance_sign` | Optional neon lettering on the gate with your own text |
+
+## 📍 Where it is
+
+The park sits on the hillside construction site along Mirror Park Boulevard. A
+blip marks the entrance at **1306.0, -731.5**. The park covers about
+13,200 m².
+
+- **West gate:** entrance sign and ticket booth.
+- **Central path:** the games row with Lucky Ducks, the fountain and the pergola.
+- **North:** Breakdance, the Klabautermann swing ship and the Food Lane with all four food stands.
+- **East:** the Ferris Wheel and the restroom pavilion by the terrace walk.
+- **South:** the Himmelsflieger, the Claw Arcade, the Grand Prix bumper cars and the Highlander tower.
+
+## 📋 Requirements
+
+<CardGroup cols={2}>
+  <Card title="OneSync" icon="radio-tower">
+    Required. Every RoadPark resource declares it.
+  </Card>
+  <Card title="Framework" icon="layers">
+    Optional. ESX, QBCore and Qbox are detected automatically. Standalone works too.
+  </Card>
+  <Card title="Inventory" icon="backpack">
+    Needed for chips and prizes. ox_inventory, qb-inventory and several others are detected.
+  </Card>
+  <Card title="No database" icon="database">
+    No SQL import, no oxmysql and no ox_lib. Data lives in JSON files and server KVP.
+  </Card>
+</CardGroup>
+
+<Info>
+  **Running without a framework.** The park, the rides and all games work
+  standalone, but nothing can be paid for: rides, games and food are free, the
+  ticket booth shows as closed and no item prizes are handed out.
+</Info>

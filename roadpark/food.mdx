@@ -1,0 +1,194 @@
+---
+title: 'Food & drinks'
+description: 'Pizza, gelato, gingerbread hearts and cold drinks in the Food Lane'
+icon: 'utensils'
+---
+
+# Food & drinks
+
+Four stands line the Food Lane. Players buy at the counter and hold the food in
+their hand — everybody nearby sees it. Pizza and gelato feed hunger and
+thirst on ESX, QBCore and Qbox; drinks add thirst on ESX.
+
+| Stand | Resource | Items needed |
+| --- | --- | --- |
+| RoadPark Pizza | `roadpark_pizza` | None |
+| RoadPark Gelato | `roadpark_icecream` | None |
+| RoadPark Sweets | `roadpark_sweets` | `gingerbread_heart` (inventories with metadata) |
+| RoadPark Drinks | `roadpark_drinks` | None |
+
+All four charge the first account that can pay — cash, then bank. Without a
+framework, everything is free.
+
+---
+
+## RoadPark Pizza
+
+A fairground pizza booth with two order points and two cooks.
+
+| Slices | Price | Baguettes | Price |
+| --- | --- | --- | --- |
+| Margherita | $6 | Salami | $8 |
+| Salami | $7 | Ham | $8 |
+| Funghi | $7 | Spinach | $8 |
+
+Press **E** at an order point and choose. The food is ready after ten seconds
+and is too hot to bite for the first six.
+
+| Key | Action |
+| --- | --- |
+| **E** | Take a bite (four bites per piece) |
+| **G** | Offer it to the player in front of you — they accept with **E** |
+| **X** | Throw it away |
+
+Players can rebind these keys in the FiveM key bindings. No eating while
+driving.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Menu` | see above | Prices per kind; `false` removes slices or baguettes |
+| `ServeSec` | `10` | Seconds until the food is in the hand (8–30) |
+| `BitesPerStage` | `1` | The food has 4 stages, so 4 bites |
+| `Nourish` | slice 6 / baguette 8 hunger | Percent per bite; `false` = off |
+| `Hot` | `{ sec = 6 }` | Too hot to bite; `false` = off |
+| `Give` | `{ distance = 2.0, timeoutSec = 10 }` | Handing food over; `false` = off |
+| `Keys` | `E`, `G`, `X`, `E` | Default keys for bite, give, discard, accept |
+
+---
+
+## RoadPark Gelato
+
+A retro ice cream cart. Players pick one to three scoops from six flavours:
+vanilla, chocolate, strawberry, pistachio, stracciatella and lemon.
+
+| At a glance | |
+| --- | --- |
+| Price | $4 per scoop |
+| Scoops | 1–3 |
+
+| Key | Action |
+| --- | --- |
+| **E** | Buy at the cart / lick |
+| **G** | Offer it to another player — they accept with **E** |
+| **X** | Throw it away |
+
+The ice cream melts: after 20 seconds without licking, it shrinks by one size every 12 seconds. When
+the scoops are gone, the cone is eaten in three bites. Watch out — falling,
+fighting, jumping and sprinting can make the player drop it.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `PricePerScoop` | `4` | Free without a framework |
+| `MaxScoops` | `3` | 1–3 |
+| `Flavors` | six flavours | Each new flavour needs its own scoop models |
+| `LicksPerStage` | `2` | Licks per melt stage |
+| `ConeBites` | `3` | Bites for the cone |
+| `Nourish` | lick 2 hunger / 1 thirst, bite 4 hunger | Percent; `false` = off |
+| `Melt` | `{ graceSec = 20, stepSec = 12 }` | Melting speed |
+| `Drop` | ragdoll, melee, 25 % per jump, 5 % per second sprinting | Drop chances; dropped cones stay 30 s |
+| `Keys` | `E`, `G`, `X`, `E` | Default keys for lick, give, discard, accept |
+
+---
+
+## RoadPark Sweets
+
+A gingerbread heart booth. Players write up to three lines in icing script,
+pick a size and an icing colour, pay and wear the heart around their neck.
+Everybody nearby sees the heart and its lettering.
+
+| Size | Price | Lettering |
+| --- | --- | --- |
+| Small | $15 | 2 lines × 10 characters |
+| Medium | $25 | 3 lines × 12 characters |
+| Large | $40 | 3 lines × 14 characters |
+
+Icing colours: white, pink, red, blue, yellow and green.
+
+**With an inventory that supports metadata** (ox_inventory, qb-inventory,
+one_inventory, jaksam_inventory, tgiann-inventory and others) the heart is an
+item with its text stored on it. Using the item puts the heart on or takes it
+off; dropping or giving it away removes it from the neck.
+
+**With the default ESX or QBCore inventory** the player wears the heart right
+after paying and takes it off with `/heart`.
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Item` | `'gingerbread_heart'` | Inventory item |
+| `Sizes` | see above | Price and lettering per size |
+| `Colors` | six colours | Icing colours |
+| `Filter` | `{ enabled = true, words = {} }` | Word filter — add your own words |
+| `RemoveOnDeath` | `false` | Takes the heart off when the wearer dies (the item stays) |
+| `HeartPhysics` | `true` | Worn hearts swing like a pendant |
+| `TakeOffCommand` | `'heart'` | Command to take the heart off |
+
+<Tip>
+  `Open.CheckText` in `open/server.lua` lets you refuse a text with your own
+  moderation, and `Open.OnInscribe` is called after every purchase — for
+  example to log lettering to a Discord webhook. See
+  [Integration](/roadpark/api/integration#hooks).
+</Tip>
+
+---
+
+## RoadPark Drinks
+
+A cold drinks kiosk. Press **E** at the counter, pick a drink, pay, and the
+player drinks it from a cup in four seconds.
+
+| Drink | Price |
+| --- | --- |
+| Still water | $4 |
+| Lemonade | $6 |
+| Cola | $6 |
+
+Dying, ragdolling or getting into a vehicle interrupts the drink. If the cup
+cannot be prepared, the payment is refunded.
+
+```lua roadpark_drinks/config.lua
+Config = {
+    Locale = 'en',
+    StreamDistance = 600.0,
+    InteractDistance = 1.5,
+    PayAccounts = {'cash', 'bank'},
+    Products = {
+        {id = 'water', price = 4},
+        {id = 'lemonade', price = 6},
+        {id = 'cola', price = 6},
+    },
+    VendorModel = 's_m_m_linecook',
+    Placements = {},
+    Thirst = 150000,
+}
+```
+
+<Note>
+  Thirst is added through `esx_status` on ESX (`Thirst = 150000`). For QBCore
+  and Qbox, or any other needs system, edit `OpenClient.OnDrink` in
+  `open/client.lua` or listen to the client event `roadpark_drinks:consumed`.
+  See [Integration](/roadpark/api/integration#events).
+</Note>
+
+---
+
+## Placing more stands
+
+The park places one of each stand in the Food Lane. More stands can be placed
+with the editors (ACE `roadpark.editor`):
+
+| Command | Effect |
+| --- | --- |
+| `/pizza` · `/pizza remove` | Place a pizza booth · remove your nearest own one within 8 m |
+| `/icecream` · `/icecream remove` | Place a gelato cart · remove your nearest own one within 5 m |
+| `/sweets` · `/sweets remove` | Place a sweets booth · remove your nearest own one within 5 m |
+
+In the editor the **mouse wheel** turns, **Enter** or a left click saves and
+**Backspace** or a right click cancels.
+
+The drinks kiosk has no editor. Add extra kiosks to `Config.Placements`:
+
+```lua roadpark_drinks/config.lua
+Placements = {
+    { id = 'beach', coords = { x = -1350.0, y = -1280.0, z = 4.4 }, heading = 90.0 },
+},
+```

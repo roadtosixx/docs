@@ -1,0 +1,163 @@
+---
+title: 'Configuration'
+description: 'Languages, permissions, park slots and placing attractions anywhere on the map'
+icon: 'sliders-horizontal'
+---
+
+# Configuration
+
+Every RoadPark resource has its own `config.lua`. Configs stay readable and
+editable in the encrypted download. Most resources also leave their
+translations (`locales.lua`), their `open/` hooks and their framework `bridge/`
+open for you.
+
+Restart a resource after changing its config. The settings of each attraction
+are described on its page: [Tickets](/roadpark/tickets),
+[Rides](/roadpark/rides), [Games](/roadpark/games),
+[Food & drinks](/roadpark/food).
+
+## 🌍 Languages
+
+English is the default. Set `Locale = 'de'` (or `Config.Locale = 'de'`) for
+German.
+
+| Resource | Languages |
+| --- | --- |
+| `roadpark_tickets`, `roadpark_games`, `roadpark_ducks`, `roadpark_claw` | `en`, `de` |
+| `roadpark_breakdance`, `roadpark_swingboat`, `roadpark_wellenflug` | `en`, `de` |
+| `roadpark_pizza`, `roadpark_icecream`, `roadpark_sweets`, `roadpark_drinks` | `en`, `de` |
+| `roadpark_highlander`, `roadpark_autoscooter`, `roadpark_riesenrad` | German prompts only, no `Locale` option yet |
+
+The Breakdance operator announcements are German speech in every language.
+Turn them off with `Config.Announcements = false`.
+
+## 🔑 Permissions
+
+```cfg server.cfg
+add_ace group.admin roadpark.editor allow
+add_ace group.admin roadpark.admin allow
+```
+
+| Permission | Unlocks |
+| --- | --- |
+| `roadpark.editor` | `/tickets`, `/ducks`, `/clawrow`, `/pizza`, `/icecream`, `/sweets`, `/breakdance editor`, `/autoscooter`, `/riesenrad`, `/wellenflug place` |
+| `roadpark.admin` | `/highlander editor`, `/highlander remove` |
+| `Config.OperatorAce` (Breakdance) | The Breakdance console — off by default, so every player may use it |
+
+Riding, playing and buying need no permission. Where a resource has an
+`EditorAce` or `adminAce` key you can rename the permission; the Grand Prix and
+the Himmelsflieger always use `roadpark.editor`.
+
+## 🗺️ Park slots
+
+The map resource decides which attraction stands in which slot:
+
+```lua roadpark/config.lua
+Config.Rides = {             -- ride or stall resource per park slot; false keeps the slot empty
+    breakdance = 'roadpark_breakdance',
+    swingboat  = 'roadpark_swingboat',
+    sweets     = 'roadpark_sweets',
+    icecream   = 'roadpark_icecream',
+    ducks      = 'roadpark_ducks',
+    wellenflug = 'roadpark_wellenflug',
+    pizza      = 'roadpark_pizza',
+    drinks     = 'roadpark_drinks',
+    highlander = 'roadpark_highlander',
+}
+
+Config.Games = 'roadpark_games' -- fairground games resource; false keeps the game slots empty
+```
+
+Set a slot to `false` to keep it empty, or simply do not start that resource.
+A resource that starts later fills its slot automatically.
+
+The **Ferris Wheel**, the **Grand Prix**, the **Claw Arcade** and the **ticket
+booth** read their park position themselves from `roadpark/park_addons.json`
+while `roadpark` runs. To keep one of them out of the park, do not start it —
+or, for the Grand Prix, the Claw Arcade and the ticket booth, set
+`managedParkResource` / `ManagedParkResource` to `false` in its config.
+
+<Warning>
+  Keep the bundled park data files — `data/placements.json`,
+  `park_addons.json`, `devices.json`, `ambient.json` and `traffic.json` in the
+  `roadpark` folder. They are generated together with the map, and the
+  positions fit the terrain exactly.
+</Warning>
+
+## 📍 Placing attractions outside the park
+
+Most attractions also work on their own anywhere on the map. Place them with
+their editor while you stand at the spot:
+
+| Attraction | Command | Saved in | How many |
+| --- | --- | --- | --- |
+| Ticket booth | `/tickets` | `roadpark_tickets/placement.json` | Any number |
+| Breakdance | `/breakdance editor` | Server KVP | Up to `MaxEditorRides` (4), 40 m apart |
+| Highlander | `/highlander editor` | `roadpark_highlander/placement.json` | One |
+| Grand Prix | `/autoscooter editor` | `roadpark_autoscooter/placement.json` | One |
+| Ferris Wheel | `/riesenrad editor` | `roadpark_riesenrad/placement.json` | One |
+| Himmelsflieger | `/wellenflug place` | `roadpark_wellenflug/placement.json` | One |
+| Lucky Ducks | `/ducks` | `roadpark_ducks/placement.json` | Up to `MaxBooths` (10) |
+| Claw Arcade | `/clawrow` | `roadpark_claw/placement.json` | Rows of 1–12 machines |
+| Pizza, Gelato, Sweets | `/pizza`, `/icecream`, `/sweets` | `placement.json` of each | Any number (Sweets: `MaxBooths`) |
+| Drinks | `Config.Placements` | `roadpark_drinks/config.lua` | Up to 16 |
+
+Most editors share these keys:
+
+| Key | Action |
+| --- | --- |
+| Arrow keys | Move |
+| **Q** / **E** | Rotate |
+| **Page Up** / **Page Down** | Height |
+| **G** | Snap to the ground |
+| **Shift** | Move faster |
+| **Enter** | Save |
+| **Backspace** | Cancel |
+
+Lucky Ducks, Pizza, Gelato and Sweets use the **mouse wheel** to rotate
+instead.
+
+<Note>
+  The Highlander, the Grand Prix, the Ferris Wheel, the swing ship and the
+  Himmelsflieger run **one ride per resource**.
+
+  - **Highlander, swing ship, Himmelsflieger:** while the park runs, the park
+    position wins; your own placement comes back when `roadpark` stops.
+  - **Grand Prix:** remembers the park position, even after `roadpark` stops.
+    To use your own editor placement, set `managedParkResource = false`.
+  - **Ferris Wheel:** a wheel you placed **outside** the park stays there and
+    the park slot stays empty. Once the wheel stands in the park, that position
+    is saved (with a backup of your old `placement.json`) and it stays there
+    even when `roadpark` stops.
+
+  The swing ship has no editor — outside the park, give it a `placement.json`:
+
+  ```json roadpark_swingboat/placement.json
+  { "coords": { "x": 0.0, "y": 0.0, "z": 0.0 }, "heading": 0.0, "bucket": 0 }
+  ```
+</Note>
+
+## 🪧 Entrance sign
+
+`roadpark_entrance_sign` builds the name on the entrance gate from neon letters.
+
+```lua roadpark_entrance_sign/config.lua
+-- Up to 32 characters; letters are uppercase. Empty text hides the lettering.
+Config.EntranceSignText = 'RoadPark'
+```
+
+Supported characters: A–Z, Ä, Ö, Ü, 0–9, space, `&`, `'`, `-` and `.`
+(ß becomes SS). The text scales down automatically to fit the gate. Stop the
+resource to show the plain gate.
+
+## 🚶 Ambient visitors
+
+The park fills itself with staff and visitors near players. To switch them off,
+set `"enabled": false` at the top of `roadpark/ambient.json` and restart
+`roadpark`.
+
+## 🐞 Debug switches
+
+Keep every `Debug` option `false` and `Config.TestNpcs = false` (Breakdance) on
+a live server. They enable diagnostics and test tools that players should not
+have.

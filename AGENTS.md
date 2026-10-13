@@ -7,9 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Product facts (global Road rules load automatically from road-brain):
 # RoadShop documentation
 
-- Mintlify site in `D:/Programmieren/docs` (`docs.json`: primary #50a2ff, dark default, Lucide icons). Lowercase folder per product (`roadphonepro/`, `roadphone/`, `roadvr/`, `roadpad/`, `roadcarradio/`, `roadpods/`, `roadbackup/`) plus shared root pages; images in `images/`, logos in `logo/`. No RoadWatch or RoadTV pages yet.
+- Mintlify site in `D:/Programmieren/docs` (`docs.json`: primary #50a2ff, dark default, Lucide icons). Lowercase folder per product (`roadphonepro/`, `roadphone/`, `roadvr/`, `roadpad/`, `roadcarradio/`, `roadminigolf/`, `roadpods/`, `roadbackup/`) plus shared root pages; images in `images/`, logos in `logo/`. No RoadWatch or RoadTV pages yet.
 - The nav group still says "RoadPods": customer-facing it must read RoadBuds (keep the `roadpods/` folder so links don't break).
-- Every page: `docs.json` navigation entry + frontmatter `title`, `description`, `icon`. Code blocks labelled with language and file (```lua config.lua). Framework variants in ESX / QBCore / Qbox tabs. Run `mintlify check`.
+- Every page: `docs.json` navigation entry + frontmatter `title`, `description`, `icon`. Code blocks labelled with language and file (```lua config.lua). Framework variants in ESX / QBCore / Qbox tabs.
+- Checks: `node scripts/check-links.mjs [folder]` (frontmatter, nav entry, internal links), `mint validate` and `mint dev --port <port>` for a render check (global CLI is `mint` 4.x; there is no `mintlify check`). Known noise: the generated `AGENTS.md` fails MDX parsing (warning in `mint validate`, makes `mint broken-links` exit 1), and on Windows `mint broken-links` flags every page in an `api/` subfolder as broken; neither tool checks `#anchor` links.
 - Facts must match the product repos and `products/*.md` (e.g. RoadVR app count differs between docs and shop site — verify in code before writing).
 - The RoadShop logo files live here: `logo/roadshop-logo.svg`, `logo/roadshop-logo-light.svg` (the light one has an invalid `fill="#00000"` — fix before use).
 

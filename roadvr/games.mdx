@@ -1,0 +1,209 @@
+---
+title: 'Games'
+description: 'How the built-in games are played and configured'
+icon: 'gamepad-2'
+---
+
+# Games
+
+RoadVR ships six games. Minigolf, Chess, Darts and Arena run in **private
+rooms**: the host gets a six-letter code, friends join with the code or an
+invitation, and a player whose headset or connection drops keeps their seat for
+a while. Beat and Basketball start straight away and offer duels.
+
+Every game has its own block in `config.lua`. A block you leave out falls back
+to the shipped defaults.
+
+## Minigolf
+
+Two courses for up to six players. **Adventure** has twelve holes, each built
+around an obstacle — a tunnel through a hill, a jump over a creek, a turnstile,
+a bridge, a half-pipe, a loop, raised landings, side slopes and rotating gates.
+The **Pro course** has five holes where no tee opens to a straight stroke.
+
+The course opens full size in first person. Walk with `WASD`, aim with the
+mouse, hold and release to putt — or set the power with the mouse wheel in 5 %
+steps. `F` returns you behind your ball. Everyone watches the same ball path
+from the server, then the next player takes their turn. Add a demo player to
+practise alone.
+
+```lua config.lua
+Config.Minigolf = {
+    enabled = true,
+    maxPlayers = 6,
+    maxStrokes = 10,
+    turnSeconds = 60,
+    lobbyMinutes = 15, -- inactivity timeout; playing a shot refreshes it
+    awayMinutes = 3, -- 1-30; a disconnected player keeps their seat this long
+    holeSelect = false, -- host may start at or jump to any hole; for testing
+}
+```
+
+<Note>
+  While a course or its score menu is open, the headset cannot be taken off by
+  accident. Death, vehicles and third person still remove it.
+</Note>
+
+## Chess
+
+A room for two, against a friend or the computer at **Beginner**, **Club
+player** or **Strong**. The host lays a 3D board down on a table, a counter, a
+car roof or the ground; everyone who joins sees it at that spot and walks up to
+play. The board is lit by the in-game clock and weather.
+
+The window keeps the familiar side: time controls from one minute to thirty
+with or without increment (or no clock), a move list, captured pieces, draw
+offers, resignation and rematches with swapped colours. The rules and the
+engine run in Lua and the server validates every move.
+
+```lua config.lua
+Config.Chess = {
+    enabled = true,
+    lobbyMinutes = 15,   -- inactivity timeout; every move refreshes it
+    computerDelay = 900, -- milliseconds the computer waits before it moves
+    awayMinutes = 2,     -- how long a seat waits for a lost headset or connection before the game is forfeited
+    lockCamera = true,   -- block the camera-switch key during a game, so nobody leaves first person by accident
+}
+```
+
+## Darts
+
+**Solo practice**, or a room for up to six players. The host hangs the board on
+a wall with **Place board**. Choose a starting score of **301** or **501** and
+whether to finish on a double. Stand behind the line, aim, hold the mouse
+button to charge and let go to throw — three darts per visit. A bust restores
+the score from the start of the visit, and the first player to reach exactly
+zero wins.
+
+Darts cannot be played in a vehicle or while an environment is running.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Show and allow the game. Off, the tile stays and opening it is refused. |
+| `maxPlayers` | `6` | Seats per room, 1–6 |
+| `lobbyMinutes` | `15` | Close an idle room after this many minutes |
+| `awayMinutes` | `2` | Keep a disconnected seat this long |
+| `turnSeconds` | `60` | Time for one three-dart visit |
+| `placeRange` | `5.0` | Metres. How far away the board may be hung |
+| `playRange` | `15.0` | Metres. Every player must be this close to start |
+| `oche` | `2.37` | Metres. Minimum distance from the player to the board |
+| `laneWidth` | `0.7` | Metres. Maximum sideways offset from the board's centre |
+| `throwRange` | `4.0` | Metres. Maximum throwing distance |
+| `minSpeed` / `maxSpeed` | `7.0` / `13.0` | Metres per second without and with full charge |
+| `gravity` | `9.81` | Vertical acceleration of a dart |
+| `chargeMs` | `1000` | Hold time for full power |
+| `windupMs` | `250` | Animation lead before the dart flies |
+| `visitPauseMs` | `1600` | How long the last dart stays before the next player |
+| `presenceCheckMs` | `500` | How often bucket, death and range are checked |
+| `animationDict` / `animationClip` | `mini@darts` / `throw_dart` | The throwing animation other players see |
+
+## Arena
+
+Team deathmatch in a 3D arena of its own, teams **Alpha** and **Bravo**. Create
+a lobby or join one, invite RoadVR friends, and let the host fill the teams with
+bots. Everybody readies up, then **Enter arena**. The host picks the score
+limit and the round time.
+
+| Input | Action |
+|---|---|
+| `WASD` / mouse | Move and aim |
+| Click / right click | Fire / aim down sights |
+| `Shift` / `Space` / `Ctrl` | Sprint / jump / crouch |
+| `R` / wheel | Reload / switch weapon |
+| `G` / `Q` | Frag / smoke grenade |
+| `Tab` / `Esc` | Scoreboard / menu |
+
+Players keep five class slots, starting from **Assault**, **Rush**, **Recon**
+and **Support**. Changes apply from the next spawn. Field of view, sensitivity,
+volume and a performance or quality preset are set in the game.
+
+| Key | Default | Range / meaning |
+|---|---|---|
+| `enabled` | `true` | Show and allow the game |
+| `maxPlayers` | `8` | 2–8 per room |
+| `maxRooms` | `4` | 1–16 concurrent rooms. Measure your server before raising it. |
+| `scoreLimit` | `50` | 25, 50 or 75 team kills; the default for new lobbies |
+| `roundSeconds` | `480` | 300, 480 or 600 |
+| `inviteSeconds` | `60` | 15–120. How long an invited seat is held |
+| `awaySeconds` | `90` | 30–180. Reconnect reservation |
+| `lobbyMinutes` | `15` | 1–60. Idle lobby expiry |
+| `rewindMilliseconds` | `200` | 0–200. Maximum hit-history rewind |
+| `snapshotHz` | `20` | 10–20 updates per second |
+
+<Info>
+  Saved classes live in `roadshop_vr_shooter_loadouts`, which is created on
+  start. Without `CREATE` permission import
+  `sql/migrations/2026-09-20-shooter-loadouts.sql`.
+</Info>
+
+## Beat
+
+Blocks fly at you down a lane and you cut them with two sabers. Four
+difficulties up to **Expert**, with bombs, walls that fill an outer column and
+stacks of two blocks under one stroke. A **Modifiers** panel changes the rules
+of a solo run — One Life, Vanishing Arrows, Ghost Blocks, Faster Song, No
+Bombs, No Walls, No Arrows — and each one raises or lowers the score. Duels are
+played without modifiers, and a rematch challenges the same opponent again.
+`ESC` pauses a solo song.
+
+Eight tracks ship. To add your own, drop an `.ogg` or `.mp3` into
+`public/beat/` and add a line:
+
+```lua config.lua
+Config.Beat = {
+    songs = {
+        -- ...the shipped tracks...
+        { id = 'my-track', file = 'my-track.mp3', label = 'My Track', artist = 'Somebody',
+          stage = { base = '#10203a', glow = '#4aa8ff' } },
+    },
+```
+
+The note chart is worked out from the audio file itself. A `.json` of the same
+name next to the audio wins over the generated chart.
+
+<Warning>
+  `id` is the seed the chart is generated from **and** the leaderboard key.
+  Change it and the chart reshuffles and the old scores are orphaned.
+</Warning>
+
+The rest of the block — `difficulties`, `energy`, `hits`, `stage`, `colors`,
+`falloffStart` / `falloffEnd` and the dance `animation` other players see — is
+commented line by line in `config.lua`. `roadvr diag` checks that every song
+file is in place.
+
+## Basketball
+
+Place a hoop and shoot. **Practice** counts points, your streak and your best;
+**Move hoop** and **Return ball** sit in the app. Switch to **Duel** to
+challenge a player next to you at the same hoop: after a three-second count-in,
+whoever scores more in `battleSeconds` wins. Leaving the hoop or closing the
+app during a duel loses it.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `throwMode` | `'timing'` | `'timing'`: hold and release in the green band. `'flick'`: pull the mouse back and flick it up. `'meter'`: hold, the mouse sets the power. |
+| `distance` | `6.0` | Metres in front of the player where the hoop is placed |
+| `panelDistance` | `1.8` | Metres from the camera to the control window |
+| `closeDistance` | `15.0` | Walking further than this from the hoop closes the app |
+| `battleSeconds` | `120` | Length of a duel |
+| `inviteSeconds` | `30` | How long a duel invitation is open |
+| `ballProp` / `hoopProp` | `prop_bskball_01` / `rv_space_hoop` | Models; the hoop ships with RoadVR |
+
+`rim`, `timing`, `assist`, `flick`, `angle` and the speed limits are tuned to
+the bundled hoop. Leave them unless you swap the model.
+
+## Games from other resources
+
+Games written by other resources use the same lobby, invitations and
+characters. Their room lifetime is set once for all of them:
+
+```lua config.lua
+Config.Games = {
+    lobbyMinutes = 15, -- Idle room lifetime in minutes (1-120).
+    awayMinutes = 3, -- Reconnect grace in minutes (1-30).
+}
+```
+
+<Card title="Custom Games" icon="pickaxe" href="/roadvr/custom-games">
+  Ship a multiplayer game as your own resource
+</Card>

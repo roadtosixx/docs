@@ -11,30 +11,27 @@ can move, resize and push away. **Widgets** stick into a wall and stay there.
 
 ## Apps
 
-Press `F7` for the home screen and every app is one tile.
-
-<Note>
-  Two of the ones below are **not** tiles on the home screen: **Vehicle** and
-  the **Head-up display** belong to the car and come up when you drive. A
-  handful of others — the single-photo viewer, the cinema bar — are opened by
-  the app that owns them rather than by you.
-</Note>
+Press `F7` for the home screen and every app is one tile. The home screen
+spreads its tiles over at most three rows and never scrolls; when more apps are
+installed than fit, page buttons appear.
 
 <Tip>
   Hold an app, or press **Edit**, and drag tiles into your own order across
   pages. The arrangement is saved per character; **Reset order** returns to
-  favourites first, then recent apps.
+  favourites first, then recent apps. Up to six apps can be pinned as
+  favourites, and the four most recently used are one click away.
 </Tip>
 
 <CardGroup cols={3}>
   <Card title="Settings" icon="settings">
-    Theme, accent colour, interface language, default anchor, and the **App
-    icons** tab — icon packs, round or square, glass on or off. Each player's
-    own; a server setting does not override it.
+    Appearance, App icons, Glass & text, Windows, Home view, Comfort,
+    Notifications, General and Updates. Every choice is the player's own; a
+    server setting does not override it.
   </Card>
   <Card title="Control Centre" icon="sliders-horizontal">
-    One key for the things you reach for constantly: what came in, whether
-    windows follow you, which environment is on.
+    Also on `F6`. Clock, RoadPhone music and notifications on the left; Do Not
+    Disturb, Windows Follow, Widgets and Stow Windows in the middle with the
+    everyday actions; the environment with its immersion slider on the right.
   </Card>
   <Card title="Character studio" icon="user">
     Build the character other players see: skin, eyes, hair, beard, glasses,
@@ -42,38 +39,49 @@ Press `F7` for the home screen and every app is one tile.
     face. The preview is the real 3D model. Saved per character.
   </Card>
   <Card title="Vehicles" icon="car">
-    Your vehicle, plus **Valet** — have it brought to you.
+    Every vehicle in your name. **Locate** one, or have a valet **bring it
+    here** for `Config.Valet.deliveryPrice`.
   </Card>
   <Card title="Map" icon="map">
-    A 3D map table you can lean over, not a flat minimap.
+    A 3D map table on the floor. Look at it, hold the focus key and move your
+    head to push it around; the wheel zooms.
   </Card>
   <Card title="Destinations" icon="navigation">
-    Save places, find your way back, and meet friends at one.
+    Save up to twelve places, follow an AR direction indicator back to them,
+    and invite a friend to meet at one.
   </Card>
   <Card title="Spaces" icon="layout-dashboard">
-    Save a room and open it again later. **Take anywhere** brings your windows,
-    nearby widgets and environment with you; **Stay here** reopens at its saved
-    location.
+    Save up to six rooms — windows, nearby widgets and the environment — and
+    open them again later. **Take anywhere** brings them with you; **Stay
+    here** reopens at the saved location.
   </Card>
-  <Card title="Environments" icon="image">
-    Replaces the world around you with a panorama. Ships without images — see
-    [Environments](/roadvr/environments).
+  <Card title="Environments" icon="mountain">
+    Surrounds you with a 3D landscape — Alpine Lake, Sand Dunes or Lunar
+    Surface. See [Environments](/roadvr/environments).
   </Card>
   <Card title="Friends" icon="users">
     Your RoadVR account tag, who is online, and the profile picture other
-    players see.
+    players see — from the RoadPhone camera roll or an image URL.
   </Card>
   <Card title="Weather" icon="cloud-sun">
-    In-game weather, wind, sunrise and sunset.
+    In-game weather, temperature, wind, daylight and the next sunrise or
+    sunset.
   </Card>
   <Card title="Clock" icon="clock">
-    The in-game clock and calendar.
+    The in-game time and date, a stopwatch, and a timer that keeps running
+    when the window is closed and notifies you when it ends.
   </Card>
   <Card title="Calculator" icon="calculator">
     Exactly what it says.
   </Card>
   <Card title="Notes" icon="sticky-note">
-    Written notes, saved to the player's profile.
+    Written notes. With RoadPhone and `Config.RoadPhone.notes` on, they are
+    the phone's notes — the same list in both places.
+  </Card>
+  <Card title="Reminders" icon="list-checks">
+    Lists and reminders with due dates, flags and notes. Today, Scheduled,
+    All, Flagged and Completed sort them for you, and a reminder that comes due
+    while the headset is on sends a notification.
   </Card>
   <Card title="Messages" icon="message-square">
     The phone's SMS threads as a second screen. **Needs RoadPhone** — without
@@ -81,59 +89,67 @@ Press `F7` for the home screen and every app is one tile.
     `Config.RoadPhone.messages`.
   </Card>
   <Card title="Photos" icon="images">
-    Your gallery, with a cinema view that puts a picture on a curved screen.
+    The RoadPhone camera roll, with a cinema view that puts a picture on a
+    curved screen. **Needs RoadPhone.**
   </Card>
   <Card title="Drone" icon="plane">
-    Fly a drone and watch its camera feed in a window.
-  </Card>
-  <Card title="Vehicle" icon="gauge">
-    Instruments that hang in front of you while you drive.
-  </Card>
-  <Card title="Head-up display" icon="monitor">
-    A compact status strip in your field of view.
+    Put a drone down, fly it and watch its camera. Needs the `roadvr_drone`
+    item unless `Config.Drone.item` is empty.
   </Card>
 </CardGroup>
+
+<Note>
+  Some apps are **not** tiles on the home screen. **Vehicle** — the bar in the
+  windshield for doors, windows, lights, engine and locks — and the
+  **Head-up display** belong to the car and come up when you drive. **Viewer**
+  and **Screen controls** are opened by Photos. **Window basics**, the window
+  tutorial, starts from the first setup or from Settings → General.
+</Note>
+
+<Info>
+  Reminders use the player's **real local time**, not the in-game clock. A
+  reminder that comes due while the headset is off does not send a
+  notification later.
+</Info>
 
 ### Games
 
 <CardGroup cols={3}>
   <Card title="Minigolf" icon="flag">
-    Twelve holes for up to six players in a private room with a six-letter
-    code. The course opens full size in first person — walk, aim, hold and
-    release to putt, and everyone watches the same authoritative ball path.
-    `Config.Minigolf`.
+    Two courses for up to six players in a private room. The course opens full
+    size in first person — walk, aim, hold and release to putt.
   </Card>
   <Card title="Chess" icon="crown">
-    A private room against a friend or the computer at three strengths. The
-    host lays a 3D board on a table, a car roof or the ground, and everyone
-    sees it at that spot in the world. The rules and the engine live in Lua and
-    the server validates every move. `Config.Chess`.
+    Against a friend or the computer at three strengths, on a 3D board the host
+    lays down in the world.
   </Card>
-  <Card title="Beat" icon="music">
-    Four difficulties up to Expert, with walls, stacks and a Modifiers panel
-    that changes the rules of a solo run. Each track carries its own room
-    colours.
+  <Card title="Darts" icon="target">
+    301 or 501 for up to six players on a board the host hangs on a wall — or
+    solo practice.
   </Card>
   <Card title="Arena" icon="crosshair">
-    Build a squad, choose a class and take the arena. Lobby code, team
-    deathmatch, friend invitations.
+    Team deathmatch for up to eight players in a 3D arena, with classes,
+    bots and friend invitations.
+  </Card>
+  <Card title="Beat" icon="music">
+    Cut blocks with two sabers to the music. Four difficulties, modifiers,
+    duels and eight tracks.
   </Card>
   <Card title="Basketball" icon="circle-dot">
-    Place a hoop and shoot.
+    Place a hoop and shoot — on your own, or in a timed duel against a player
+    next to you.
   </Card>
 </CardGroup>
 
-<Info>
-  Games written by other resources appear in the same launcher, with RoadVR
-  providing the lobby, invitations and character models. See [Custom
-  Games](/roadvr/custom-games).
-</Info>
+<Card title="Games" icon="gamepad-2" href="/roadvr/games">
+  How each game is played and configured
+</Card>
 
 <Info>
-  Apps written by other resources appear on the same home screen, next to
-  these. See [Custom Apps](/roadvr/custom-apps) — and [Custom
-  Markers](/roadvr/custom-markers) for annotating the world itself, which needs
-  no app at all.
+  Apps and games written by other resources appear on the same home screen.
+  See [Custom Apps](/roadvr/custom-apps), [Custom Games](/roadvr/custom-games)
+  — and [Custom Markers](/roadvr/custom-markers) for annotating the world
+  itself, which needs no app at all.
 </Info>
 
 ## Widgets
@@ -142,27 +158,32 @@ Press `F7` for the home screen and every app is one tile.
   <img src="/images/roadvr/widgets-wall.jpg" alt="RoadVR widgets stuck into a wall" />
 </Frame>
 
-Press `G`, pick a tile from the bar, carry it to a wall and let go. The mouse
-wheel resizes the one you are carrying.
+Open the widget editor from the home screen, pick a widget, aim at a wall and
+left-click. The mouse wheel resizes the one you are carrying. See
+[Controls](/roadvr/controls#widgets) for the whole flow.
 
 <CardGroup cols={3}>
   <Card title="Clock" icon="clock">
-    An analogue face, recessed into the wall.
+    Three designs: **Studio** and **Midnight** analogue faces, or a wide
+    **Flip clock**. The design can be changed later.
   </Card>
   <Card title="Weather" icon="cloud-sun">
-    Temperature and conditions at a glance.
-  </Card>
-  <Card title="Note" icon="sticky-note">
-    A written note that stays on the wall.
-  </Card>
-  <Card title="Photo" icon="image">
-    A picture from your gallery, framed.
+    A small illustrated weather station: conditions, temperature, wind and
+    daylight.
   </Card>
   <Card title="Calendar" icon="calendar">
-    The in-game date.
+    A tear-off calendar with the in-game date.
   </Card>
-  <Card title="Sign" icon="signpost">
-    Free text, for labelling a room or a door.
+  <Card title="Sticky note" icon="sticky-note">
+    Up to 180 characters on one of ten paper colours, square, wide or tall.
+  </Card>
+  <Card title="Photo frame" icon="image">
+    A picture from the RoadPhone gallery — framed, unframed or as an instant
+    photo.
+  </Card>
+  <Card title="Neon sign" icon="signpost">
+    Up to 22 characters of neon in one of ten colours, for labelling a room or
+    a door.
   </Card>
   <Card title="Aquarium" icon="fish">
     A window into water. It does nothing useful and everybody hangs one up.
@@ -173,6 +194,8 @@ wheel resizes the one you are carrying.
   Widgets belong to the **player**, not to the resource that provides them. A
   resource restarting leaves them on the wall showing an *unavailable* plate
   until it comes back — they are never silently removed from somebody's room.
+  While an environment is running, widgets are hidden unless the player turns
+  on **Widgets in an environment** in Settings → Comfort.
 </Note>
 
 <Card title="Custom Widgets" icon="pickaxe" href="/roadvr/custom-widgets">
@@ -182,7 +205,8 @@ wheel resizes the one you are carrying.
 ## Limits worth knowing
 
 <ParamField path="Config.MaxPanels" type="number" default="4">
-  How many app windows can be open at once.
+  How many app windows can be open at once. The home screen, Spaces and the
+  car's displays do not count; opening one more closes the oldest.
 </ParamField>
 
 <ParamField path="Config.Widgets.max" type="number" default="12">
@@ -196,8 +220,9 @@ wheel resizes the one you are carrying.
   costs. A fourth in the same corner is refused and stays in the hand.
 
   Only **new** placements are checked — a wall that is already fuller than this
-  keeps everything on it. Set it to `0` to switch the near limit off and leave
-  only `max`.
+  keeps everything on it. Replacing a widget keeps its place and its slot,
+  even at the limit. Set it to `0` to switch the near limit off and leave only
+  `max`.
 </ParamField>
 
 <ParamField path="Config.Widgets.clusterRadius" type="number" default="5.0">
@@ -219,6 +244,10 @@ wheel resizes the one you are carrying.
   Metres. How far away a widget may be placed.
 </ParamField>
 
+<ParamField path="Config.Widgets.maxSurfaceTilt" type="number" default="0.6">
+  Above this tilt a surface counts as floor or ceiling and takes no widget.
+</ParamField>
+
 <ParamField path="Config.Widgets.nearDistance" type="number" default="2.2">
   Metres. How close the wearer has to be for a widget to notice them. Only
   widgets that do something with it care — the aquarium, whose fish come to the
@@ -232,6 +261,13 @@ wheel resizes the one you are carrying.
 </ParamField>
 
 <ParamField path="Config.Widgets.hideAtPanels" type="number" default="3">
-  Once this many app windows are open, the widgets step aside so the view does
-  not fill up.
+  Once this many app windows are visible in view at the same time, the widgets
+  step aside so the view does not fill up. Windows behind the player, stowed or
+  covered do not count, and the widgets come back once two fewer are in view.
+  The widget editor ignores the rule. `0` keeps widgets on regardless.
+</ParamField>
+
+<ParamField path="Config.Widgets.editKey" type="string" default="''">
+  Default key for the widget editor. Ships unbound; the editor opens from the
+  home screen and the Control Centre.
 </ParamField>

@@ -1,0 +1,276 @@
+---
+title: 'Installation'
+description: 'Install the RoadPark map and all park resources'
+icon: 'download'
+---
+
+# Installation
+
+RoadPark ships as 16 resources: the park map, the ticket booth, the entrance
+sign, six rides, the games and the food stands. Install them together — the
+map places every attraction into its slot as soon as that resource starts.
+
+<Danger>
+  **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
+  We recommend **WinSCP**.
+</Danger>
+
+<Note>
+  **There is no SQL file and no transaction ID to enter.** RoadPark keeps its
+  data in JSON files and server KVP. The download comes from the
+  [cfx.re Portal](/license-system).
+</Note>
+
+## 📋 Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="OneSync" icon="radio-tower">
+    Required by every RoadPark resource.
+  </Card>
+  <Card title="Framework" icon="layers">
+    Optional: ESX, QBCore or Qbox for payments and item prizes.
+  </Card>
+  <Card title="Inventory" icon="backpack">
+    Needed for Park Chips and prizes when you use a framework.
+  </Card>
+  <Card title="Target script" icon="crosshair">
+    Optional: ox_target for the games row. Without it players press **E**.
+  </Card>
+</CardGroup>
+
+## 🚀 Setup Instructions
+
+<Steps>
+  <Step title="Extract the resources">
+    Put all 16 folders into one category folder. Keep the folder names exactly
+    as they are — the map, the ticket booth and the rides find each other by
+    resource name.
+
+    ```bash
+    resources/
+    └── [roadpark]/
+        ├── roadpark/
+        ├── roadpark_tickets/
+        ├── roadpark_entrance_sign/
+        ├── roadpark_breakdance/
+        ├── roadpark_highlander/
+        ├── roadpark_autoscooter/
+        ├── roadpark_riesenrad/
+        ├── roadpark_swingboat/
+        ├── roadpark_wellenflug/
+        ├── roadpark_games/
+        ├── roadpark_ducks/
+        ├── roadpark_claw/
+        ├── roadpark_pizza/
+        ├── roadpark_icecream/
+        ├── roadpark_sweets/
+        └── roadpark_drinks/
+    ```
+  </Step>
+
+  <Step title="Start the resources">
+    Start your framework and your inventory first, then RoadPark:
+
+    ```cfg server.cfg
+    ensure roadpark
+    ensure roadpark_tickets
+    ensure roadpark_games
+    ensure roadpark_breakdance
+    ensure roadpark_highlander
+    ensure roadpark_autoscooter
+    ensure roadpark_riesenrad
+    ensure roadpark_swingboat
+    ensure roadpark_wellenflug
+    ensure roadpark_pizza
+    ensure roadpark_icecream
+    ensure roadpark_sweets
+    ensure roadpark_drinks
+    ensure roadpark_ducks
+    ensure roadpark_claw
+    ensure roadpark_entrance_sign
+    ```
+
+    The order inside this block does not decide placement: a ride that starts
+    after the map still receives its slot, and every ride registers its price
+    with the ticket booth again when `roadpark_tickets` (re)starts.
+  </Step>
+
+  <Step title="Give your staff permissions">
+    ```cfg server.cfg
+    add_ace group.admin roadpark.editor allow
+    add_ace group.admin roadpark.admin allow
+    ```
+
+    `roadpark.editor` unlocks the placement editors of the booths, games and
+    most rides. `roadpark.admin` unlocks the Highlander editor. Players need no
+    permission to ride, play or buy. Details: [Permissions](/roadpark/configuration#permissions).
+  </Step>
+
+  <Step title="Register the inventory items">
+    Park Chips and the prizes are real items. Add them to your inventory — see
+    [Inventory items](#inventory-items) below.
+  </Step>
+
+  <Step title="Join and check">
+    Connect, follow the **RoadPark** blip to the entrance at Mirror Park and buy
+    a chip at the ticket booth. The price board on the booth lists every ride
+    that is running.
+
+    Each resource with a bridge prints the framework and inventory it found in
+    the server console, for example `[Bridge] ESX + ox_inventory`.
+  </Step>
+</Steps>
+
+## 🎒 Inventory items
+
+| Item | Resource | Purpose |
+| --- | --- | --- |
+| `park_ticket` | `roadpark_tickets` | Park Chip, used to board rides and play Lucky Ducks |
+| `dk_rubber_duck`, `dk_bouncy_ball`, `dk_plush_duck`, `dk_plush_frog`, `dk_plush_duck_big`, `dk_golden_duck` | `roadpark_ducks` | Lucky Ducks prizes |
+| `plush_teddy`, `plush_duck`, `plush_dino`, `plush_unicorn`, `plush_alien`, `plush_penguin` | `roadpark_claw` | Claw Arcade prizes |
+| `teddy` | `roadpark_games` | Shooting Gallery prize |
+| `gingerbread_heart` | `roadpark_sweets` | Lettered gingerbread heart (inventories with metadata) |
+
+Pizza, gelato and drinks are held in the hand or consumed right away — they
+need no items.
+
+<Tabs>
+  <Tab title="ox_inventory / Qbox">
+    ```lua data/items.lua
+    -- RoadPark Tickets
+    ['park_ticket'] = { label = 'Park Chip', weight = 1, stack = true, close = true, description = 'One chip for the RoadPark rides.' },
+
+    -- Lucky Ducks
+    ['dk_rubber_duck'] = { label = 'Rubber Duck', weight = 100, stack = true, close = true, description = 'Won at the duck pond.' },
+    ['dk_bouncy_ball'] = { label = 'Bouncy Ball', weight = 50, stack = true, close = true, description = 'Won at the duck pond.' },
+    ['dk_plush_duck'] = { label = 'Plush Duck', weight = 200, stack = true, close = true, description = 'Won at the duck pond.' },
+    ['dk_plush_frog'] = { label = 'Plush Frog', weight = 200, stack = true, close = true, description = 'Won at the duck pond.' },
+    ['dk_plush_duck_big'] = { label = 'Big Sailor Duck', weight = 500, stack = true, close = true, description = 'Won at the duck pond.' },
+    ['dk_golden_duck'] = { label = 'Golden Lucky Duck', weight = 800, stack = true, close = true, description = 'The main prize of the duck pond.' },
+
+    -- Claw Arcade
+    ['plush_teddy'] = { label = 'Plush Teddy', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+    ['plush_duck'] = { label = 'Plush Duck', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+    ['plush_dino'] = { label = 'Plush Dino', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+    ['plush_unicorn'] = { label = 'Plush Unicorn', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+    ['plush_alien'] = { label = 'Plush Alien', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+    ['plush_penguin'] = { label = 'Plush Penguin', weight = 200, stack = true, close = true, description = 'Won at a claw machine.' },
+
+    -- Shooting Gallery
+    ['teddy'] = { label = 'Plush Duck', weight = 200, stack = true, close = true, description = 'Won at the shooting gallery.' },
+
+    -- RoadPark Sweets
+    ['gingerbread_heart'] = { label = 'Gingerbread heart', weight = 150, stack = false, close = true, client = { image = 'gingerbread_heart_m.png' } },
+    ```
+
+    Qbox uses ox_inventory, so these definitions cover Qbox as well. The
+    gingerbread heart needs no `consume`, `usetime` or export — using the item
+    puts the heart on or takes it off.
+  </Tab>
+  <Tab title="ESX">
+    ```sql items.sql
+    INSERT INTO items (name, label, weight, rare, can_remove) VALUES
+      ('park_ticket', 'Park Chip', 1, 0, 1),
+      ('dk_rubber_duck', 'Rubber Duck', 1, 0, 1),
+      ('dk_bouncy_ball', 'Bouncy Ball', 1, 0, 1),
+      ('dk_plush_duck', 'Plush Duck', 1, 0, 1),
+      ('dk_plush_frog', 'Plush Frog', 1, 0, 1),
+      ('dk_plush_duck_big', 'Big Sailor Duck', 2, 0, 1),
+      ('dk_golden_duck', 'Golden Lucky Duck', 3, 0, 1),
+      ('plush_teddy', 'Plush Teddy', 1, 0, 1),
+      ('plush_duck', 'Plush Duck', 1, 0, 1),
+      ('plush_dino', 'Plush Dino', 1, 0, 1),
+      ('plush_unicorn', 'Plush Unicorn', 1, 0, 1),
+      ('plush_alien', 'Plush Alien', 1, 0, 1),
+      ('plush_penguin', 'Plush Penguin', 1, 0, 1),
+      ('teddy', 'Plush Duck', 1, 0, 1);
+    ```
+
+    With the default ESX inventory the gingerbread heart is not an item: the
+    player wears it right after paying and takes it off with `/heart`. If you
+    run ox_inventory on ESX, use the ox_inventory tab instead.
+  </Tab>
+  <Tab title="QBCore">
+    ```lua qb-core/shared/items.lua
+    park_ticket = { name = 'park_ticket', label = 'Park Chip', weight = 1, type = 'item', image = 'park_ticket.png', unique = false, useable = false, shouldClose = true, description = 'One chip for the RoadPark rides.' },
+
+    dk_rubber_duck = { name = 'dk_rubber_duck', label = 'Rubber Duck', weight = 100, type = 'item', image = 'dk_rubber_duck.png', unique = false, useable = false, shouldClose = true, description = 'Won at the duck pond.' },
+    dk_bouncy_ball = { name = 'dk_bouncy_ball', label = 'Bouncy Ball', weight = 50, type = 'item', image = 'dk_bouncy_ball.png', unique = false, useable = false, shouldClose = true, description = 'Won at the duck pond.' },
+    dk_plush_duck = { name = 'dk_plush_duck', label = 'Plush Duck', weight = 200, type = 'item', image = 'dk_plush_duck.png', unique = false, useable = false, shouldClose = true, description = 'Won at the duck pond.' },
+    dk_plush_frog = { name = 'dk_plush_frog', label = 'Plush Frog', weight = 200, type = 'item', image = 'dk_plush_frog.png', unique = false, useable = false, shouldClose = true, description = 'Won at the duck pond.' },
+    dk_plush_duck_big = { name = 'dk_plush_duck_big', label = 'Big Sailor Duck', weight = 500, type = 'item', image = 'dk_plush_duck_big.png', unique = false, useable = false, shouldClose = true, description = 'Won at the duck pond.' },
+    dk_golden_duck = { name = 'dk_golden_duck', label = 'Golden Lucky Duck', weight = 800, type = 'item', image = 'dk_golden_duck.png', unique = false, useable = false, shouldClose = true, description = 'The main prize of the duck pond.' },
+
+    plush_teddy = { name = 'plush_teddy', label = 'Plush Teddy', weight = 200, type = 'item', image = 'plush_teddy.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+    plush_duck = { name = 'plush_duck', label = 'Plush Duck', weight = 200, type = 'item', image = 'plush_duck.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+    plush_dino = { name = 'plush_dino', label = 'Plush Dino', weight = 200, type = 'item', image = 'plush_dino.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+    plush_unicorn = { name = 'plush_unicorn', label = 'Plush Unicorn', weight = 200, type = 'item', image = 'plush_unicorn.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+    plush_alien = { name = 'plush_alien', label = 'Plush Alien', weight = 200, type = 'item', image = 'plush_alien.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+    plush_penguin = { name = 'plush_penguin', label = 'Plush Penguin', weight = 200, type = 'item', image = 'plush_penguin.png', unique = false, useable = false, shouldClose = true, description = 'Won at a claw machine.' },
+
+    teddy = { name = 'teddy', label = 'Plush Duck', weight = 200, type = 'item', image = 'teddy.png', unique = false, useable = false, shouldClose = true, description = 'Won at the shooting gallery.' },
+
+    gingerbread_heart = { name = 'gingerbread_heart', label = 'Gingerbread heart', weight = 150, type = 'item', image = 'gingerbread_heart_m.png', unique = true, useable = true, shouldClose = true, description = 'A lettered gingerbread heart' },
+    ```
+
+    Without qb-inventory (default QBCore inventory only) the gingerbread heart
+    is worn right after paying instead of becoming an item.
+  </Tab>
+</Tabs>
+
+<Tip>
+  The Lucky Ducks prize pictures ship in `roadpark_ducks/web/img/` and can be
+  copied into your inventory's image folder.
+</Tip>
+
+<Info>
+  You do not want an item prize at the Shooting Gallery? Set
+  `R.Prize.item = ''` in `roadpark_games/config/range.lua` and the `teddy` item
+  is no longer needed.
+</Info>
+
+## ⚠️ Map compatibility
+
+The `roadpark` resource replaces the original game files of the Mirror Park
+construction site and a few neighbouring LOD, road and collision files while
+it runs. Your GTA V installation is never modified.
+
+<Warning>
+  Do not run another map that streams files with the same names — for example
+  a different build on the Mirror Park construction site. Two maps replacing
+  the same files overwrite each other, and you get holes or floating objects.
+</Warning>
+
+While the park runs, the roads inside the park area are closed for ambient
+traffic and the parked-car spawns there are removed. Both come back when you
+stop `roadpark`.
+
+## 🔄 Updating
+
+<Steps>
+  <Step title="Keep your server-owned files">
+    Copy the new files over the old ones, but keep:
+
+    - every `config.lua` you changed (and `roadpark_games/config/*.lua`)
+    - `placement.json`, `managed_placement.json` and their backups in the
+      ride and booth folders
+    - `roadpark_games/scores.json` (the leaderboards)
+  </Step>
+  <Step title="Restart">
+    `refresh`, then `restart` the resources you updated. Copying files alone
+    does not restart anything.
+  </Step>
+  <Step title="Reconnect">
+    After an update with new streamed files (models, map, collision),
+    reconnect your client so the new files load instead of the cached ones.
+  </Step>
+</Steps>
+
+## 🗑️ Removing the park
+
+Remove the `ensure` lines of `roadpark` and of every attraction you do not use
+elsewhere, restart the server and reconnect. The original construction site,
+its roads and its parked cars come back.
+
+Attractions can also live on without the park — see
+[Placing attractions outside the park](/roadpark/configuration#placing-attractions-outside-the-park).

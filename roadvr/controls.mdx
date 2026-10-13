@@ -22,7 +22,8 @@ explains almost every question about the controls.
   </Card>
   <Card title="Focus" icon="mouse-pointer-click">
     The mouse is free and you can click. Movement is locked while you are in
-    it.
+    it — except while you hold a window's grabber, which lets you walk and
+    carry the window along.
   </Card>
 </CardGroup>
 
@@ -30,74 +31,154 @@ You enter focus mode by looking at a window and pressing `E`, and you leave it
 with `ESC`. Nothing is torn down on the way out — the windows stay exactly
 where they were.
 
+<Info>
+  The headset only goes on in **first person**. Switching to third person while
+  it is on takes it off again — flying the drone is the exception. Servers can
+  turn this off with `Config.FirstPersonOnly = false`.
+</Info>
+
 ## The keys
 
-| Input | What it does | Configurable |
-|---|---|---|
-| Use the item | Put the headset on and take it off | `Config.Item` |
-| `F7` | Home screen (launcher) | FiveM keybind |
-| `F6` | Control centre | `Config.ControlCenter.key` |
-| `G` | Widget edit mode | `Config.Widgets.editKey` |
-| `E` while looking at a window | Focus it, free the mouse | `Config.FocusKey` |
-| `ESC` | Leave focus, back to passthrough | — |
-| Drag the title bar | Move the window across the sphere around you | — |
-| Mouse wheel on the title bar | Pull the window closer or push it further away | — |
-| Drag a corner | Resize the window | — |
+| Input | What it does | Default | Changed through |
+|---|---|---|---|
+| Use the item | Put the headset on and take it off | — | `Config.Item` |
+| `roadvr_toggle` | The same without an item | unbound | FiveM key bindings |
+| `F7` | Home screen | `F7` | FiveM key bindings |
+| `F6` | Control Centre | `F6` | `Config.ControlCenter.key`, FiveM key bindings |
+| `roadvr_widgets` | Widget editor | unbound | `Config.Widgets.editKey`, FiveM key bindings |
+| `E` while looking at a window | Focus it, free the mouse | `E` | `Config.FocusKey` |
+| `ESC` | Leave focus, back to passthrough | — | — |
 
 <Note>
-  Every key above is a **FiveM keybind**, which means each player can rebind it
-  under Settings → Key Bindings → FiveM. What you set in `config.lua` is the
-  default, not a lock.
+  `F7`, `F6`, `roadvr_toggle` and `roadvr_widgets` are **FiveM keybinds**: each
+  player can rebind them under Settings → Key Bindings → FiveM, and what
+  `config.lua` sets is only the default. The focus key is not — it reads a
+  fixed game control, so `Config.FocusKey` accepts `E`, `G`, `X`, `F` or `H`
+  and falls back to `E` for anything else.
 </Note>
 
-## The unbound key
+`F7` does a little more than open the home screen: in a car with the cockpit
+bar enabled it shows and hides the bar in the windshield, and if the home
+screen is already open but far behind you, it brings it back in front.
 
-`roadvr_toggle` appears in the FiveM key bindings and is deliberately shipped
-**without a default key**.
+`ESC` also closes the widget editor, and while an environment is running it
+opens a small menu in passthrough: **Resume**, **Open map** and **Leave
+environment**.
+
+## The unbound keys
+
+`roadvr_toggle` and `roadvr_widgets` appear in the FiveM key bindings and are
+deliberately shipped **without a default key**.
 
 That is not an oversight. A default would take a key away from every server
-that installs RoadVR, and most servers hand the headset out as an item anyway.
-If you run without an item (`Config.Item = ''`), tell your players to bind it
-once themselves — or use the command:
+that installs RoadVR. Most servers hand the headset out as an item anyway, and
+the widget editor has its own button on the home screen. If you run without an
+item (`Config.Item = ''`), tell your players to bind `roadvr_toggle` once
+themselves — or use the command:
 
 ```
 /roadvr_toggle
 ```
 
+<Tip>
+  When no window is near, a hint at the bottom of the view reads *"Press F7 to
+  open the home screen"* — with whatever key the player actually bound. Nobody
+  is left wearing a headset that shows nothing.
+</Tip>
+
+## The window bar
+
+Every window has a bar of controls hanging **below** it. It appears when you
+look at the window, and from left to right it holds:
+
+| Control | What it does |
+|---|---|
+| App buttons | Whatever the app puts there |
+| ✕ | Close the window |
+| Grabber | Drag to move the window. Hold it and walk to carry the window along. |
+| Tilt | Drag up or down to tilt the window up to 60°. Double-click sets it straight again. |
+| Anchor | Pin the window in the room, or let it come along with you |
+| Arrange | Line up every open window side by side in front of you and pin them |
+| Move all | The grabber, the wheel and the tilt of any window act on all of them |
+| Home | Bring the home screen to where this window is |
+
+The home screen's own bar carries a **Widgets** button in place of Home.
+
 ## Moving windows
 
 A window hangs on a sphere around the player rather than in free 3D space, so
-dragging the title bar moves it along that shell and it always faces you.
+dragging the grabber moves it along that shell.
+
+- **Distance:** the mouse wheel over the grabber pulls the window closer or
+  pushes it away, in 0.2 m steps between 0.8 m and 6 m.
+- **Size:** move the pointer near a corner and an arc appears — drag it. The
+  window keeps its proportions.
+- **Facing:** with **Windows turn with you** on (the default, in Settings →
+  Windows) a window always faces you. Switched off, it keeps the direction it
+  was placed in.
+
+<Tip>
+  While **Move all** is on, every grab handle is tinted, because an invisible
+  mode that changes what dragging does is a trap.
+</Tip>
+
+## Anchors
 
 Two anchor modes decide what happens when you walk away:
 
 <CardGroup cols={2}>
-  <Card title="Body" icon="person-standing">
-    The window follows you. Good for anything you want to keep reading while
-    you move.
+  <Card title="Come along" icon="person-standing">
+    The window follows you once you are 2 m away or have turned 45°. Good for
+    anything you want to keep reading while you move.
   </Card>
-  <Card title="World" icon="map-pin">
+  <Card title="Stay in place" icon="map-pin">
     The window stays where you put it. Good for leaving a screen on a desk.
   </Card>
 </CardGroup>
 
-Each player picks their own default in the headset's Settings app. A server
-owner's setting does not override that — it is the player's own preference.
+New windows **stay in place** by default. Each player changes that under
+Settings → Windows → **New windows**, and every window can be switched on its
+own with the anchor button in its bar. A window you drag and let go of is
+pinned in the room where you left it.
 
-<Tip>
-  In the home screen's tray there is a **move all** toggle. While it is on, the
-  grab handle of any window moves every window at once. Every grab handle is
-  tinted while it runs, because an invisible mode that changes what dragging
-  does is a trap.
-</Tip>
+## How many windows
+
+`Config.MaxPanels` (4) caps the app windows that can be open at once. The home
+screen, Spaces and the car's displays do not count. Opening one more closes the
+oldest, with a notification saying so.
 
 ## Widgets
 
-Press `G` for edit mode, and the widget bar opens. Pick a tile, carry it to a
-wall and let go — it sticks. The mouse wheel resizes the one you are carrying.
+Open the widget editor with the **Widgets** button under the home screen, the
+**Widgets** switch in the Control Centre, or `/roadvr_widgets`.
+
+<Steps>
+  <Step title="Pick a widget">
+    The bar shows how many you have up out of your limit. Widgets with content
+    — a note, a photo, a sign — open a sheet first; **Hang it up** when it is
+    ready.
+  </Step>
+  <Step title="Place it">
+    The widget follows your gaze. The mouse wheel resizes it, **left click**
+    sticks it to the wall, **right click** cancels.
+  </Step>
+  <Step title="Change it later">
+    In the editor, click a widget on the wall to take it off, use the pencil to
+    change its contents, choose another widget to swap it in the same spot, or
+    remove it with ✕. **Done** or `ESC` closes the editor.
+  </Step>
+</Steps>
 
 Widgets live in the player's profile, so they survive taking the headset off,
 relogging and a resource restart.
+
+## Learn it in game
+
+**Window basics** is a short interactive tutorial that walks through focusing,
+grabbing, distance, tilt, resizing, anchors, Move all and Arrange. It is
+offered at the end of the first setup and can be started again from Settings →
+General → **Try the window tutorial**. It puts your open windows away while it
+runs and brings them back afterwards.
 
 <Card title="Apps & Widgets" icon="layout-grid" href="/roadvr/apps">
   Everything that ships with the headset

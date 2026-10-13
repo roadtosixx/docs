@@ -1,0 +1,249 @@
+---
+title: 'Configuration'
+description: 'Every block in config.lua and what it changes'
+icon: 'sliders-horizontal'
+---
+
+# Configuration
+
+Everything lives in `config.lua`, and every value carries a comment there. This
+page groups the blocks by what they change. Games, environments and widget
+limits have their own pages:
+
+<CardGroup cols={3}>
+  <Card title="Games" icon="gamepad-2" href="/roadvr/games">
+    Minigolf, Chess, Darts, Arena, Beat, Basketball
+  </Card>
+  <Card title="Environments" icon="mountain" href="/roadvr/environments">
+    Landscapes and blocked apps
+  </Card>
+  <Card title="Apps & Widgets" icon="layout-grid" href="/roadvr/apps#limits-worth-knowing">
+    Window and widget limits
+  </Card>
+</CardGroup>
+
+<Info>
+  Keep your `config.lua` when you update. Every block you leave out falls back
+  to the shipped defaults, and the server console names the blocks that are
+  missing.
+</Info>
+
+## Basics
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Config.Locale` | `'en'` | `'en'`, `'de'`, `'es'` or `'it'`. Lua notifications, and the interface language for players who have not picked their own |
+| `Config.Item` | `'roadvr_headset'` | Inventory item that puts the headset on. `''` = no item needed |
+| `Config.FocusKey` | `'E'` | Focus the window you look at. `E`, `G`, `X`, `F` or `H` |
+| `Config.MaxPanels` | `4` | App windows open at once |
+| `Config.FirstPersonOnly` | `true` | Only put the headset on in first person; third person takes it off |
+| `Config.Fahrenheit` | `false` | Weather in Fahrenheit instead of Celsius |
+| `Config.Debug` | `false` | Enables `/roadvr_calib` and the in-game tuning commands. Keep it off on a live server |
+
+### Updates
+
+```lua config.lua
+Config.Updates = {
+    enabled = true,
+    intervalMinutes = 60,
+}
+```
+
+The server reads RoadVR's public version file on start and then every
+`intervalMinutes` (5–1440). When a newer version exists, the console says so
+and players see it under **Settings → Updates** with the release notes.
+Manual checks from Settings share one five-minute cooldown for the whole
+server.
+
+Nothing is downloaded or installed, and no data about your server is sent —
+updating stays your job. The file is fetched from `raw.githubusercontent.com`;
+allow it if your host filters outgoing traffic.
+
+## The headset
+
+`Config.Visor` decides what the headset looks like on a player.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `mode` | `'clothing'` | `'clothing'` puts on the glasses from `roadvr_models`; `'prop'` attaches a model to the head |
+| `prop` | `''` | Model name for `mode = 'prop'` |
+| `clothing.collection` | `'roadphone'` | The glasses collection from `roadvr_models`, found by name |
+| `clothing.freemodeOnly` | `true` | Only guess glasses on the two freemode bodies when the collection is missing |
+| `offsets` | — | Head bone offsets for the prop, per ped model, per sex or `default` |
+| `gesture.prop` | `'rs_visionpro'` | The headset the hands carry while putting it on and taking it off. `''` = none |
+| `gesture.putOn` / `takeOff` | — | Animations and their timing |
+
+Whichever mode is set, the other catches what it cannot do: `'clothing'` needs
+a ped with a glasses slot, `'prop'` needs a streamed model and an offset per
+head. With `Config.Debug` on, `/roadvr_visor` tunes the prop live and prints
+the line to paste back.
+
+## Windows in the room
+
+```lua config.lua
+Config.Anchor = {
+    default            = 'world',
+    bodyFollowDistance = 2.0,    -- metres before the window follows
+    bodyFollowAngle    = 45.0,   -- degrees
+}
+```
+
+`default` is the anchor for players who have not chosen one: `'world'` stays in
+place, `'body'` comes along. The first setup asks every player — with **Stay in
+place** preselected — and saves their answer, so for anyone who went through it
+their own choice wins.
+
+| Block | Key | Default | Meaning |
+|---|---|---|---|
+| `Config.Panel` | `defaultDistance` | `2.0` | Metres. Where a new window opens; players change it in Settings |
+| | `maxDistance` | `6.0` | Metres |
+| `Config.Panel.shadow` | `enabled` | `true` | A soft contact shadow on the floor under every window |
+| | `opacity` | `0.32` | 0–1, before height and visibility fades |
+| | `maxHeight` | `4.0` | Metres from window centre to floor; higher casts nothing |
+| | `softness` | `0.35` | Metres of edge spread per metre of clearance |
+| | `depth` | `0.55` | Metres. The shadow's footprint |
+| | `refreshMs` | `120` | Minimum interval between floor probes per window |
+| | `fadeMs` | `180` | Fade duration |
+| `Config.Fade` | `panelDistance` | `15.0` | Metres. Past this a window is gone |
+| | `panelFadeBand` | `5.0` | Metres of fade before that limit |
+| | `widgetFadeBand` | `4.0` | The same, before `Config.Widgets.renderDistance` |
+| `Config.Occlusion` | `enabled` | `true` | Dim windows that are behind walls |
+| | `minOpacity` | `0.15` | `0` hides covered windows completely |
+| | `raysPerFrame` | `2` | Wall tests per frame |
+
+Shadows are drawn only for the wearer and switch off inside an environment, in
+the car and for stowed windows. `Config.Pose` holds the rest detection of the
+camera stream — leave it as shipped.
+
+## Markers
+
+```lua config.lua
+Config.Markers = {
+    enabled        = true,   -- false switches the whole export surface off
+    maxPerResource = 32,     -- above this, a request is rejected, with a line in the console
+    cullDistance   = 120.0,  -- metres, beyond this nothing is drawn in the first place
+}
+```
+
+<Card title="Custom Markers" icon="map-pin" href="/roadvr/custom-markers">
+  How other resources put markers into the world
+</Card>
+
+## Vehicles and valet
+
+| Key | Default | Meaning |
+|---|---|---|
+| `pedModel` | `'s_m_y_valet_01'` | The valet driver |
+| `deliveryPrice` | `500` | What bringing a vehicle costs |
+| `serverSideCheck` | `true` | A vehicle that is already out gets a waypoint instead of a delivery |
+| `rxGarage`, `cdGarages`, `jgAdvancedGarages`, `codesignGarage` | `false` | Set exactly one if you run that garage script; all `false` uses the framework default (`state` on QBCore and Qbox, `stored` on ESX) |
+
+<Warning>
+  A confirmed valet fee stays charged if the delivery fails later. There is no
+  automatic refund.
+</Warning>
+
+## In the car
+
+`Config.Cockpit` is the bar in the windshield, `Config.Hud` the speed and route
+readout below it.
+
+| Block | Key | Default | Meaning |
+|---|---|---|---|
+| `Config.Cockpit` | `enabled` | `true` | |
+| | `offset` | `side 0.0, forward 1.00, up 0.10` | Metres in vehicle space |
+| | `tilt` | `-15.0` | Degrees; negative leans it into the glass |
+| | `size` | `w 1.25, h 0.85` | Metres |
+| | `keysExport` | `''` | Your key system, e.g. `'qb-vehiclekeys:HasKeys'`, called with the source and the trimmed plate. Empty asks the vehicle table |
+| | `allow` | all `true` | `doors`, `windows`, `lights`, `engine`, `locks` — switch off what your server handles elsewhere |
+| `Config.Hud` | `enabled` | `true` | |
+| | `offset` | `side 0.0, forward 0.90, up -0.05` | Lower and nearer than the cockpit, so they do not overlap |
+| | `tilt` | `-15.0` | |
+| | `size` | `w 1.10, h 0.34` | Metres |
+| | `unit` | `'kmh'` | `'kmh'` or `'mph'` |
+
+A position that fits a Sultan sits wrong in a bus. With `Config.Debug` on,
+`/roadvr_ctune` and `/roadvr_htune` tune both live and print the block to
+paste back.
+
+## RoadPhone
+
+```lua config.lua
+Config.RoadPhone = {
+    enabled       = true,
+    notifications = true,
+    music         = true,   -- playback and its remote in the control centre
+    messages      = true,   -- off, the app says messages are unavailable
+    notes         = true,
+}
+```
+
+RoadPhone **2.6.0 or newer** is detected automatically; without it everything
+here is simply off. With `notes` on, the Notes app reads and writes the phone's
+notes, so both places show the same list. Off — or without RoadPhone — RoadVR
+keeps its own `roadvr_notes` table. Nothing is copied between the two, so
+switching back brings the other set back untouched.
+
+## Control Centre
+
+```lua config.lua
+Config.ControlCenter = {
+    enabled = true,
+    key = 'F6',   -- default binding only; players can rebind it
+}
+```
+
+## Map
+
+`Config.Gps` is the map table on the floor.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `tableSize` | `2.0` | Starting width in metres, resized in game between `sizeMin` `1.0` and `sizeMax` `5.0` |
+| `tableHeight` | `0.05` | Metres above the ground |
+| `distance` | `1.5` | Fallback distance when no ground is found |
+| `span` | `default 600, min 40, max 4000` | Game metres across the table. Small means zoomed in |
+| `stream` | `200` | Milliseconds between position updates |
+| `texture` | `base 2048, detail 1024` | Texture budget. If it stutters, halve `base` first |
+
+## Drone
+
+| Key | Default | Meaning |
+|---|---|---|
+| `item` | `'roadvr_drone'` | Item the pilot has to carry. `''` = everyone may fly |
+| `simDistance` | `20.0` | Metres. Past this the drone stops being simulated |
+| `flight.mode` | `'assisted'` | `'assisted'` flies where you look; `'fpv'` is acro. `X` switches in flight |
+| `flight.speedSlow` / `speedNormal` / `speedFast` | `4` / `22` / `38` | Metres per second with `ALT`, normally, with `SHIFT` |
+| `flight.maxHeight` | `450.0` | Metres; above that the map stops streaming well |
+| `flight.maxDistance` | `1000.0` | Metres from the take-off point, measured horizontally. `0` = unlimited |
+| `flight.collision` | `true` | `false` flies through walls |
+| `player.freeze` | `true` | The pilot and their vehicle stay put while flying |
+| `player.invincible` | `false` | |
+| `prop.placeDistance` / `pickupDistance` | `8.0` / `2.5` | Metres. Where it can be put down, how close to pick it up |
+
+The drone has to be put down before it flies and picked back up by hand. Its
+models ship with RoadVR. Feel, camera, sound and the in-flight overlay are
+commented line by line in `config.lua`.
+
+## Weather
+
+`Config.Weather.daylight` holds sunrise and sunset per month as decimal hours —
+`6.75` is 06:45. The game has no native that answers this, so the shipped
+values are approximations. A server with its own time cycle or an extended day
+corrects them here.
+
+## Reminders
+
+| Key | Default | Meaning |
+|---|---|---|
+| `maxLists` | `12` | Lists per character |
+| `maxTasks` | `200` | Reminders across all lists |
+| `maxListName` | `80` | Characters in a list name |
+| `maxTitle` | `120` | Characters in a title |
+| `maxNotes` | `2000` | Characters in the notes |
+| `maxDocumentBytes` | `262144` | Size of one character's reminders, encoded |
+
+The interface caps list names, titles and notes at 80, 120 and 2000 characters
+whatever the config says, so raising those three has no effect in the app.
+Values that are invalid or more than sixteen times the default fall back to the
+default.

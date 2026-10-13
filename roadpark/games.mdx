@@ -1,0 +1,256 @@
+---
+title: 'Games'
+description: 'The games row, Lucky Ducks and the Claw Arcade'
+icon: 'gamepad-2'
+---
+
+# Games
+
+RoadPark has three game resources:
+
+| Resource | Games | Pays with |
+| --- | --- | --- |
+| `roadpark_games` | Can Toss, Shooting Gallery, High Striker, Basketball, Moving Hoop | Money |
+| `roadpark_ducks` | Lucky Ducks | Park Chips (money without the ticket resource) |
+| `roadpark_claw` | Claw Arcade with six themed machines | Money |
+
+---
+
+## Games row
+
+Five booths along the central path. Walk up to a booth and press **E** — or use
+ox_target, which is picked up automatically when it runs — to open the game
+menu.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_games` |
+| Price | $50 per round at every park booth |
+| Payment | From the first account that can pay — cash, then bank |
+| Leaderboards | Per booth and per game, top 10 |
+
+A round ends without a result if the player walks more than 10 m away, dies,
+presses **ESC** or plays longer than three minutes. Admission is not refunded.
+
+<Info>
+  **Where prize money comes from.** Each booth pays money prizes out of the
+  admission it has taken since the last restart. A booth that has not taken in
+  enough yet skips the money prize. This keeps the games from printing money.
+</Info>
+
+### High Striker
+
+1. **Charge:** hammer **Space** as fast as you can for three seconds.
+2. **Strike:** click the **left mouse button** at the right moment.
+
+The score goes up to 1,000 (power × accuracy). From 950 the bell rings and
+pays the bell prize ($200).
+
+### Can Toss
+
+Hold the **left mouse button** to charge, release to throw. The **right mouse
+button** cancels the charge. Three balls per round.
+
+The score counts the share of cans knocked down plus a bonus for clearing the
+stack with fewer balls. Clearing every can with the **first ball** wins the
+jackpot ($100).
+
+### Basketball
+
+45 seconds, one point per basket. Hold the **left mouse button** to charge and
+release to throw; the **right mouse button** cancels. Twelve baskets win the
+jackpot ($100).
+
+### Moving Hoop
+
+Like Basketball, but the hoop moves from side to side and up to three players
+throw next to each other. Ten baskets win the jackpot ($100).
+
+### Shooting Gallery
+
+Hold the **right mouse button** to aim steadily and click the **left mouse
+button** to fire. 45 seconds per round.
+
+| Target | Count | Points |
+| --- | --- | --- |
+| Ducks (moving row) | 5 | 60 |
+| Star wheel plates | 6 | 100 |
+| Balloons | 7 | 50 |
+| Flip targets | 2 | 80 |
+
+Hits in a row raise a combo multiplier up to ×3. Popping all seven balloons
+wins the jackpot ($250). From 1,600 points the player also wins a plush duck
+(item `teddy`).
+
+### Settings
+
+```lua roadpark_games/config.lua
+Config.Locale = 'en'
+Config.Interaction = 'auto'      -- 'auto', 'ox_target' or 'keypress'
+Config.InteractKey = 38          -- E
+Config.InteractDistance = 3.5
+Config.ServerDistance = 10.0     -- leaving this distance ends the round
+Config.StreamDistance = 120.0
+Config.DefaultPrice = 50         -- for booths without their own price
+Config.Accounts = { 'cash', 'bank' }
+Config.Sound = { enabled = true, distance = 30.0 }
+Config.Scores = { topN = 10, maxPlayersPerDevice = 100 }
+```
+
+Each game has its own file in `roadpark_games/config/` (`cans.lua`,
+`range.lua`, `lukas.lua`, `hoops.lua`, `hoops2.lua`) with keys, round length,
+physics and a `Settings` table for the jackpots:
+
+| Game | Setting | Default |
+| --- | --- | --- |
+| High Striker | `bellPrize` | 200 |
+| Can Toss | `jackpot`, `rows` (2–5), `stacks` (1–3) | 100, 3, 1 |
+| Basketball | `jackpot`, `jackpotBaskets` | 100, 12 |
+| Moving Hoop | `jackpot`, `jackpotBaskets` | 100, 10 |
+| Shooting Gallery | `jackpot`, `prizeScore` | 250, 1600 |
+
+The Shooting Gallery item prize is `R.Prize` in `config/range.lua`. Set its
+`item` to `''` if you do not want an item prize.
+
+The five park booths are listed in `roadpark/devices.json`. Change a booth's
+`"price"` there; an optional `"settings"` object overrides the defaults above
+for that booth only.
+
+<Note>
+  Leaderboards are saved to `roadpark_games/scores.json` every 30 seconds and
+  when the resource stops. Keep this file when you update.
+</Note>
+
+---
+
+## Lucky Ducks
+
+A duck pond with a flowing channel. Up to eight players fish at the same time
+with bamboo rods, and every duck they land wins a prize.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_ducks` |
+| Price | 1 chip — or $25 when `roadpark_tickets` is not running |
+| Round | 3 ducks |
+| Spots | 8 |
+
+### Playing
+
+| Key | Action |
+| --- | --- |
+| **E** | Start a round at a free spot / collect a waiting prize |
+| **Mouse** | Move the rod tip |
+| **Left mouse button** (hold) | Dip the hook |
+| **C** | Switch camera |
+| **Backspace** | Stop |
+
+Every duck carries a marking that decides the prize:
+
+| Class | Share | Prizes |
+| --- | --- | --- |
+| Small | 70 % | Rubber Duck or Bouncy Ball |
+| Medium | 24 % | Plush Duck or Plush Frog |
+| Big | 6 % | Big Sailor Duck |
+| Lucky duck | one per pond | Golden Lucky Duck |
+
+If the inventory is full, the prize waits at the booth for ten minutes — press
+**E** there to collect it. A waiting prize is lost when the player disconnects.
+
+A round ends after 75 seconds without action (with a warning at 60), when the
+player walks more than 3 m away or dies, or when all three ducks are caught.
+There is no refund once a round has started.
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Locale` | `'en'` | `'en'` or `'de'` |
+| `Price` | `25` | Money price when the ticket resource is not running |
+| `Accounts` | `{ 'cash', 'bank' }` | Money accounts in order |
+| `TicketResource` | `'roadpark_tickets'` | Ticket resource for chip payment |
+| `DucksPerRound` | `3` | 1–10 |
+| `Ducks` | `100` | Ducks in the channel (40–120) |
+| `Classes` | `{ small = 70, mid = 24, big = 6 }` | Share of each class |
+| `Prizes` | see config | Item and weight per class |
+| `IdleWarnSeconds` / `IdleEndSeconds` | `60` / `75` | Idle warning and end |
+| `PrizeHoldMinutes` | `10` | How long a prize waits at the booth (1–60) |
+| `MouseSensitivity` | `0.5` | 0.1–2.0 |
+| `EditorAce` | `'roadpark.editor'` | ACE for the editor |
+| `MaxBooths` | `10` | Booths placed with the editor (1–20) |
+
+The chip price is set in the ticket resource under the ride ID `ducks` — see
+[Tickets](/roadpark/tickets#ride-prices).
+
+### More booths
+
+`/ducks` opens the placement editor. Turn with the **mouse wheel**, place with
+**E**, remove the nearest editor booth with **X**, close with **Backspace**.
+Placing and removing need `roadpark.editor`.
+
+---
+
+## Claw Arcade
+
+Themed claw machines in a row. Each theme has its own cabinet colours, topper
+figure and three plush variants.
+
+| At a glance | |
+| --- | --- |
+| Resource | `roadpark_claw` |
+| Price | $50 per game |
+| Themes | Teddy Grab, Duck Dash, Dino Dig, Unicorn Dream, Alien Abduction, Penguin Party |
+
+### Playing
+
+| Key | Action |
+| --- | --- |
+| **E** | Open the machine panel |
+| **← / →** | Choose how many games to buy (up to 20) |
+| **Enter** | Pay or continue |
+| **W A S D** | Move the claw |
+| **Space** | Drop the claw |
+| **C** | Switch camera |
+| **Backspace** / **ESC** | Pause |
+
+The claw drops by itself after 15 seconds. Games bought in advance stay on that
+machine — also after a reconnect or a server restart.
+
+A won plush falls into the chute. Press **E** at the chute to take it. If the
+inventory is full, the prize waits; after two minutes it is added
+automatically, and if the inventory is still full, it is lost. A won plush is
+missing from the machine for five minutes before it is refilled.
+
+### Settings
+
+| Key | Default | Description |
+| --- | --- | --- |
+| `Locale` | `'en'` | `'en'` or `'de'` |
+| `Price` | `50` | Price per game |
+| `MaxPlays` | `20` | Games per purchase (1–20) |
+| `PayAccounts` | `{ 'cash', 'bank' }` | Money accounts in order |
+| `InventorySystem` | `'auto'` | Force an inventory instead of detecting it |
+| `Themes.<theme>.enabled` | `true` | Switch a theme on or off |
+| `Themes.<theme>.strength` | `25` | Grip strength in percent (5–100) |
+| `Themes.<theme>.prizes` | `12` | Plushies in a machine (1–12) |
+| `Themes.<theme>.item` | `'plush_<theme>'` | Prize item |
+| `MoveSeconds` | `15` | Time before the claw drops by itself (5–60) |
+| `RefillSeconds` | `300` | Time until a won plush is replaced (10–3600) |
+| `PickupTimeout` | `120` | Time to take the prize from the chute (10–600) |
+| `EditorAce` | `'roadpark.editor'` | ACE for the editor |
+
+Machine sounds need game build 2060 or newer.
+
+### More machines
+
+`/clawrow` opens the row editor (`/clawrow <theme>` starts with a theme);
+`/clawrow remove` removes your nearest own row within 12 m. Both need
+`roadpark.editor`.
+
+| Key | Action |
+| --- | --- |
+| Arrow keys, **Q** / **E**, **Page Up** / **Page Down**, **G**, **Shift** | Move, rotate, height, ground, faster |
+| **Mouse wheel** | Number of machines (1–12) |
+| **X** | Next theme |
+| **B** | Back to back (arcade island) |
+| **Enter** / **Backspace** | Save / cancel |
