@@ -53,6 +53,7 @@ A light list of every course, without props, sorted by ID.
     <ResponseField name="par" type="number">Total par</ResponseField>
     <ResponseField name="start" type="table | nil">`{ x, y, z, h }` of the start point</ResponseField>
     <ResponseField name="revision" type="number">Saved version of the course</ResponseField>
+    <ResponseField name="player" type="boolean">`true` for a course a player built (player building)</ResponseField>
   </Expandable>
 </ResponseField>
 
@@ -337,6 +338,20 @@ Flags never punish on their own. The `OpenHooks.OnSuspicious` hook in
 | `road_minigolf:server:scoreRemoved` | `src, courseId, identifier, name` |
 | `road_minigolf:server:coursesReloaded` | `src, identifier, count, changed` |
 | `road_minigolf:server:sessionEnded` | `src, sessionId, identifier` |
+
+### Player building
+
+| Event | Arguments |
+|---|---|
+| `road_minigolf:server:playerCourseSaved` | `src, courseId, identifier, name` |
+| `road_minigolf:server:playerCourseDeleted` | `src, courseId, identifier, name` |
+| `road_minigolf:server:playerCourseReview` | `src, courseId, name` |
+| `road_minigolf:server:piecesBought` | `src, identifier, model, count, total` |
+| `road_minigolf:server:planSold` | `src, identifier, planId, sellerIdentifier, price, earned` |
+
+Saves and deletes by players fire these instead of `courseSaved` and
+`courseDeleted`. Rounds on player courses fire no `holeInOne`, `recordSet` or
+`holeRecordSet`.
 
 `identifier` is the admin's identifier. `name` is the course name.
 

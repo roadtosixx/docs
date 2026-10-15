@@ -1,0 +1,333 @@
+---
+title: 'Player Building'
+description: 'Let players buy track pieces, build their own courses, share course plans and build together'
+icon: 'hammer'
+---
+
+# Player Building
+
+Player building is an optional mode (off by default). Players buy track pieces
+in a shop, place them with the editor in **build mode** and build their own
+minigolf courses. They can keep a course private, open it to everyone, sell or
+share its layout as a **course plan**, and build together with friends.
+
+Every piece of the [track kit](/roadminigolf/track-kit) is an **inventory
+item**. Pieces are taken from the player's stock when a course is saved and come
+back when they are removed again, so nothing is lost and nothing can be
+duplicated.
+
+<CardGroup cols={2}>
+  <Card title="Piece shop" icon="store">
+    `/mgshop`, the build menu or an NPC at a shop counter on the map
+  </Card>
+  <Card title="Build mode" icon="hammer">
+    The real editor, limited to the pieces a player owns
+  </Card>
+  <Card title="Building zones" icon="map">
+    Anywhere, or only inside zones in PolyZone's formats
+  </Card>
+  <Card title="Course plans and co-building" icon="users">
+    Share or sell layouts, add friends as builders
+  </Card>
+</CardGroup>
+
+## Turn it on
+
+<Steps>
+  <Step title="Enable player building">
+    ```lua config.lua
+    Config.Build = {
+        enabled = true,
+        inventory = 'items',          -- 'items' (inventory items) or 'box' (no inventory needed)
+        area = 'zones',               -- 'anywhere' or 'zones'
+        zones = {
+            { name = 'Vespucci beach', points = { vector2(-1500.0, -1000.0), vector2(-1450.0, -1000.0), vector2(-1450.0, -950.0), vector2(-1500.0, -950.0) }, minZ = 0.0, maxZ = 30.0 },
+        },
+    }
+    ```
+    <Warning>
+      With `area = 'zones'` and no zones nobody can save a course. The server
+      console warns about it on start. Add zones or set `area = 'anywhere'`.
+    </Warning>
+  </Step>
+  <Step title="Add the piece items to your inventory">
+    The item definitions for all 21 pieces are in `install/items/`, the item
+    images in `install/items/images/`.
+
+    <Tabs>
+      <Tab title="ox_inventory">
+        Copy the entries of `install/items/ox_inventory.lua` into
+        `ox_inventory/data/items.lua` and the images into
+        `ox_inventory/web/images/`.
+      </Tab>
+      <Tab title="QBCore">
+        Copy the entries of `install/items/qb-core.lua` into
+        `qb-core/shared/items.lua` and the images into the image folder of
+        your inventory (for example `qb-inventory/html/images/`).
+      </Tab>
+      <Tab title="Qbox">
+        Qbox uses ox_inventory: follow the ox_inventory tab.
+      </Tab>
+      <Tab title="ESX">
+        Run `install/items/esx.sql` once in your database and copy the images
+        into the image folder of your inventory.
+      </Tab>
+      <Tab title="No inventory">
+        Set `Config.Build.inventory = 'box'`. Bought pieces then live in a
+        server-side **build box** and never show up in an inventory.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Choose where the shop is">
+    By default `/mgshop` and the build menu sell pieces anywhere. Shop counters
+    put the shop on the map: each one has a blip and an NPC who sells the
+    pieces (players press E next to it, or use ox_target / qb-target as set in
+    `Config.World.interaction`). To sell only at the counters, turn the command
+    off:
+
+    ```lua config.lua
+    Config.Build.shopCommand = false
+    Config.Build.shops = {
+        { coords = vector3(-1338.0, 61.5, 55.2), heading = 90.0, blip = true },
+    }
+    ```
+
+    Use the coordinates and heading of where you stand: the NPC is placed on
+    the ground there and faces that way. `ped = false` on a counter shows a
+    marker instead, `ped = 'a_f_y_golfer_01'` picks another model for one
+    counter, and `Config.Build.shopPed` sets the model and animation of all of
+    them:
+
+    ```lua config.lua
+    Config.Build.shopPed = { model = 'a_m_y_golfer_01', scenario = 'WORLD_HUMAN_CLIPBOARD' }
+    ```
+  </Step>
+  <Step title="Restart">
+    ```cfg server console
+    restart road_minigolf
+    ```
+    Players open the build menu with `/mgbuild`.
+  </Step>
+</Steps>
+
+## Building zones
+
+With `area = 'anywhere'` players may build everywhere. With `area = 'zones'`
+every piece, tee, cup and start point must lie inside one of
+`Config.Build.zones`. While a player builds, the zone borders show as a yellow
+fence.
+
+Zones use **PolyZone's formats**, so you can draw them in game with PolyZone's
+`/pzcreate` and paste the result. PolyZone itself is **not** needed: Road
+Minigolf checks the zones with its own code.
+
+<CodeGroup>
+```lua Poly zone
+{ name = 'Park', points = { vector2(100.0, 200.0), vector2(140.0, 200.0), vector2(140.0, 260.0), vector2(100.0, 260.0) }, minZ = 20.0, maxZ = 40.0 },
+```
+
+```lua Box zone
+{ name = 'Roof', center = vector3(-75.0, -820.0, 326.0), length = 30.0, width = 20.0, heading = 90.0, minZ = 320.0, maxZ = 335.0 },
+```
+
+```lua Circle zone
+{ name = 'Pier', center = vector3(-1850.0, -1230.0, 13.0), radius = 25.0 },
+```
+</CodeGroup>
+
+`minZ` and `maxZ` are optional. A zone that cannot be read is ignored, and the
+server console names it.
+
+Wherever players build, these rules apply as well:
+
+| Rule | Key | Default |
+|---|---|---|
+| Every point stays within this distance of the course start | `maxRadius` | `60.0` m |
+| Distance to every point of any other course | `spacing` | `3.0` m |
+| The player stands near the course to save it | `nearCourse` | `80.0` m (plus `maxRadius`) |
+| Players may use the editor cameras (free, orbit, top-down); admins always can | `freecam` | `false` |
+| The editor cameras stay within this distance of the player | `cameraRange` | `60.0` m |
+
+## The shop
+
+The shop shows every piece with its picture and price, grouped into start &
+finish, lanes and obstacles, and how many of each the player already owns.
+Players pick a piece, set a quantity (up to `maxPurchase`) and pay with the
+account in `Config.Economy.account`. The price comes from the server config,
+never from the player. Pieces you add yourself show a placeholder instead of a
+picture.
+
+```lua config.lua
+Config.Build.pieces = {
+    rmg_loop = { item = 'mg_loop', price = 750 },                                 -- change a price
+    rmg_windmill = false,                                                         -- take a piece out
+    prop_mp_ramp_01 = { item = 'mg_ramp_small', price = 150, label = 'Ramp small' }, -- add a catalog prop
+}
+```
+
+The 21 kit pieces are set by default (prices from $30 for a 1 m lane to $500
+for the loop). A piece with `price = 0` is not sold in the shop but can still
+be built with when players get the item another way. Shop revenue can go to a
+business account:
+
+```lua config.server.lua
+Server.Build = {
+    society = 'society_minigolf',
+}
+```
+
+## Build mode
+
+`/mgbuild` opens the build menu with four tabs: **My courses**, **Shop**,
+**Build box** and **Course plans**. **New course** opens the editor in build
+mode and starts a course where the player stands.
+
+Build mode is the same editor admins use (placement, snapping onto open lane
+ends, quick build, draw path, prebuilt holes, the blueprint and test mode, see
+[Course Editor](/roadminigolf/editor)), with these differences:
+
+- Only shop pieces can be placed, and only as many as the player owns. A
+  **piece budget** in the panel shows what is left; missing pieces are refused
+  right away.
+- No teleports and no admin tools. Players build on foot: the editor cameras
+  (free, orbit, top-down) are off unless `freecam` is `true` or the player is
+  an admin. Then they stay within `cameraRange` of the player and never make
+  the player invincible.
+- A hole can be tested when the player stands within `testDistance` (15 m) of
+  its tee. Nobody is teleported, also not in real rounds on player courses.
+- Build mode closes when the player dies, gets cuffed or gets into a vehicle
+  (see the client hook `OpenHooks.CanPlay`).
+- Money settings are locked: player courses never charge entry fees or pay
+  rewards.
+
+Pieces are taken when the course is **saved**: first from the build box, then
+from the inventory. Removed pieces go into the owner's **build box**, which is
+used first the next time. Pieces in the box can be taken back into the
+inventory from the **Build box** tab.
+
+<Tip>
+  Using a piece item from the inventory opens the build menu, or, while build
+  mode is open on a course, starts placing that piece.
+</Tip>
+
+### Limits
+
+| Key | Default | Meaning |
+|---|---|---|
+| `maxCoursesPerPlayer` | `2` | Courses one player owns |
+| `maxCourses` | `50` | Player courses on the server in total (admin courses count against `Config.Editor.maxCourses`) |
+| `maxHoles` | `18` | Holes per player course |
+| `maxProps` | `150` | Pieces per player course |
+
+## Private, public and approval
+
+New courses are **private**: they stand in the world, but only the owner and
+the builders can play them, alone and unranked, from the build menu
+(**Play solo**). **Make public** opens a course to everyone: it shows up in the
+course finder, gets a blip and has its own leaderboards.
+
+With `requireApproval = true` a course made public waits for an admin. Admins
+see it with a **Review** badge in the editor's course list and publish it there.
+A public course whose name or description changes goes back to review.
+
+Player courses always use the default blip, keep their play areas within
+`maxRadius`, never teleport players to tees and add nothing to the global
+player statistics or the record events: their own leaderboards still count.
+
+## Course plans
+
+A course plan is a copy of a course layout. The owner saves a course as a plan
+from **My courses → Save as plan** and chooses:
+
+- **Private**: only for the owner, as a backup or to build the same course again.
+- **Public and free**: everyone can build from it.
+- **Public with a price**: others buy it once. The seller gets the price minus
+  `plans.fee` (10 %), also while offline: the money is paid out the next time
+  they open the build menu.
+
+**Build from it** places the layout where the player stands, turned to their
+facing direction, as a new unsaved course. Saving it still needs the pieces:
+every plan shows how many are missing. A plan is only sold at the price the
+buyer confirmed, and a sold plan its owner deletes stays usable for its buyers.
+
+```lua config.lua
+Config.Build.plans = { enabled = true, maxPerPlayer = 5, maxPrice = 100000, fee = 0.1 }
+```
+
+## Building together
+
+The owner adds players who stand next to them (`builderDistance`, 15 m) as
+**builders**, up to `maxBuilders` (4). Builders open the course in build mode
+from their own build menu and pay for the pieces they add. Removed pieces go
+into the owner's build box.
+
+Only one player edits a course at a time: the first one to open it holds an
+**edit lock** until they leave the course, close build mode or disconnect (at
+the latest after `lockMinutes` without activity). The others see who is
+building. Builders can leave a course, and owners can remove builders.
+
+## Admins
+
+Admins see every player course in the editor (with a **Player** badge) and can
+edit, publish, unpublish or delete it like any course.
+
+- Pieces an admin removes go back into the owner's build box.
+- Pieces an admin adds are free and are never paid out as items.
+- Deleting a player course returns every paid piece to its owner. Restored from
+  the trash, it comes back as an admin course.
+
+## Permissions and hooks
+
+Everyone may use player building once it is on. To limit it (for example to a
+job or a licence), return `false` from the server hook:
+
+```lua server/open.lua
+function OpenHooks.CanBuild(src)
+    return true
+end
+```
+
+The client hook `OpenHooks.CanPlay()` in `client/open.lua` (dead, cuffed) also
+keeps players out of build mode.
+
+## OneSync
+
+Shop counters, adding builders and the distance check on saves use the player
+positions on the server, which need OneSync. Without OneSync these checks are
+skipped, and shop counters never sell: keep `shopCommand = true` then.
+
+## All keys
+
+```lua shared/defaults.lua (defaults)
+Config.Build = {
+    enabled = false,
+    inventory = 'items',
+    area = 'zones',
+    zones = {},
+    showZones = true,
+    shopCommand = true,
+    shops = {},
+    shopBlip = { sprite = 109, color = 5, scale = 0.8 },
+    shopPed = { model = 'a_m_y_golfer_01', scenario = 'WORLD_HUMAN_CLIPBOARD', distance = 60.0 },
+    maxCourses = 50,
+    maxCoursesPerPlayer = 2,
+    maxHoles = 18,
+    maxProps = 150,
+    maxRadius = 60.0,
+    spacing = 3.0,
+    freecam = false,
+    cameraRange = 60.0,
+    testDistance = 15.0,
+    nearCourse = 80.0,
+    requireApproval = false,
+    maxBuilders = 4,
+    builderDistance = 15.0,
+    maxPurchase = 50,
+    lockMinutes = 30,
+    plans = { enabled = true, maxPerPlayer = 5, maxPrice = 100000, fee = 0.1, listSize = 60 },
+    pieces = { --[[ the 21 kit pieces: model = { item = 'mg_...', price = ... } ]] },
+}
+```
+
+Copy any key into `Config.Build` in `config.lua` to change it. Keys missing
+there use the defaults.

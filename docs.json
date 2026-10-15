@@ -104,6 +104,7 @@
               "roadminigolf/installation",
               "roadminigolf/playing",
               "roadminigolf/editor",
+              "roadminigolf/player-building",
               "roadminigolf/track-kit",
               "roadminigolf/demo-map",
               "roadminigolf/configuration",

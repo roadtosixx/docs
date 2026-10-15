@@ -245,7 +245,7 @@ Turn logging on in `config.lua` and put one webhook URL per category into
 ```lua config.lua
 Config.Logs = {
     enabled = true,
-    categories = { admin = true, economy = true, anticheat = true, records = true },
+    categories = { admin = true, economy = true, anticheat = true, records = true, build = true },
 }
 ```
 
@@ -256,13 +256,15 @@ Server.Logs = {
         economy = '',     -- entry fees, refunds, rewards
         anticheat = '',   -- suspicious hole reports and ball positions
         records = '',     -- course and hole records, holes-in-one
+        build = '',       -- player courses saved, deleted or waiting for review
     },
     username = 'Minigolf',
 }
 ```
 
-Every entry carries the player's identifier. Entries are queued and sent in
-batches, within Discord's rate limit.
+Bought track pieces and sold course plans are logged under `economy`. Every
+entry carries the player's identifier. Entries are queued and sent in batches,
+within Discord's rate limit.
 
 ## Editor
 
@@ -284,6 +286,35 @@ Config.Editor = {
 
 `Config.PropCatalog` holds the editor's prop catalog. See
 [Track Kit → Other props](/roadminigolf/track-kit#other-props).
+
+## Player building
+
+`Config.Build` turns on player building: a piece shop, build mode for players,
+building zones, course plans and co-building. Every key is explained on
+[Player Building](/roadminigolf/player-building#all-keys).
+
+```lua config.lua
+Config.Build = {
+    enabled = false,
+    inventory = 'items',              -- 'items' (inventory items, see install/items) or 'box' (pieces only in the build box)
+    area = 'zones',                   -- 'anywhere' or 'zones'
+    zones = {},                       -- PolyZone formats: poly, box or circle
+    shopCommand = true,               -- /mgshop works anywhere; false: only at Config.Build.shops
+    shops = {},                       -- counters { coords, heading, blip, ped }, ped = false: a marker instead of the NPC
+    shopPed = { model = 'a_m_y_golfer_01', scenario = 'WORLD_HUMAN_CLIPBOARD' }, -- NPC at every counter, model = false: markers only
+    maxCourses = 50,
+    maxCoursesPerPlayer = 2,
+    maxHoles = 18,
+    maxProps = 150,
+    maxRadius = 60.0,
+    spacing = 3.0,
+    freecam = false,                  -- true: players may use the editor cameras; admins always can
+    requireApproval = false,
+    maxBuilders = 4,
+    plans = { enabled = true, maxPerPlayer = 5, maxPrice = 100000, fee = 0.1 },
+    pieces = {},                      -- model = { item = 'name', price = 0 }; model = false removes a piece
+}
+```
 
 ## Sounds
 
@@ -324,6 +355,11 @@ function OpenHooks.CanPlay(src)
     return true
 end
 
+-- Return false to keep a player out of player building (build mode and saving).
+function OpenHooks.CanBuild(src)
+    return true
+end
+
 -- Called for every anti-cheat flag. Prints to the console by default.
 -- reason: 'implausible_hole', 'hole_unreachable' or 'ball_speed'
 function OpenHooks.OnSuspicious(src, identifier, reason, data)
@@ -335,7 +371,8 @@ The file ships with examples for ESX, QBCore and Qbox.
 ### Client hooks
 
 ```lua client/open.lua
--- Return false when the local player may not start a round or practice.
+-- Return false when the local player may not start a round, practice or use build mode.
+-- Build mode closes when it turns false.
 function OpenHooks.CanPlay()
     local ped = PlayerPedId()
     if IsEntityDead(ped) or IsPedCuffed(ped) then return false end
@@ -367,6 +404,8 @@ Road Minigolf has no database. It writes JSON files into `road_minigolf/data/`:
 | `history-<courseId>-a.json`, `-b.json` | The last saved versions of a course |
 | `trash-a.json`, `trash-b.json` | Deleted courses that can be restored |
 | `demo-a.json`, `demo-b.json` | Which version of each demo course was installed |
+| `builds-a.json`, `builds-b.json` | Player building: owners, builders and visibility of player courses, paid pieces, build boxes, pending plan payouts |
+| `plans-a.json`, `plans-b.json` | Course plans and who bought them |
 | `export/`, `import/` | Course export and import |
 
 Every store is written to two alternating files and read back byte for byte

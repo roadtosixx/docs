@@ -123,6 +123,47 @@ icon: 'badge-info'
   </Accordion>
 </AccordionGroup>
 
+## Player building
+
+<AccordionGroup>
+  <Accordion title="Every player save says the course lies outside the building area">
+    `Config.Build.area` is `'zones'` but there are no zones, or the course lies
+    outside them. Add zones (see
+    [Building zones](/roadminigolf/player-building#building-zones)) or set
+    `area = 'anywhere'`. The server console warns on start when zones mode has
+    no zones.
+  </Accordion>
+
+  <Accordion title="Do I need PolyZone?">
+    No. The zones use PolyZone's formats, so you can draw them with
+    `/pzcreate` and paste the output, but Road Minigolf checks them with its own
+    code.
+  </Accordion>
+
+  <Accordion title="The shop items have no images">
+    Copy `install/items/images/*.png` into the image folder of your inventory
+    (for ox_inventory `ox_inventory/web/images/`). The file names match the item
+    names.
+  </Accordion>
+
+  <Accordion title="I don't run an inventory script">
+    Set `Config.Build.inventory = 'box'`. Bought pieces then live in a build box
+    on the server and are used from there.
+  </Accordion>
+
+  <Accordion title="Can players farm money or statistics with their own courses?">
+    No. Player courses never charge entry fees or pay rewards, and they add
+    nothing to the global player statistics or record events. They keep their
+    own leaderboards.
+  </Accordion>
+
+  <Accordion title="What happens to the pieces when a course is deleted?">
+    Every piece that was paid for goes back into the owner's build box, also
+    when an admin deletes the course. Pieces an admin added for free are never
+    paid out.
+  </Accordion>
+</AccordionGroup>
+
 ## Playing
 
 <AccordionGroup>
