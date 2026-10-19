@@ -1,0 +1,48 @@
+---
+title: 'Halloween decoration'
+description: 'Seasonal pumpkins, lights and a graveyard for the RoadPark map'
+icon: 'ghost'
+---
+
+# Halloween decoration
+
+`roadpark_halloween` dresses the RoadPark for Halloween: a lit pumpkin arch behind the entrance, carved
+pumpkin lanterns along the promenade, Halloween banners on 24 promenade lamps, 16 bats hanging in the trees and under the promenade lamp arms,
+orange and violet string lights across the food lane, cobwebs on four stall roofs, three glowing carved
+pumpkins on the sweets and drinks counters, a pumpkin patch with two scarecrows and a witch's cauldron by the
+fountain, a small graveyard with a tomb, candles, a cauldron and three engraved gravestones, hay and pumpkin
+groups at all six rides and ghosts at the edge of the park.
+
+<Note>
+The decoration needs `sv_enforceGameBuild 2944` or newer. On older builds the props from newer game updates
+are skipped and reported once in the client console.
+</Note>
+
+## Season
+
+```lua roadpark_halloween/config.lua
+RoadParkHalloween = {
+    Season = 'auto', -- 'auto' follows Window, 'on' always shows the decoration, 'off' never does.
+    Window = { from = '10-15', to = '11-02' }, -- Month-day, both days included; from after to wraps over New Year.
+    SpawnRadius = 300.0, -- Metres from the park centre within which the decoration appears.
+}
+```
+
+With `Season = 'auto'` the decoration appears on 15 October and disappears after 2 November, every year.
+The server checks its local date at start and every ten minutes.
+
+## Installation
+
+Copy `roadpark_halloween` next to `roadpark` and start it after the map. Clients reconnect once after the
+first install.
+
+## Performance
+
+131 frozen local objects, created in batches when a player approaches the park and removed when the player
+leaves or the season ends. The own models switch to simpler detail levels with distance; their lights only
+burn at night.
+
+<Note>
+The decoration is measured on the park map and stall models of the same RoadPark release. Update
+`roadpark_halloween` together with `roadpark` and the stall resources.
+</Note>

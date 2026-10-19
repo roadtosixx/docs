@@ -6,9 +6,10 @@ icon: 'download'
 
 # Installation
 
-RoadPark ships as 16 resources: the park map, the ticket booth, the entrance
-sign, six rides, the games and the food stands. Install them together — the
-map places every attraction into its slot as soon as that resource starts.
+RoadPark ships as 17 resources: the park map, the ticket booth, the entrance
+sign, six rides, the games, the food stands and the seasonal
+[Halloween decoration](/roadpark/halloween). Install them together — the map
+places every attraction into its slot as soon as that resource starts.
 
 <Danger>
   **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
@@ -42,7 +43,7 @@ map places every attraction into its slot as soon as that resource starts.
 
 <Steps>
   <Step title="Extract the resources">
-    Put all 16 folders into one category folder. Keep the folder names exactly
+    Put all 17 folders into one category folder. Keep the folder names exactly
     as they are — the map, the ticket booth and the rides find each other by
     resource name.
 
@@ -64,7 +65,8 @@ map places every attraction into its slot as soon as that resource starts.
         ├── roadpark_pizza/
         ├── roadpark_icecream/
         ├── roadpark_sweets/
-        └── roadpark_drinks/
+        ├── roadpark_drinks/
+        └── roadpark_halloween/
     ```
   </Step>
 
@@ -88,6 +90,7 @@ map places every attraction into its slot as soon as that resource starts.
     ensure roadpark_ducks
     ensure roadpark_claw
     ensure roadpark_entrance_sign
+    ensure roadpark_halloween
     ```
 
     The order inside this block does not decide placement: a ride that starts
