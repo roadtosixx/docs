@@ -149,6 +149,211 @@ local number = exports['roadphone']:getActivePhoneNumber(source)
 
 `source` is a numeric online player server ID. Returns a number string or `nil`. Metadata mode reads the active item; with the SIM addon it uses the active SIM. Legacy mode resolves the player's database number. `GetPhoneNumberBySource(source)` wraps the same resolver.
 
+## Phone Status
+
+Read a player's phone settings and state from the server: flight mode, silent mode, focus, power, open screen, flashlight and calls. Nothing has to be enabled for these exports.
+
+<Note>
+  **With item metadata** (`Config.UseMetadata = true`) settings belong to the phone item. Without a `number` the exports describe the phone the player is using. Pass a `number` to ask about one specific phone the player carries: the phone in the interface answers with its live values, any other phone with what is stored on its item. A number the player does not carry has no status (`nil`, or `false` for the yes/no exports).
+
+  **Without item metadata** the player has one phone, and `number` only has to match it.
+</Note>
+
+<Tip>
+  Combine it with `getSourceFromPhone` when all you have is a number:
+
+  ```lua
+  local src = exports['roadphone']:getSourceFromPhone(number)
+  local status = src and exports['roadphone']:getPhoneStatus(src, number)
+  ```
+</Tip>
+
+### getPhoneStatus
+
+```lua
+local status = exports['roadphone']:getPhoneStatus(source, number)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="number" type="string">
+  Optional: one of the player's phone numbers (metadata mode).
+</ParamField>
+
+<ResponseField name="returns" type="table | nil">
+  `nil` when the player is offline or does not carry that phone. Otherwise:
+
+  <Expandable title="properties">
+    <ResponseField name="number" type="string | nil">
+      The phone's number.
+    </ResponseField>
+    <ResponseField name="open" type="boolean">
+      The phone is on screen.
+    </ResponseField>
+    <ResponseField name="flightmode" type="boolean">
+      Flight mode is on.
+    </ResponseField>
+    <ResponseField name="silent" type="boolean">
+      Silent mode is on.
+    </ResponseField>
+    <ResponseField name="focus" type="string | nil">
+      `'donotdisturb'`, `'work'`, `'personal'`, `'sleep'` or `nil`.
+    </ResponseField>
+    <ResponseField name="poweredOn" type="boolean">
+      `false` after the player shut the phone down in Settings.
+    </ResponseField>
+    <ResponseField name="flashlight" type="boolean">
+      The flashlight is on.
+    </ResponseField>
+    <ResponseField name="inCall" type="boolean">
+      A call is ringing, outgoing or active, including group calls and calls to a dispatch number.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+`open`, `flashlight` and `inCall` belong to the phone in hand: for any other phone of the player they are `false`.
+
+<CodeGroup>
+```lua Phone tracking
+RegisterCommand('trackphone', function(source, args)
+    local number = args[1]
+    local target = exports['roadphone']:getSourceFromPhone(number)
+    local status = target and exports['roadphone']:getPhoneStatus(target, number)
+
+    if not status or status.flightmode or not status.poweredOn then
+        print(('%s cannot be located'):format(number))
+        return
+    end
+
+    print(('%s is at %s'):format(number, GetEntityCoords(GetPlayerPed(target))))
+end, true)
+```
+</CodeGroup>
+
+---
+
+### isFlightmode
+
+```lua
+local flightmode = exports['roadphone']:isFlightmode(source, number)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` when flight mode is on. `number` is optional, see above.
+</ResponseField>
+
+---
+
+### isSilentMode
+
+```lua
+local silent = exports['roadphone']:isSilentMode(source, number)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` when silent mode is on. `number` is optional.
+</ResponseField>
+
+---
+
+### getFocusMode
+
+```lua
+local focus = exports['roadphone']:getFocusMode(source, number)
+```
+
+<ResponseField name="returns" type="string | nil">
+  `'donotdisturb'`, `'work'`, `'personal'` or `'sleep'`, or `nil` when no focus mode is on. `number` is optional.
+</ResponseField>
+
+---
+
+### isPhonePoweredOn
+
+```lua
+local on = exports['roadphone']:isPhonePoweredOn(source, number)
+```
+
+<ResponseField name="returns" type="boolean">
+  `false` when the player shut the phone down in Settings (or is offline). `number` is optional.
+</ResponseField>
+
+<Note>
+  An empty battery is a separate state: check [`isBatteryDead`](#isbatterydead) with the battery addon.
+</Note>
+
+---
+
+### isPhoneOpen
+
+```lua
+local open = exports['roadphone']:isPhoneOpen(source)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` while the phone is on the player's screen. The in-phone camera does not count as open, like the [client export](/roadphonepro/api/client#isphoneopen).
+</ResponseField>
+
+---
+
+### isFlashlight
+
+```lua
+local on = exports['roadphone']:isFlashlight(source)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` while the phone's flashlight is on.
+</ResponseField>
+
+---
+
+### isInPhoneCall
+
+```lua
+local busy = exports['roadphone']:isInPhoneCall(source)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` while a call rings for or from the player, or is active, including group calls and calls to a dispatch number. VideoCalls are not included.
+</ResponseField>
+
+---
+
+### hasPhone
+
+```lua
+local carries = exports['roadphone']:hasPhone(source)
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` when the player carries a usable phone item (`Config.Items`). Water-damaged phones do not count. With `Config.NeedItem = false` a player without any phone item counts as having one.
+</ResponseField>
+
+---
+
+### State bag
+
+The values come from the player state bag `roadphoneStatus`, so other resources can also read it or react to changes. It describes the phone in the interface and is cleared when RoadPhone stops.
+
+```lua
+-- { number, open, flightmode, silent, focus, poweredOn, flashlight, groupCall }
+local status = Player(source).state.roadphoneStatus
+
+AddStateBagChangeHandler('roadphoneStatus', nil, function(bagName, _, value)
+    local player = GetPlayerFromStateBagName(bagName)
+    if player ~= 0 and value and value.flightmode then
+        print(('%s switched flight mode on'):format(GetPlayerName(player)))
+    end
+end)
+```
+
+<Warning>
+  The client writes this state bag, so treat it like any other client input. Prefer the exports: in metadata mode they also cover the player's other phones.
+</Warning>
+
 ## Account Sessions
 
 ### GetCloudAccountForSource
@@ -865,6 +1070,114 @@ local charging = exports['roadphone']:isCharging(source)
 <ResponseField name="returns" type="boolean">
   `true` if currently charging, `false` otherwise.
 </ResponseField>
+
+---
+
+## Phone Cases (RoadPhone Studio)
+
+RoadPhone Studio designs the case of a phone through these exports. With item metadata the design is stored on the phone item as `phone_case`, so it travels with the phone. Its `hex` colour (`'#rrggbb'`) is drawn as a rim around the phone frame the next time the phone opens.
+
+### GetPhoneItems
+
+Every phone item the player carries. Reads the newest state, including changes RoadPhone has buffered but not yet written to the inventory.
+
+```lua
+local result = exports['roadphone']:GetPhoneItems(source)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ResponseField name="returns" type="table">
+  With item metadata: `{ mode = 'metadata', phones = { { slot, item, label, number, device, form, case }, ... } }`, sorted by slot. `label` is the item name in title case (`purple_phone` becomes `Purple Phone`), `device` the item's `phone_device_id`, `form` is `'phone'` or `'fold'` and `case` the stored design or `nil`. Without item metadata the character has a single phone: `{ mode = 'character', number }`.
+</ResponseField>
+
+<Note>
+  A phone item without a `phone_device_id` is given one here. An item the inventory refuses to update is left out of the list.
+</Note>
+
+---
+
+### SetPhoneCase
+
+Write a case design onto the phone in `slot`, but only while that slot still holds the same phone.
+
+```lua
+local ok, reason = exports['roadphone']:SetPhoneCase(source, slot, device, design)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="slot" type="number" required>
+  Inventory slot of the phone, as returned by `GetPhoneItems`.
+</ParamField>
+
+<ParamField path="device" type="string" required>
+  The phone's `phone_device_id` (`device` from `GetPhoneItems`). If the slot now holds a different phone, nothing is written.
+</ParamField>
+
+<ParamField path="design" type="table" required>
+  The design, stored as `phone_case`. Its `hex` field (`'#rrggbb'`) sets the rim colour.
+</ParamField>
+
+<ResponseField name="returns" type="boolean, string?">
+  `true`, or `false` with a reason:
+  - `'no_metadata'`: `Config.UseMetadata` is off. Without item metadata RoadPhone Studio stores the design itself.
+  - `'phone_changed'`: the slot is empty, holds no phone item or holds a phone with another `phone_device_id`, or `device` is not a string.
+  - `'bad_design'`: `design` is not a table.
+  - `'write_failed'`: the inventory refused the metadata update.
+</ResponseField>
+
+<Note>
+  The design is written to the inventory at once, merged into any change RoadPhone has buffered for the same phone, so neither is lost.
+</Note>
+
+---
+
+### GetPhoneGallery
+
+Photo URLs of a phone's gallery, newest first, without deleted photos and at most 150.
+
+```lua
+local urls = exports['roadphone']:GetPhoneGallery(source, slot)
+```
+
+<ParamField path="source" type="number" required>
+  The player's server ID.
+</ParamField>
+
+<ParamField path="slot" type="number">
+  Inventory slot of the phone. Ignored without item metadata.
+</ParamField>
+
+<ResponseField name="returns" type="string[]">
+  With item metadata: the photos stored on the phone in `slot`, or an empty table if that slot holds no phone item. Without item metadata: the character's camera roll.
+</ResponseField>
+
+---
+
+### Active phone state bags
+
+Two replicated player state bags describe the phone in hand, so companion resources such as RoadPhone Studio can follow it on every client.
+
+```lua
+-- { slot, item, device, form } of the active phone, or nil
+local active = Player(source).state.roadphoneActive
+
+-- Network id of the phone prop in the player's hand, or nil
+local propNetId = Player(source).state.roadphoneProp
+```
+
+**`roadphoneActive`** is written by the server whenever a phone item with a `phone_device_id` becomes the active phone (the player uses the item or opens the phone). `form` is `'phone'` or `'fold'`. Closing the phone does **not** clear it: it keeps describing the last phone used until another phone becomes active. It becomes `nil` when the player disconnects, when the server does not answer an open request within 5 seconds and, on Jaksam inventory, when the active phone item is removed. While an open is still looking for the right phone it can be `nil` for a moment.
+
+**`roadphoneProp`** is written by the player's client when the hand prop is created and set back to `nil` when the prop is deleted (the phone is put away). A new prop, for example after the model changes, gets a new network id.
+
+<Warning>
+  The client writes `roadphoneProp`, so treat it like any other client input.
+</Warning>
 
 ---
 

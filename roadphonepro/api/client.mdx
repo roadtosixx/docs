@@ -512,3 +512,24 @@ exports['roadphone']:deliverOrMarkCar(plate)
 <Note>
   Both run the same valet action the phone's own buttons use, including its cost and cooldown rules from `config.lua`.
 </Note>
+
+---
+
+## Phone Cases (RoadPhone Studio)
+
+### setCaseColor
+
+Colour of the rim drawn around the phone frame for a RoadPhone Studio case on servers without item metadata. With item metadata the colour comes from the phone item itself (see [SetPhoneCase](/roadphonepro/api/server#setphonecase)) and this value is ignored.
+
+```lua
+exports['roadphone']:setCaseColor('#d9692a')
+exports['roadphone']:setCaseColor(nil) -- removes the rim
+```
+
+<ParamField path="hex" type="string">
+  Colour as `'#rrggbb'`. Any other value, including `nil`, removes the rim.
+</ParamField>
+
+<Note>
+  The colour is applied the next time the phone opens. An open phone keeps its current rim.
+</Note>

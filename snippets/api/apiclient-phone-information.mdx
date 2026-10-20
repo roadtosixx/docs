@@ -26,6 +26,86 @@ local flightMode = exports['roadphone']:isFlightmode()
   `true` if flight mode is enabled, `false` otherwise.
 </ResponseField>
 
+<Note>
+  With item metadata this follows the phone in hand: after switching to another phone item it reports that phone's setting. The server has the same export with a `source` argument, see [Phone Status](/roadphonepro/api/server#phone-status).
+</Note>
+
+---
+
+### isSilentMode
+
+Check if the phone is in silent mode.
+
+```lua
+local silent = exports['roadphone']:isSilentMode()
+```
+
+<ResponseField name="returns" type="boolean">
+  `true` if silent mode is on, `false` otherwise.
+</ResponseField>
+
+---
+
+### getFocusMode
+
+The focus mode that is currently on.
+
+```lua
+local focus = exports['roadphone']:getFocusMode()
+```
+
+<ResponseField name="returns" type="string | nil">
+  `'donotdisturb'`, `'work'`, `'personal'` or `'sleep'`, or `nil` when no focus mode is on.
+</ResponseField>
+
+---
+
+### getPhoneStatus
+
+The phone's state in one call.
+
+```lua
+local status = exports['roadphone']:getPhoneStatus()
+```
+
+<ResponseField name="returns" type="table">
+  <Expandable title="properties">
+    <ResponseField name="number" type="string | nil">
+      Number of the phone in the interface.
+    </ResponseField>
+    <ResponseField name="open" type="boolean">
+      The phone is on screen (same as `isPhoneOpen`).
+    </ResponseField>
+    <ResponseField name="flightmode" type="boolean">
+      Flight mode is on.
+    </ResponseField>
+    <ResponseField name="silent" type="boolean">
+      Silent mode is on.
+    </ResponseField>
+    <ResponseField name="focus" type="string | nil">
+      The active focus mode, see `getFocusMode`.
+    </ResponseField>
+    <ResponseField name="poweredOn" type="boolean">
+      `false` after the player shut the phone down in Settings.
+    </ResponseField>
+    <ResponseField name="flashlight" type="boolean">
+      The flashlight is on.
+    </ResponseField>
+    <ResponseField name="inCall" type="boolean">
+      A call is ringing, outgoing or active, group calls included (same as `isInPhoneCall`).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<CodeGroup>
+```lua Example
+local status = exports['roadphone']:getPhoneStatus()
+if status.flightmode or not status.poweredOn then
+    print('The phone is not reachable')
+end
+```
+</CodeGroup>
+
 ---
 
 ### isFlashlight
