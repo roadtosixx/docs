@@ -1,0 +1,43 @@
+---
+title: 'Commands'
+description: 'Admin commands of RoadBanking'
+icon: 'terminal'
+---
+
+# Commands
+
+## /bankadmin
+
+Look up, freeze and correct any account. Needs the `road_banking.admin`
+permission (`Config.AdminAce`) and also works from the server console.
+
+```cfg server.cfg
+add_ace group.admin road_banking.admin allow
+```
+
+| Command | What it does |
+|---|---|
+| `/bankadmin info <account number>` | Type, owner, balance and whether the account is frozen |
+| `/bankadmin freeze <account number>` | Freezes the account: RoadBanking moves no money out of it |
+| `/bankadmin unfreeze <account number>` | Lifts the freeze |
+| `/bankadmin give <account number> <amount>` | Adds money, booked as an admin line in the history |
+| `/bankadmin take <account number> <amount>` | Removes money; fails when the balance is too low |
+
+<ParamField path="account number" type="string" required>
+  Without spaces, for example `LS1234567890`. Players see their numbers in the
+  bank.
+</ParamField>
+
+<Note>
+  A checking account is the player's framework bank money. A freeze stops
+  RoadBanking from taking money out, but other scripts that charge the
+  framework balance directly are not affected. `take` on a checking account
+  only works while its owner is online.
+</Note>
+
+<ParamField path="amount" type="number">
+  Whole amount for `give` and `take`.
+</ParamField>
+
+Freezes and money corrections are posted to the
+[Discord audit log](/roadbanking/configuration#audit-log) when one is set.

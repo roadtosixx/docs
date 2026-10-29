@@ -1,0 +1,259 @@
+---
+title: 'Configuration'
+description: 'config.lua, API.lua, owner hooks and languages of RoadBanking'
+icon: 'settings'
+---
+
+# Configuration
+
+These files stay readable after the Asset Escrow upload:
+
+| File | Sent to players | What it holds |
+|---|---|---|
+| `config.lua` | Yes | Branches, ATMs, fees, limits, cards, business accounts, loans, invoices, standing orders |
+| `API.lua` | **No** | Discord webhook for the audit log |
+| `server/open.lua` | No | Server hooks: refuse the bank to a player, forward bookings to your logs |
+| `client/open.lua` | Yes | Client hooks: who may open the bank, your own notifications, HUD |
+| `locales/*.lua` | Yes | In-game texts (help text, target labels, notifications, admin replies) |
+| `public/locales/*.json` | Yes | Texts of the bank screen |
+
+<Info>
+  Every key has a built-in default. A key missing from your `config.lua`, for
+  example after an update added a new one, uses that default, so an older
+  config keeps working.
+</Info>
+
+## General
+
+```lua config.lua
+Config.Locale = 'en' -- 'en' or 'de', also sets the UI language
+Config.Debug = false -- extra lines in the server console
+Config.BankName = 'Los Santos Bank' -- shown in the UI, on cards and as the Discord webhook name
+Config.Currency = 'USD' -- ISO 4217 code for money formatting, e.g. 'EUR'
+
+Config.Interaction = 'auto' -- 'auto' = ox_target or qb-target when one runs, otherwise the key; 'key' = always the key
+Config.InteractKey = 38 -- control id, 38 = E
+Config.AdminAce = 'road_banking.admin' -- permission for /bankadmin
+```
+
+## Branches
+
+```lua config.lua
+Config.Branches = {
+    { id = 'legion', label = 'Fleeca Legion Square', coords = vector4(149.91, -1040.74, 29.37, 160.0) },
+    -- ...
+}
+Config.BranchRadius = 2.0 -- metres from the counter point
+Config.Teller = { Enabled = true, Model = 'u_m_m_bankman', Offset = 1.4 }
+Config.Blip = { Enabled = true, Sprite = 108, Color = 2, Scale = 0.75 }
+```
+
+- `coords` is the point where the player stands at the counter. The fourth
+  value is the direction the player faces, towards the teller.
+- The teller stands `Teller.Offset` metres in front of the player, behind the
+  counter. Adjust the offset if a teller stands inside the counter.
+- `id` must be unique and use letters and numbers only.
+
+To add a branch, stand at the counter facing it, copy your coordinates and
+heading and add a line.
+
+## ATMs
+
+```lua config.lua
+Config.ATM = {
+    Models = { 'prop_atm_01', 'prop_atm_02', 'prop_atm_03', 'prop_fleeca_atm' },
+    Distance = 1.5, -- metres
+    Deposit = true, -- cash deposits at ATMs
+    Fee = 0, -- per withdrawal
+    QuickAmounts = { 100, 500, 1000, 2000, 5000 },
+    Animation = true, -- ATM scenario while the screen is open
+}
+```
+
+Every prop with one of these models is an ATM, including ATMs from map
+add-ons that use the same models.
+
+## Accounts, savings and transfers
+
+```lua config.lua
+Config.Accounts = {
+    NumberPrefix = 'LS', -- two letters in front of every account number
+    MaxSavings = 2, -- per player
+    MaxShared = 3, -- shared accounts a player may own or join
+    MaxMembers = 8, -- per shared account
+    OpenFee = 0, -- per new savings or shared account
+}
+
+Config.Savings = {
+    InterestRate = 0.5, -- percent per payout
+    IntervalHours = 24, -- between payouts
+    MaxInterestBalance = 1000000, -- interest is only paid on this much
+    CashWithdraw = false, -- cash from savings at the counter; false = transfer to checking first
+}
+
+Config.Transfers = {
+    FeePercent = 0.0, -- of the amount
+    MinFee = 0,
+    MaxFee = 0, -- 0 = no cap
+    MaxAmount = 1000000, -- per transfer and standing order
+}
+```
+
+<Warning>
+  Change `NumberPrefix` before players open accounts. Existing account numbers
+  keep their old prefix.
+</Warning>
+
+## Cards
+
+```lua config.lua
+Config.Cards = {
+    Enabled = true,
+    Item = 'bank_card', -- item name, false = player-bound cards
+    AllowForeignCards = true, -- a found or stolen card plus its PIN works at ATMs (item cards only)
+    OrderFee = 250, -- per card
+    DailyLimit = 5000, -- ATM withdrawals per day for new cards
+    MaxDailyLimit = 50000, -- highest limit a player can set
+    MaxPerAccount = 2, -- item cards only
+    PinAttempts = 3, -- wrong PINs until the card is blocked
+}
+```
+
+Item cards need an inventory with item metadata. See
+[Cards and ATMs](/roadbanking/cards) for both modes.
+
+## Business accounts, loans and credit score
+
+`Config.Business` is explained under
+[Business accounts](/roadbanking/accounts#business-accounts),
+`Config.Loans` and `Config.CreditScore` under
+[Loans and credit score](/roadbanking/loans).
+
+## Invoices, standing orders and the rest
+
+```lua config.lua
+Config.Invoices = {
+    Enabled = true,
+    MaxAmount = 500000,
+    Distance = 5.0, -- metres between sender and recipient
+}
+
+Config.StandingOrders = {
+    Enabled = true,
+    Max = 5, -- per player
+    Intervals = { 24, 72, 168 }, -- hours the player can choose from
+}
+
+Config.Privacy = {
+    ShowNearbyNames = false, -- invoice and member pickers show names instead of server ids
+}
+
+Config.Security = {
+    ActionCooldown = 600, -- ms between money actions per player
+    SessionDistance = 6.0, -- metres a player may move away from the counter or ATM
+}
+
+Config.Scheduler = {
+    IntervalSeconds = 60, -- how often interest, installments and standing orders are processed
+    Batch = 50, -- due entries per type and run
+}
+
+Config.History = {
+    PageSize = 40, -- transactions per page
+}
+```
+
+## Audit log
+
+`API.lua` is loaded on the server only. Paste a Discord webhook URL to log
+deposits, withdrawals, transfers and admin actions:
+
+```lua API.lua
+API.Webhook = 'https://discord.com/api/webhooks/...'
+API.WebhookThreshold = 50000 -- only money movements at or above this amount are posted
+```
+
+Admin actions (freeze, unfreeze, give, take) are always posted.
+
+## Hooks
+
+The hook files let you connect RoadBanking to your own scripts. An error in a
+hook is printed to the console and ignored, so a broken hook never stops the
+bank.
+
+<Tabs>
+  <Tab title="server/open.lua">
+    ```lua server/open.lua
+    -- Return false to refuse the bank or an ATM to this player right now.
+    -- kind: 'bank' or 'atm'. The player sees "You cannot use the bank right now".
+    function OpenHooks.CanOpen(source, kind)
+        -- Qbox / QBCore jail example:
+        -- local player = exports.qbx_core:GetPlayer(source)
+        -- if player and (player.PlayerData.metadata.injail or 0) > 0 then return false end
+        return true
+    end
+
+    -- Called after every ledger line, e.g. to forward bookings to your own log system.
+    -- Do not Wait here: it runs inside the account lock.
+    function OpenHooks.OnBooking(entry)
+        -- entry.account, entry.accountType, entry.kind, entry.amount (negative = outgoing),
+        -- entry.balance, entry.counterparty, entry.counterpartyName, entry.reference,
+        -- entry.actor (identifier), entry.actorName
+    end
+    ```
+  </Tab>
+  <Tab title="client/open.lua">
+    ```lua client/open.lua
+    -- Return false when the local player may not open the bank or an ATM right now.
+    function OpenHooks.CanOpen(kind)
+        local ped = PlayerPedId()
+        if IsEntityDead(ped) or IsPedCuffed(ped) or IsPedInAnyVehicle(ped, false) then return false end
+        return true
+    end
+
+    -- Called when the bank or ATM screen opens or closes, e.g. to hide your HUD.
+    function OpenHooks.OnOpen(kind) end
+    function OpenHooks.OnClose() end
+
+    -- Show a message with your own notification script and return true;
+    -- return false to use the framework's. kind: 'inform' or 'error'.
+    function OpenHooks.Notify(message, kind)
+        -- lib.notify({ description = message, type = kind })
+        -- return true
+        return false
+    end
+    ```
+  </Tab>
+</Tabs>
+
+## Language
+
+`Config.Locale` sets the language of the in-game texts and of the bank screen.
+English (`en`) and German (`de`) are built in.
+
+To add a language, for example French:
+
+<Steps>
+  <Step title="Copy the English files">
+    Copy `locales/en.lua` to `locales/fr.lua` and
+    `public/locales/en.json` to `public/locales/fr.json`.
+  </Step>
+  <Step title="Translate them">
+    In `locales/fr.lua`, change `Locales['en']` to `Locales['fr']`. Keep the
+    keys and placeholders (`%s` in Lua, `{name}` in JSON) as they are.
+  </Step>
+  <Step title="Load the Lua file">
+    Add `'locales/fr.lua',` to `shared_scripts` in `fxmanifest.lua`, next to
+    the other locale files.
+  </Step>
+  <Step title="Switch the language">
+    ```lua config.lua
+    Config.Locale = 'fr'
+    ```
+  </Step>
+</Steps>
+
+On the bank screen, a text you leave out of the JSON file, or whose
+placeholders no longer match, falls back to English. In the Lua file,
+translate every line: a missing line shows its key instead of a text. You can
+change the built-in English or German texts the same way.

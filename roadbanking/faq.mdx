@@ -1,0 +1,87 @@
+---
+title: 'FAQ'
+description: 'Common questions and problems with RoadBanking'
+icon: 'badge-info'
+---
+
+# FAQ
+
+<AccordionGroup>
+  <Accordion title="Players see two options at ATMs or bank counters">
+    Another banking script also adds ATM and counter interactions. Stop it or
+    remove its targets. Keep the resource that holds your society money
+    running if your business accounts use it (`Config.Business.Source =
+    'society'`).
+  </Accordion>
+
+  <Accordion title="Players can only have one card">
+    Your inventory has no item metadata (for example the default ESX
+    inventory), or `Config.Cards.Item = false`. Cards are then bound to the
+    player, one per player. With ox_inventory, qb-inventory and other metadata
+    inventories, cards are items and players can hold several. See
+    [Cards and ATMs](/roadbanking/cards).
+  </Accordion>
+
+  <Accordion title="The card item has no picture">
+    Copy `install/bank_card.png` into your inventory's image folder
+    (`ox_inventory/web/images/` or `qb-inventory/html/images/`) and restart the
+    inventory.
+  </Accordion>
+
+  <Accordion title="A card says it is blocked">
+    The PIN was entered wrong too often. The card owner sets a new PIN in the
+    **Cards** tab at a branch, which unblocks it.
+  </Accordion>
+
+  <Accordion title="There is no Deposit or Withdraw button">
+    On a standalone server there is no cash, so deposits and withdrawals are
+    hidden. Transfers, cards, loans, invoices and standing orders work.
+
+    At an ATM, deposits are hidden when `Config.ATM.Deposit = false`. For
+    savings accounts, cash withdrawals at the counter need
+    `Config.Savings.CashWithdraw = true`.
+  </Accordion>
+
+  <Accordion title="A loan installment or standing order was not taken">
+    The checking account is the player's framework bank money and can only be
+    charged while the player is online. Installments and standing orders from
+    it wait until the player is back.
+  </Accordion>
+
+  <Accordion title="A business account does not show up">
+    The job must be listed in `Config.Business.Accounts`, and the player's
+    grade must be at least the `view` grade. The boss grade always has access.
+    Players only see the business account of their current job.
+  </Accordion>
+
+  <Accordion title="The teller stands in the wrong place">
+    The teller stands `Config.Teller.Offset` metres in front of the branch
+    point, in the direction of its heading. Change the offset, or the heading
+    (fourth value of `coords`) so it points from the player to the counter.
+    `Config.Teller.Enabled = false` removes tellers.
+  </Accordion>
+
+  <Accordion title="How do I add or move a branch?">
+    Stand where players should stand at the counter, facing it, and add a line
+    to `Config.Branches` with your coordinates and heading. See
+    [Branches](/roadbanking/configuration#branches).
+  </Accordion>
+
+  <Accordion title="Can other scripts pay into or charge accounts?">
+    Yes. Use the [server exports](/roadbanking/api/exports): `AddMoney`,
+    `RemoveMoney`, `Transfer` and `CreateInvoice`. Scripts that change the
+    framework bank balance directly keep working too; with `AddTransaction`
+    they can add a matching line to the history.
+  </Accordion>
+
+  <Accordion title="The bank does not open">
+    Check the server console for `[road_banking]` errors. `oxmysql` and
+    `ox_lib` must start before RoadBanking, and OneSync must be on. Players
+    also cannot open the bank while dead, cuffed or in a vehicle; you can
+    change that in `client/open.lua`.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Still stuck? Open a ticket on our [Discord](https://discord.gg/2nZrmmvM2q).
+</Info>

@@ -1,0 +1,84 @@
+---
+title: 'Loans and credit score'
+description: 'Credit score, loan tiers, installments and late fees in RoadBanking'
+icon: 'hand-coins'
+---
+
+# Loans and credit score
+
+Players take loans at a branch in the **Loans** tab. How much they can borrow,
+and at what rate, depends on their credit score.
+
+<Frame>
+  <img src="/images/roadbanking/loans.webp" alt="Loans screen with credit score, loan tiers and repayment options" />
+</Frame>
+
+## Credit score
+
+The score runs from 300 to 850. It starts at `Config.CreditScore.Base` and
+changes with:
+
+| Factor | Default | Cap |
+|---|---|---|
+| Days since the player's first account | +2 per day | +100 |
+| Repaid loans | +35 each | +140 |
+| Money across the player's own accounts | +5 per $5,000 | +80 |
+| Bookings on the checking account in the last 30 days | +1 each | +30 |
+| Missed installments | −15 each | |
+| Defaulted loans | −120 each | |
+
+All weights are in `Config.CreditScore`.
+
+## Loan tiers
+
+The highest tier the score reaches sets the largest loan and the interest
+rate:
+
+```lua config.lua
+Config.Loans = {
+    Tiers = {
+        { score = 500, max = 10000, rate = 12.0 },
+        { score = 620, max = 50000, rate = 9.0 },
+        { score = 700, max = 150000, rate = 6.5 },
+        { score = 780, max = 400000, rate = 4.5 },
+    },
+    Installments = { 6, 12, 24 },
+    IntervalHours = 24,
+    LateFeePercent = 5.0,
+    DefaultAfterMissed = 3,
+    MaxActive = 1,
+}
+```
+
+The rate is a flat percentage on the whole loan: $10,000 at 9 % means $10,900
+to pay back, split into equal installments.
+
+## Taking a loan
+
+1. Enter the amount (up to the tier's maximum).
+2. Pick the number of installments.
+3. Review the total and the installment, then confirm.
+
+The money is paid into the checking account right away. A player can have
+`MaxActive` loans at the same time (default 1) and cannot take a new loan
+while a defaulted loan is still open or when the score is below the first
+tier.
+
+## Installments
+
+Every `IntervalHours` (default 24 hours) one installment is taken from the
+checking account automatically.
+
+- When the account cannot cover it, the installment counts as missed and a
+  late fee of `LateFeePercent` of one installment is added to the loan.
+- After `DefaultAfterMissed` missed installments (default 3) the loan is
+  marked as defaulted. That lowers the credit score and blocks new loans; the
+  installments keep running until the loan is paid off.
+- Players can repay early, all at once or in parts, from any account they may
+  transfer from.
+
+<Note>
+  The checking account is the player's framework bank money, which can only
+  be charged while the player is online. Installments wait until the player is
+  back instead of counting as missed.
+</Note>

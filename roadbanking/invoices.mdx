@@ -1,0 +1,54 @@
+---
+title: 'Invoices and standing orders'
+description: 'Invoices between players and businesses, and recurring transfers in RoadBanking'
+icon: 'receipt'
+---
+
+# Invoices and standing orders
+
+## Invoices
+
+<Frame>
+  <img src="/images/roadbanking/invoices.webp" alt="Invoices screen with an open invoice to pay or decline" />
+</Frame>
+
+Players send invoices from the **Invoices** tab with **New invoice**:
+
+1. Pick a player standing nearby (within `Config.Invoices.Distance`, default
+   5 metres).
+2. Enter the amount (up to `Config.Invoices.MaxAmount`) and a reason.
+3. Choose the account the money should go to: the checking account, or a
+   business account of the player's job. A business invoice shows the
+   business name as the sender.
+
+The recipient gets a notification and finds the invoice under **To pay**.
+They **Pay** it from any account they may transfer from, or **Decline** it.
+The sender sees the status under **Sent**, can cancel an open invoice and is
+notified when it is paid.
+
+By default, the pickers show server ids. `Config.Privacy.ShowNearbyNames =
+true` shows player names instead.
+
+Other scripts (fines, shops, mechanics) can send invoices with the
+[`CreateInvoice`](/roadbanking/api/exports#createinvoice) export.
+
+## Standing orders
+
+<Frame>
+  <img src="/images/roadbanking/orders.webp" alt="Standing orders screen" />
+</Frame>
+
+Standing orders transfer a fixed amount to any account number on a schedule,
+for rent, pocket money or a savings plan.
+
+- They can be set up from checking, savings and shared accounts (shared:
+  owners and managers).
+- The interval is one of `Config.StandingOrders.Intervals` (default every 24,
+  72 or 168 hours).
+- A player can have up to `Config.StandingOrders.Max` standing orders
+  (default 5). The amount is limited by `Config.Transfers.MaxAmount`.
+- Orders can be paused and resumed or deleted at any time.
+
+When a run fails, for example because the account is empty, the player is
+notified. After three failed runs in a row the order is paused. Orders from
+the checking account wait while its owner is offline.

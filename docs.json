@@ -127,6 +127,19 @@
             ]
           },
           {
+            "group": "RoadBanking",
+            "pages": [
+              "roadbanking/installation",
+              "roadbanking/accounts",
+              "roadbanking/cards",
+              "roadbanking/loans",
+              "roadbanking/invoices",
+              "roadbanking/configuration",
+              "roadbanking/commands",
+              "roadbanking/faq"
+            ]
+          },
+          {
             "group": "RoadPods",
             "pages": [
               "roadpods/installation"
@@ -204,6 +217,12 @@
             "group": "RoadPark",
             "pages": [
               "roadpark/api/integration"
+            ]
+          },
+          {
+            "group": "RoadBanking",
+            "pages": [
+              "roadbanking/api/exports"
             ]
           }
         ]

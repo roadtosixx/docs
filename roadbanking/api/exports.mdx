@@ -1,0 +1,246 @@
+---
+title: 'Exports'
+description: 'Server and client exports for integrating RoadBanking with other scripts'
+icon: 'server'
+---
+
+# Exports
+
+Call the exports on `exports.road_banking`. Unless noted, they are
+server-side.
+
+## Targets
+
+Most exports take a `target`. It can be:
+
+| Value | Account |
+|---|---|
+| Player server id (number) | That player's checking account |
+| Account number (string, with or without spaces) | That account |
+| Job name with a business account (string) | The job's business account |
+| Framework identifier (string) | That player's checking account, if it exists |
+
+Amounts are whole numbers above zero.
+
+## Accounts
+
+### GetPersonalAccount
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+
+<ResponseField name="return" type="string | nil">
+  The account number of the checking account, or `nil`.
+</ResponseField>
+
+```lua
+local number = exports.road_banking:GetPersonalAccount(source) -- 'LS1234567890'
+```
+
+### GetAccount
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+
+<ResponseField name="return" type="table | nil">
+  <Expandable title="properties">
+    <ResponseField name="number" type="string">Account number</ResponseField>
+    <ResponseField name="type" type="string">`personal`, `savings`, `shared` or `business`</ResponseField>
+    <ResponseField name="label" type="string">Display name</ResponseField>
+    <ResponseField name="owner" type="string">Identifier of the owner, or the job name</ResponseField>
+    <ResponseField name="balance" type="number | nil">`nil` for a checking account whose owner is offline</ResponseField>
+    <ResponseField name="frozen" type="boolean">Frozen by an admin</ResponseField>
+  </Expandable>
+</ResponseField>
+
+```lua
+local account = exports.road_banking:GetAccount('police')
+print(account.label, account.balance)
+```
+
+### GetBalance
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+
+<ResponseField name="return" type="number">
+  The balance. `0` when the account does not exist or is a checking account
+  whose owner is offline.
+</ResponseField>
+
+## Money
+
+### AddMoney
+
+Pays money into an account and adds a history line.
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+<ParamField path="amount" type="number" required>
+  Whole amount above zero
+</ParamField>
+<ParamField path="reason" type="string">
+  Shown in the history (up to 120 characters)
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` when the money was booked.
+</ResponseField>
+
+```lua
+exports.road_banking:AddMoney(source, 2500, 'Paycheck')
+```
+
+### RemoveMoney
+
+Takes money from an account and adds a history line. Refuses overdrafts and
+frozen accounts.
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+<ParamField path="amount" type="number" required>
+  Whole amount above zero
+</ParamField>
+<ParamField path="reason" type="string">
+  Shown in the history (up to 120 characters)
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` when the money was taken.
+</ResponseField>
+
+```lua
+if exports.road_banking:RemoveMoney(source, 800, 'Vehicle repair') then
+    -- repair the vehicle
+end
+```
+
+### Transfer
+
+Moves money between two accounts, with history lines on both sides. The
+recipient is notified. No transfer fee is charged.
+
+<ParamField path="from" type="number | string" required>
+  Paying account, see [Targets](#targets)
+</ParamField>
+<ParamField path="to" type="number | string" required>
+  Receiving account
+</ParamField>
+<ParamField path="amount" type="number" required>
+  Whole amount above zero
+</ParamField>
+<ParamField path="reference" type="string">
+  Shown in both histories (up to 120 characters)
+</ParamField>
+
+<ResponseField name="return" type="boolean, string | nil">
+  `true` on success, otherwise `false` and an error code such as
+  `insufficient_funds`, `account_frozen`, `owner_offline` or
+  `invalid_request`.
+</ResponseField>
+
+```lua
+local ok, code = exports.road_banking:Transfer(source, 'mechanic', 1500, 'Tuning')
+```
+
+### AddTransaction
+
+Adds a history line for money your script moved itself, for example through
+the framework's own bank functions. The balance does not change.
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+<ParamField path="amount" type="number" required>
+  Positive for incoming, negative for outgoing money
+</ParamField>
+<ParamField path="reference" type="string">
+  Up to 120 characters
+</ParamField>
+<ParamField path="counterpartyName" type="string">
+  Who paid or was paid (up to 64 characters)
+</ParamField>
+
+<ResponseField name="return" type="boolean" />
+
+```lua
+exports.road_banking:AddTransaction(source, -45, 'Fuel', 'Globe Oil')
+```
+
+### GetTransactions
+
+<ParamField path="target" type="number | string" required>
+  See [Targets](#targets)
+</ParamField>
+<ParamField path="limit" type="number" default="20">
+  Up to 100
+</ParamField>
+
+<ResponseField name="return" type="table">
+  Newest first.
+
+  <Expandable title="entry">
+    <ResponseField name="id" type="number">Ledger id</ResponseField>
+    <ResponseField name="kind" type="string">For example `deposit`, `withdraw`, `transfer_in`, `transfer_out`, `fee`, `interest`, `external`</ResponseField>
+    <ResponseField name="amount" type="number">Negative for outgoing money</ResponseField>
+    <ResponseField name="counterparty" type="string">Other account number, if any</ResponseField>
+    <ResponseField name="counterpartyName" type="string">Other party's name, if any</ResponseField>
+    <ResponseField name="reference" type="string">Reference text</ResponseField>
+    <ResponseField name="createdAt" type="number">Timestamp in milliseconds</ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Invoices
+
+### CreateInvoice
+
+Sends an invoice to an online player, for fines, shops or services. The
+recipient pays it in the bank.
+
+<ParamField path="data" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="target" type="number" required>Server id of the player who pays</ParamField>
+    <ParamField path="amount" type="number" required>Whole amount above zero, up to `Config.Invoices.MaxAmount`</ParamField>
+    <ParamField path="reason" type="string">Shown on the invoice (up to 120 characters)</ParamField>
+    <ParamField path="job" type="string">Business account that receives the money</ParamField>
+    <ParamField path="sender" type="number">Server id of the sending player; the money goes to their checking account. Give `job` or `sender`.</ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="boolean, number | string">
+  `true` and the invoice id, or `false` and an error code.
+</ResponseField>
+
+```lua
+exports.road_banking:CreateInvoice({ target = playerId, amount = 500, reason = 'Speeding', job = 'police' })
+```
+
+## Credit score
+
+### GetCreditScore
+
+<ParamField path="target" type="number | string" required>
+  Player server id or framework identifier
+</ParamField>
+
+<ResponseField name="return" type="number | nil">
+  The score from 300 to 850, without the points for money held, which are
+  only counted at the bank.
+</ResponseField>
+
+## Client
+
+### IsOpen
+
+<ResponseField name="return" type="boolean">
+  `true` while the bank or ATM screen is open.
+</ResponseField>
+
+```lua
+if exports.road_banking:IsOpen() then return end
+```

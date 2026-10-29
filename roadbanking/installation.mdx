@@ -1,0 +1,162 @@
+---
+title: 'Installation'
+description: 'Complete setup guide for RoadBanking'
+icon: 'download'
+---
+
+# Installation
+
+RoadBanking is a full bank for your server: checking, savings, shared and
+business accounts, transfers by account number, debit cards with PIN, ATMs,
+loans with a credit score, invoices and standing orders. Players use it at
+bank branches and at every ATM on the map.
+
+The checking account **is** the player's framework bank balance, so wages,
+shops and every other script that pays into or charges `bank` keep working.
+
+<Frame>
+  <img src="/images/roadbanking/accounts.webp" alt="RoadBanking account overview at a branch" />
+</Frame>
+
+<Danger>
+  **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
+  We recommend **WinSCP**.
+</Danger>
+
+<Note>
+  The download comes from the [cfx.re Portal](/license-system). The database
+  tables are created automatically on the first start.
+</Note>
+
+## 📋 Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="oxmysql and ox_lib" icon="database">
+    Both are required and must start before RoadBanking.
+  </Card>
+  <Card title="OneSync" icon="radio-tower">
+    Required.
+  </Card>
+  <Card title="Framework" icon="layers">
+    ESX Legacy, QBCore, Qbox or no framework (standalone).
+  </Card>
+  <Card title="Target script" icon="crosshair">
+    Optional: ox_target or qb-target. Without one, players press **E** at the
+    counter or ATM.
+  </Card>
+</CardGroup>
+
+## 🚀 Setup Instructions
+
+<Steps>
+  <Step title="Extract the resource">
+    Put the folder into your resources. We recommend a `[road]` folder
+    alongside our other scripts:
+
+    ```bash
+    resources/
+    └── [road]/
+        ├── road_banking/
+        └── other_scripts/
+    ```
+
+    <Warning>
+      The folder name must stay `road_banking`. Events and exports use this
+      name.
+    </Warning>
+  </Step>
+
+  <Step title="Start it after its dependencies">
+    ```cfg server.cfg
+    ensure oxmysql
+    ensure ox_lib
+    # your framework and inventory
+    ensure road_banking
+    ```
+  </Step>
+
+  <Step title="Give your admins access">
+    ```cfg server.cfg
+    add_ace group.admin road_banking.admin allow
+    ```
+
+    This unlocks [`/bankadmin`](/roadbanking/commands) on every framework.
+  </Step>
+
+  <Step title="Add the card item">
+    With an inventory that supports item metadata, bank cards are real items.
+    Without one (for example the default ESX inventory), skip this step: cards
+    are then bound to the player. See [Cards and ATMs](/roadbanking/cards).
+
+    Copy `install/bank_card.png` into your inventory's image folder, then add
+    the item:
+
+    <Tabs>
+      <Tab title="ox_inventory (ESX, Qbox)">
+        Image folder: `ox_inventory/web/images/`
+
+        ```lua ox_inventory/data/items.lua
+        ['bank_card'] = {
+            label = 'Bank card',
+            weight = 10,
+            stack = false,
+            close = true,
+        },
+        ```
+      </Tab>
+      <Tab title="QBCore (qb-inventory)">
+        Image folder: `qb-inventory/html/images/`
+
+        ```lua qb-core/shared/items.lua
+        bank_card = { name = 'bank_card', label = 'Bank card', weight = 10, type = 'item', image = 'bank_card.png', unique = true, useable = false, shouldClose = true, description = 'Debit card' },
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Remove other ATM and bank interactions">
+    If another banking script also adds ATM and bank counter options, players
+    see both. Stop that script or remove its targets.
+
+    <Warning>
+      Keep the resource that holds your society money (esx_addonaccount,
+      qb-management, qbx_management or qb-banking) running: business accounts
+      read their balance from it.
+    </Warning>
+  </Step>
+</Steps>
+
+## 🌐 Language
+
+```lua config.lua
+Config.Locale = 'en'
+```
+
+English (`en`) and German (`de`) are built in. The setting changes both the
+in-game texts and the bank screen. To add your own language, see
+[Configuration](/roadbanking/configuration#language).
+
+## ✅ Verification
+
+1. The server console shows no `road_banking` errors on start.
+2. Bank blips appear on the map at the eight default branches.
+3. At a branch counter or an ATM you get the target option or the
+   **E** help text, and the bank opens.
+4. Your checking account shows the same balance as your framework bank money.
+
+## 📚 Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Accounts and transfers" icon="landmark" href="/roadbanking/accounts">
+    Account types, shared accounts, transfers and history
+  </Card>
+  <Card title="Cards and ATMs" icon="credit-card" href="/roadbanking/cards">
+    Item cards, player-bound cards, PIN and daily limits
+  </Card>
+  <Card title="Configuration" icon="settings" href="/roadbanking/configuration">
+    Branches, fees, limits, loans and owner hooks
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadbanking/faq">
+    Any problems or questions?
+  </Card>
+</CardGroup>

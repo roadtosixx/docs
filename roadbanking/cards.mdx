@@ -1,0 +1,90 @@
+---
+title: 'Cards and ATMs'
+description: 'Debit cards with PIN, daily limits and ATM use in RoadBanking'
+icon: 'credit-card'
+---
+
+# Cards and ATMs
+
+Players order debit cards at a branch and use them at every ATM on the map.
+An ATM needs a card and its 4-digit PIN.
+
+## Item cards or player-bound cards
+
+RoadBanking picks the card mode from your inventory:
+
+| | Item cards | Player-bound cards |
+|---|---|---|
+| When | Your inventory supports item metadata (ox_inventory, qb-inventory, tgiann, codem, core_inventory, ...) and `Config.Cards.Item` is set | Your inventory has no item metadata (for example the default ESX inventory), or `Config.Cards.Item = false` |
+| The card is | An item in the inventory that carries the card number | Bound to the player, no item |
+| Cards per player | Up to `MaxPerAccount` (default 2) per account | **One** card in total |
+| Lost or stolen cards | A found card plus its PIN works at an ATM (`AllowForeignCards`) | Not possible |
+| Replace plastic | Yes | No |
+
+The [card item](/roadbanking/installation) only needs to be added for item
+cards.
+
+## Ordering a card
+
+<Frame>
+  <img src="/images/roadbanking/cards.webp" alt="Cards screen with a debit card, daily limit and card actions" />
+</Frame>
+
+In the **Cards** tab, players choose **Order card**, pick the account and
+choose a PIN. The card costs `Config.Cards.OrderFee` ($250 by default), paid
+from that account, and is ready right away.
+
+Who may order a card for an account:
+
+- Checking: the owner.
+- Shared: owner and managers.
+- Business: employees with the `withdraw` grade or the boss.
+
+## Managing a card
+
+| Action | What it does |
+|---|---|
+| **Freeze** | Stops the card at ATMs until it is unfrozen. |
+| **Change PIN** | Sets a new PIN. This also unblocks a card blocked by wrong PINs. |
+| **Daily limit** | How much the card may withdraw per day, up to `MaxDailyLimit` (default $50,000). New cards start at `DailyLimit` (default $5,000). |
+| **Replace plastic** | Item cards only: a new item for the same card, for example after losing it. The fee is not charged again. |
+| **Cancel card** | The card stops working for good. |
+
+<Tip>
+  A replaced card keeps its number, so a lost item still works. Freeze or
+  cancel the card if it might have been stolen.
+</Tip>
+
+## Using an ATM
+
+<Frame>
+  <img src="/images/roadbanking/atm.webp" alt="ATM asking for the card PIN" />
+</Frame>
+
+ATMs are the GTA ATM props listed in `Config.ATM.Models`. Players use the
+target option or press **E** in front of one.
+
+<Steps>
+  <Step title="Insert a card">
+    The ATM lists the cards the player can use: the card items they carry, or
+    their player-bound card.
+  </Step>
+  <Step title="Enter the PIN">
+    After `Config.Cards.PinAttempts` wrong PINs (default 3) the card is
+    blocked until its owner sets a new PIN at a branch.
+  </Step>
+  <Step title="Choose what to do">
+    - **Withdraw** with quick amounts or any other amount. The menu shows how
+      much of the daily limit is left. An optional `Config.ATM.Fee` is added
+      per withdrawal.
+    - **Deposit** cash (when `Config.ATM.Deposit` is on).
+    - **Statement** with the latest bookings.
+    - **Change PIN** with the current PIN.
+    - **Return card** when done.
+  </Step>
+</Steps>
+
+<Note>
+  With `Config.Cards.Enabled = false` there are no cards: ATMs open the
+  player's checking account directly.
+</Note>
