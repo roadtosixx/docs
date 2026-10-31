@@ -67,6 +67,14 @@ icon: 'badge-info'
     [Branches](/roadbanking/configuration#branches).
   </Accordion>
 
+  <Accordion title="Does it work with RoadPhone Pro?">
+    Yes, with RoadPhone Pro versions that have `Config.roadBanking`. Set
+    `Config.roadBanking = true` in RoadPhone's `config.lua`. The phone's bank
+    app then shows the RoadBanking checking account number, balance and
+    history, and phone transfers go through RoadBanking: to any account number,
+    or by phone number to a contact's checking account.
+  </Accordion>
+
   <Accordion title="Can other scripts pay into or charge accounts?">
     Yes. Use the [server exports](/roadbanking/api/exports): `AddMoney`,
     `RemoveMoney`, `Transfer` and `CreateInvoice`. Scripts that change the

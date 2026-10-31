@@ -123,7 +123,8 @@ end
 ### Transfer
 
 Moves money between two accounts, with history lines on both sides. The
-recipient is notified. No transfer fee is charged.
+recipient is notified. `Config.Transfers` fees do not apply; pass your own
+with `options.fee`.
 
 <ParamField path="from" type="number | string" required>
   Paying account, see [Targets](#targets)
@@ -137,15 +138,25 @@ recipient is notified. No transfer fee is charged.
 <ParamField path="reference" type="string">
   Shown in both histories (up to 120 characters)
 </ParamField>
+<ParamField path="options" type="table">
+  <Expandable title="properties">
+    <ParamField path="fee" type="number">Charged to the payer on top of the amount and booked as a bank fee</ParamField>
+    <ParamField path="notify" type="boolean" default="true">`false` sends no RoadBanking notification to the recipient, so your script can show its own</ParamField>
+  </Expandable>
+</ParamField>
 
 <ResponseField name="return" type="boolean, string | nil">
   `true` on success, otherwise `false` and an error code such as
-  `insufficient_funds`, `account_frozen`, `owner_offline` or
-  `invalid_request`.
+  `insufficient_funds`, `account_frozen`, `owner_offline`, `invalid_amount`
+  or `invalid_request`.
 </ResponseField>
+
+When `from` is a player server id, that player is recorded as the one who
+made the transfer.
 
 ```lua
 local ok, code = exports.road_banking:Transfer(source, 'mechanic', 1500, 'Tuning')
+local ok2 = exports.road_banking:Transfer(source, 'LS1234567890', 950, 'Rent', { fee = 50, notify = false })
 ```
 
 ### AddTransaction
@@ -187,6 +198,7 @@ exports.road_banking:AddTransaction(source, -45, 'Fuel', 'Globe Oil')
   <Expandable title="entry">
     <ResponseField name="id" type="number">Ledger id</ResponseField>
     <ResponseField name="kind" type="string">For example `deposit`, `withdraw`, `transfer_in`, `transfer_out`, `fee`, `interest`, `external`</ResponseField>
+    <ResponseField name="label" type="string">Readable text for the kind in the server language (from `public/locales`), e.g. "Cash deposit"</ResponseField>
     <ResponseField name="amount" type="number">Negative for outgoing money</ResponseField>
     <ResponseField name="counterparty" type="string">Other account number, if any</ResponseField>
     <ResponseField name="counterpartyName" type="string">Other party's name, if any</ResponseField>
