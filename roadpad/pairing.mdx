@@ -1,0 +1,128 @@
+---
+title: 'Pairing & Metadata'
+description: 'Connect each physical RoadPad to a chosen RoadPhone and understand inventory requirements'
+icon: 'link'
+---
+
+With metadata enabled, **each tablet remembers the RoadPhone you choose for it**. Tablet A can use phone A while tablet B uses phone B. A different inventory slot or another phone becoming active does not change the saved pairing.
+
+## Enable device pairing
+
+In linked mode, these options come from **RoadPhone's** configuration:
+
+```lua roadphone/config.lua
+Config.UseMetadata = true
+Config.InventorySystem = 'auto'
+```
+
+Keep the tablet item names in RoadPad's configuration:
+
+```lua roadpad/config.lua
+Config.Items = { 'tablet' }
+Config.OpenKey = 'M'
+```
+
+Restart `roadphone`, followed by `roadpad`, after changing the shared setup. Both resources need the compatible companion integration; replacing only one resource can leave pairing unavailable.
+
+## Tablet inventory items
+
+The inventory must persist metadata separately for each item slot. Tablets must be **non-stackable** in metadata mode. The bridge supports adapters for `ox_inventory`, `one_inventory`, `jaksam`, `tgiann`, `qb-inventory`, `codem` and `core_inventory`; verify per-item reads and writes with your installed inventory version.
+
+<Tabs>
+  <Tab title="ESX">
+    With ox_inventory, add an item like this to its item definitions:
+
+    ```lua ox_inventory/data/items.lua
+    ['tablet'] = {
+        label = 'Tablet',
+        weight = 1000,
+        stack = false,
+        close = true,
+    },
+    ```
+
+    If you use another inventory, set its equivalent non-stackable option and enable its metadata adapter.
+  </Tab>
+  <Tab title="QBCore">
+    With qb-inventory, define the item in your shared item list:
+
+    ```lua qb-core/shared/items.lua
+    tablet = {
+        name = 'tablet',
+        label = 'Tablet',
+        weight = 1000,
+        type = 'item',
+        image = 'tablet.png',
+        unique = true,
+        useable = true,
+        shouldClose = true,
+        description = 'RoadPad tablet',
+    },
+    ```
+
+    Supply the matching inventory image. The bridge handles qb-inventory's `info` metadata field.
+  </Tab>
+  <Tab title="Qbox">
+    For Qbox with ox_inventory, define the tablet in ox_inventory:
+
+    ```lua ox_inventory/data/items.lua
+    ['tablet'] = {
+        label = 'Tablet',
+        weight = 1000,
+        stack = false,
+        close = true,
+    },
+    ```
+
+    The bridge detects `qbx_core`; do not add a second tablet handler through a QBCore compatibility script.
+  </Tab>
+</Tabs>
+
+RoadPad registers its item handling through the inventory bridge. Do not add another handler that opens the interface without selecting the used item. Keep the RoadPhone item setup from the [RoadPhone metadata guide](/roadphonepro/metadata).
+
+Existing tablets without an identity receive one when RoadPad resolves them. A stack containing multiple tablets is rejected instead of assigning the whole stack one identity. Unstack existing items as well as changing their item definition.
+
+## Pair a tablet
+
+<Steps>
+  <Step title="Carry both devices">
+    Put the tablet and the RoadPhone you want to use in the same player's inventory.
+  </Step>
+  <Step title="Use the tablet item">
+    Using its inventory item selects that physical tablet. This matters when you carry more than one.
+  </Step>
+  <Step title="Choose the phone">
+    Select a RoadPhone from the device picker. Entries include its number and inventory slot when available. Unusable phones can appear disabled.
+  </Step>
+  <Step title="Reopen or manage the connection">
+    M and `/roadpad` reopen the last selected tablet. Tap **Connected** in the status bar to choose another phone or disconnect.
+  </Step>
+</Steps>
+
+If the last selected tablet has left your inventory, use another tablet item explicitly. RoadPad does not silently select a different physical tablet.
+
+## What is synchronized?
+
+The linked tablet uses the selected phone's messages, contacts, notes, photos, accounts, settings and home-screen folders. Opening it loads that device's current data; server updates reach the connected tablet. RoadPhone handles the call/voice connection and phone world audio.
+
+RoadPad keeps its own tablet presentation, portrait/landscape layouts, dock and tablet-specific apps. Pairing does not turn the tablet into an independent copy of the phone's data.
+
+| Change | Result |
+| --- | --- |
+| Move a tablet or phone to another inventory slot | The saved connection follows the stable device identity. |
+| Use another phone | The tablet keeps its saved binding; it does not automatically pair with that phone. |
+| Remove the paired phone | The tablet cannot access it and offers reconnection/device selection. |
+| Remove the tablet | Further tablet requests fail ownership checks. With the inventory-opening fix installed, a new M/command open stays closed. |
+| Disconnect or choose a different phone | The old phone's data is retained; the saved tablet binding changes. |
+
+For integration debugging, the tablet identity is `roadpad_device_id`; the saved `roadpad_pair.device` refers to the phone's `phone_device_id`. Phone numbers and slot numbers are not the identity. Preserve unrelated item metadata and let the scripts manage these fields.
+
+## Metadata disabled
+
+With `Config.UseMetadata = false`, linked mode stores one explicit connection per character. Physical tablets cannot remember separate phone choices. The legacy tablet-item requirement comes from `roadpad/config.lua`; an explicit item-free legacy setup can set `Config.NeedItem = false` there. RoadPhone's own phone-item requirement is configured separately.
+
+<Note>
+  Disabling the item requirement does not create a physical tablet identity in metadata mode. Device pairing still needs a real tablet item.
+</Note>
+
+If RoadPhone is not running, RoadPad uses its standalone backend instead of the pairing flow. See [installation](/roadpad/installation) and [troubleshooting](/roadpad/faq).

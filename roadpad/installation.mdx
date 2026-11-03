@@ -1,138 +1,115 @@
 ---
 title: 'Installation'
-description: 'Complete setup guide for the roadpad script'
+description: 'Install RoadPad v3 with RoadPhone pairing or its own standalone backend'
 icon: 'download'
 ---
 
-# Installation
-
-<Danger>
-    **Do not use FileZilla**. It can corrupt or skip hidden files during upload. We recommend **WinSCP**.
-</Danger>
-<Warning>
-    Enter your TebexTransactionID in `API.lua`. The music app will not work without a TebexID.
-</Warning>
-
-## 📋 Prerequisites
-
-Before you begin, make sure you have:
+RoadPad v3 provides a tablet workspace with portrait and landscape layouts, two-column views in supported apps, a dock with recent apps, lock screen customization, Business and Marketplace. It can connect to a specific RoadPhone or run on its own.
 
 <CardGroup cols={2}>
-    <Card title="Database Access" icon="database">
-        MySQL or MariaDB database with permissions to create tables
-    </Card>
-    <Card title="FTP Client" icon="server">
-        WinSCP or similar (not FileZilla)
-    </Card>
-    <Card title="Discord Webhooks" icon="discord">
-        Valid Discord webhook URLs for logging
-    </Card>
-    <Card title="Server Access" icon="key">
-        FTP/SFTP access to your game server
-    </Card>
+  <Card title="Updating an existing server?" icon="refresh-cw" href="/roadpad/updates">
+    Follow the v3 update guide before replacing an older installation.
+  </Card>
+  <Card title="Pair tablets with phones" icon="link" href="/roadpad/pairing">
+    Configure metadata and keep a separate phone connection for each tablet.
+  </Card>
 </CardGroup>
 
-## 🚀 Setup Instructions
+## Requirements
+
+- ESX, QBCore, Qbox or a configured standalone framework bridge.
+- MySQL/MariaDB and a database adapter. The supplied manifest imports `@mysql-async/lib/MySQL.lua`; an oxmysql installation using its direct library must use `@oxmysql/lib/MySQL.lua` instead. Enable only the import used by your server.
+- `ox_lib`, the supplied `xsound` dependency and OneSync.
+- An inventory item for the tablet. Separate physical-device pairing requires an inventory that can read and persist per-slot metadata.
+- A compatible, updated `roadphone` resource for linked mode.
+
+## Choose the operating mode
+
+| Mode | When it is used | Backend and configuration |
+| --- | --- | --- |
+| Linked | `roadphone` is running | RoadPhone handles phone data and services. RoadPad keeps its own tablet controls, item names and tablet app settings. |
+| Standalone | `roadphone` is absent or not started | RoadPad runs its own backend and uses its own configuration and API files. |
+
+<Note>
+  The mode is selected when RoadPad starts. If you start or stop RoadPhone later, restart RoadPad. Keep the resource names `roadphone` and `roadpad` unchanged.
+</Note>
+
+## Install the resource
 
 <Steps>
-    <Step title="Create Resource Folder">
-        Create a folder in your resource folder called `[pad]`
+  <Step title="Extract the download">
+    Copy the supplied `roadpad` resource and `xsound` dependency into your server's resources directory. If your server already runs the supplied xsound version, use that existing resource once.
 
-        ```bash
-        resources/
-        └── [pad]/
+    ```text resources directory
+    resources/
+    └── [road]/
         ├── roadpad/
-        ├── xSound/
-        └── other_scripts/
-        ```
-    </Step>
+        │   ├── bridge/
+        │   ├── client/
+        │   ├── server/
+        │   ├── public/
+        │   ├── config.lua
+        │   ├── API.lua
+        │   └── fxmanifest.lua
+        └── xsound/
+    ```
 
-    <Step title="Extract Scripts">
-        Extract all scripts that are included in the download to the `[pad]` folder
+    RoadPhone is installed separately. Linked mode requires its current companion integration as well as the updated RoadPad files.
+  </Step>
 
-        <Note>
-            Make sure to maintain the folder structure as provided in the download package
-        </Note>
-    </Step>
+  <Step title="Prepare the database">
+    Back up the database before importing SQL. For a fresh standalone installation, select the schema matching your framework:
 
-    <Step title="Import Database">
-        Read the SQL file **roadpad.sql** into your database
+    <Tabs>
+      <Tab title="ESX">
+        Import `roadpad/__installation/roadphone-esx.sql`. The customer download also includes this schema as `roadpad_esx.sql`.
+      </Tab>
+      <Tab title="QBCore">
+        Import `roadpad/__installation/roadphone-qb.sql`. The customer download also includes it as `roadpad_qb.sql`.
+      </Tab>
+      <Tab title="Qbox">
+        Use `roadpad/__installation/roadphone-qb.sql` with the Qbox player/vehicle schema. The bridge detects `qbx_core` automatically.
+      </Tab>
+    </Tabs>
 
-        <Tip>
-            You can also use phpMyAdmin or HeidiSQL to import the SQL file
-        </Tip>
-    </Step>
+    For framework-free setups, also configure the [standalone bridge](/roadphonepro/standalone).
 
-    <Step title="Configure API">
-        <Warning>
-            The script will not work without a valid key.
-        </Warning>
+    In linked mode, retain RoadPhone's existing database. Pairing does not require a separate SQL migration. RoadPad creates missing Business, Marketplace and Vehicle Marketplace tables from `sql/roadpad_apps.sql` at startup in both modes. These apps retain their existing `roadshop_` table names.
+  </Step>
 
-        - Open <code>API.lua</code> and enter your **TebexTransactionID** and your **Fivemanage** API key.
+  <Step title="Add the tablet item">
+    Add `tablet` to your inventory, or put your chosen item name in RoadPad's `Config.Items`. For metadata mode, make every tablet non-stackable and give it its own inventory slot.
 
-        **Where to find your Transaction ID:**
-        - Check your purchase confirmation email from Tebex
-        - Or log in to view your payment history:
+    See [inventory examples and metadata setup](/roadpad/pairing). Do not copy metadata or device IDs between physical tablets.
+  </Step>
 
-        <Card title="Tebex Payment History" href="https://checkout.tebex.io/payment-history/login" icon="receipt" iconType="solid">
-            View and retrieve your transaction ID from past purchases
-        </Card>
+  <Step title="Configure RoadPad and RoadPhone">
+    Follow the [configuration guide](/roadpad/configuration). In linked mode, set metadata, inventory detection and shared phone settings in `roadphone/config.lua`. Tablet item names, keys, prop and Business/Marketplace settings remain in RoadPad.
 
-        <CardGroup cols={2}>
-            <Card title="Fivemanage Setup" icon="cloud" href="/roadpad/fivemanage">
-                Getting the key and checking it works
-            </Card>
-        </CardGroup>
+    Linked uploads and services use RoadPhone's server-only API files. Standalone mode uses RoadPad's `API.lua` and `MusicAPI.lua`. Add the credentials required by the services you enable; see [Fivemanage setup](/roadpad/fivemanage) for media uploads.
+  </Step>
 
-        - **optional**: Add your **Discord webhooks** in <code>API.lua</code>.
-    </Step>
-    <Step title="Configure Config">
-        - configure <code>roadpad/config.lua</code>
-    </Step>
+  <Step title="Start the resources">
+    Start your framework, inventory, database adapter and `ox_lib` first. Then use the following order for linked mode:
 
-    <Step title="Start Resources">
-        Add the resources to your server.cfg
+    ```cfg server.cfg
+    ensure xsound
+    ensure roadphone
+    ensure roadpad
+    ```
 
-        ```cfg
-        ensure [pad]
-        ```
-    </Step>
+    For standalone mode, omit `ensure roadphone`. A fresh server boot can also use a resource group; the explicit order above makes the intended setup clear.
+  </Step>
+
+  <Step title="Open and pair the tablet">
+    Join the server with a tablet item. In linked mode, also carry a RoadPhone. Use the tablet item, then choose the phone to connect. The default toggle key is **M**; `/roadpad` also toggles the tablet.
+
+    Use the **Connected** status-bar control to change or remove the pairing. Each tablet remembers its own choice when metadata is enabled.
+  </Step>
 </Steps>
 
-## ✅ Verification
+## Check the installation
 
-After installation, verify everything is working:
+Test opening and closing, portrait/landscape, the lock screen editor and your configured tablet apps. For linked mode, pair two tablets with different phones, move their inventory slots, remove and return a paired phone, and verify messages, settings and calls. Check the inventory-opening fix by pressing M without a tablet: the interface should stay closed and show the missing-item notification.
 
-<Tabs>
-    <Tab title="In-Game Test">
-        1. Join your server
-        2. Check if the roadpad script loads without errors
-        3. Test basic functionality like opening the pad
-    </Tab>
-</Tabs>
-
-## 🔧 Troubleshooting
-
-<AccordionGroup>
-    <Accordion title="Script not starting">
-        - Verify all dependencies are installed
-        - Check server console for error messages
-        - Ensure the resource folder structure is correct
-    </Accordion>
-
-    <Accordion title="Database errors">
-        - Confirm database credentials are correct
-        - Check if the SQL file was imported successfully
-    </Accordion>
-</AccordionGroup>
-
-## 📚 Next Steps
-
-<CardGroup cols={2}>
-    <Card title="FAQ" icon="badge-info" href="/roadpad/faq">
-        Any problems or questions?
-    </Card>
-    <Card title="CustomApps" icon="pickaxe" href="/roadpad/custom-apps">
-        Learn how to create custom apps
-    </Card>
-</CardGroup>
+If a check fails, use the [FAQ](/roadpad/faq). Server startup messages should identify the expected framework and inventory. Verify on your own FiveM server before using the update in production.

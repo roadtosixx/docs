@@ -1,0 +1,66 @@
+---
+title: 'Updating to v3'
+description: 'Update RoadPad safely, preserve existing data and install the matching RoadPhone integration'
+icon: 'refresh-cw'
+---
+
+RoadPad v3 refreshes the tablet workspace, home-screen spacing, typography, lock screen customization and animations. It adds explicit device pairing with metadata support while retaining the tablet's Business, Marketplace and wide app layouts.
+
+## Update an existing installation
+
+<Steps>
+  <Step title="Back up the current installation">
+    Back up the database and existing `roadpad` resource. Keep copies of `config.lua`, `API.lua`, `MusicAPI.lua`, addon configuration, edited locales and `public/static/config/config.json`. For linked mode, back up RoadPhone's configuration too.
+  </Step>
+  <Step title="Replace the resource files">
+    Stop RoadPad and replace the old resource folder with the new download. Keep its resource name `roadpad`. Avoid merging the release into an old folder: removed Lua files and old UI bundles must not remain.
+  </Step>
+  <Step title="Merge your configuration">
+    Merge your server-specific values into the new defaults. Restore credentials in the appropriate server-only API files; customer packages contain empty credentials. Review tablet items/keys, Business access, job applications and Marketplace image paths using the [configuration guide](/roadpad/configuration).
+
+    Preserve custom-app resources you own and restore their catalogue entries. They are separate from the RoadPad resource update.
+  </Step>
+  <Step title="Update RoadPhone for linked mode">
+    Install the compatible RoadPhone Pro build containing the RoadPad companion exports and session/metadata integration. Update both resources together. An older build with a similar version number can still lack the required integration.
+
+    RoadPad and RoadPhone have separate version numbers. RoadPad v3 does not imply that RoadPhone must also have a 3.x version.
+  </Step>
+  <Step title="Check inventory and database settings">
+    In linked mode, enable metadata and select the inventory adapter in RoadPhone. Make tablets non-stackable and separate existing stacks before using them. See [Pairing & Metadata](/roadpad/pairing).
+
+    Existing tablets receive their device identity when resolved. Pairing itself needs no SQL migration. The tablet app tables are created if missing at startup. Do not blindly import a fresh-install SQL file over an existing production database.
+
+    Check the database library import in `fxmanifest.lua`: the supplied manifest uses mysql-async; direct oxmysql setups need the corresponding oxmysql import.
+  </Step>
+  <Step title="Restart and reconnect">
+    Start the dependencies first, then restart RoadPhone before RoadPad:
+
+    ```text server console
+    restart roadphone
+    restart roadpad
+    ```
+
+    For standalone mode, leave RoadPhone stopped and restart only RoadPad. Use a tablet item to select that physical device, then choose its phone in linked mode.
+  </Step>
+</Steps>
+
+## What happens to existing data?
+
+- The backend continues to use the existing `roadshop_` tables. Business listings, applications and Marketplace data keep their existing table names.
+- Linked mode uses the selected RoadPhone's data rather than copying the previous standalone tablet data over it.
+- Changing or removing a pairing retains the phone's data. Previous standalone tablet data is not erased by pairing.
+- With metadata disabled, linked mode keeps one explicit connection per character; it cannot store separate pairings for multiple physical tablets.
+
+Switching the metadata storage mode is a separate data-migration decision. Do not toggle it simply to hide an inventory or pairing error.
+
+## Verify on the test server
+
+1. Open a tablet from its inventory item and pair it with phone A. Pair another tablet with phone B.
+2. Edit a note or setting, close the tablet, and check the matching phone. Repeat in the other direction.
+3. Move both devices to different inventory slots and confirm the saved connection stays with them.
+4. Remove the selected phone and confirm RoadPad asks for reconnection rather than opening another phone.
+5. With the inventory-opening fix installed, remove the tablet and press M or run `/roadpad`: the interface should stay closed.
+6. Open the phone and tablet in quick succession. Verify focus, pending settings, messages and one call with your voice integration.
+7. Check portrait/landscape, the lock screen editor, long lists and your installed tablet apps.
+
+If you also support standalone mode, stop RoadPhone, restart RoadPad and test it separately. See the [FAQ](/roadpad/faq) for the current troubleshooting flow.

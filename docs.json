@@ -84,6 +84,9 @@
             "group": "RoadPad",
             "pages": [
               "roadpad/installation",
+              "roadpad/updates",
+              "roadpad/pairing",
+              "roadpad/configuration",
               "roadpad/faq",
               "roadpad/custom-apps",
               "roadpad/fivemanage"

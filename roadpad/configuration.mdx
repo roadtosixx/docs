@@ -1,0 +1,108 @@
+---
+title: 'Configuration'
+description: 'Configure tablet controls, shared phone settings, Business, Marketplace and the app catalogue'
+icon: 'settings'
+---
+
+## Which configuration is used?
+
+When RoadPhone is running, RoadPad adopts its Lua configuration and keeps a defined set of tablet-specific settings from `roadpad/config.lua`. The tablet's frontend catalogue remains in `roadpad/public/static/config/config.json`.
+
+| Setting | Linked mode | Standalone mode |
+| --- | --- | --- |
+| Metadata and inventory adapter | `roadphone/config.lua` | `roadpad/config.lua` |
+| Default locale and shared app/service options | `roadphone/config.lua` | `roadpad/config.lua` |
+| Tablet item names and key bindings | `roadpad/config.lua` | `roadpad/config.lua` |
+| Legacy tablet-item requirement | `Config.NeedItem` in `roadpad/config.lua` | `Config.NeedItem` in `roadpad/config.lua` |
+| Tablet prop and holding animation | `roadpad/config.lua` | `roadpad/config.lua` |
+| Business management access and Marketplace item exclusions | `roadpad/config.lua` | `roadpad/config.lua` |
+| Tablet app catalogue, job applications and inventory image paths | `roadpad/public/static/config/config.json` | Same file |
+| Upload credentials and other backend API settings | RoadPhone's server-only API files | RoadPad's server-only API files |
+
+In linked legacy mode, the tablet ownership check uses `Config.NeedItem` from `roadpad/config.lua`; RoadPhone's own phone-item checks use its configuration. Metadata pairing requires a real tablet item independently of the legacy exemption. See [Pairing & Metadata](/roadpad/pairing).
+
+## Tablet controls
+
+```lua roadpad/config.lua
+Config.Items = { 'tablet' }
+Config.RegisterKeyMapping = true
+Config.OpenKey = 'M'
+Config.OpenKeyNumber = 244
+```
+
+| Command | Purpose |
+| --- | --- |
+| `ToggleTablet` | Toggle the tablet; this is the command used by its key mapping. |
+| `roadpad` | Toggle the tablet from chat or another command binding. |
+| `stoptablet` | Close the tablet. |
+| `fixtabletprop` | Run the tablet prop cleanup command if the prop gets stuck. |
+
+Players can change an existing FiveM key binding in the game's key-binding settings. Changing `Config.OpenKey` changes the default rather than replacing every player's saved binding.
+
+Use a tablet item to select a different physical tablet. The key and command reopen the last selection. The [client API](/roadpad/api/client) offers exports for other resources.
+
+`Config.Tablet` controls the prop, bone, offsets, rotation and holding animation. Preserve the supplied defaults unless you are adjusting your server's hand placement.
+
+## Business
+
+The Business app provides the tablet's company and job-application workflows. Set the minimum grade that can manage each configured company:
+
+```lua roadpad/config.lua
+Config.BusinessAppAccess = {
+    { job = 'police', grade = 4 },
+    { job = 'ambulance', grade = 3 },
+}
+Config.UnemployedJob = 'unemployed'
+```
+
+`Config.UnemployedJob` is the job assigned when an employee is dismissed. Job names and grades must exist in your framework.
+
+The companies players can apply to are listed separately in the frontend configuration. This is a fragment to merge into the existing object:
+
+```json roadpad/public/static/config/config.json
+{
+  "JobApplications": [
+    {
+      "name": "Police",
+      "jobname": "police",
+      "img": "/public/img/app/Business/police.png"
+    },
+    {
+      "name": "EMS",
+      "jobname": "ambulance",
+      "img": "/public/img/app/Business/ambulance.png"
+    }
+  ]
+}
+```
+
+## Marketplace
+
+Configure items that cannot be listed:
+
+```lua roadpad/config.lua
+Config.MarketplaceBlacklistedItems = { 'marijuana', 'cannabis' }
+```
+
+RoadPad also excludes recognized tablet/phone device items from the Marketplace to avoid losing their device data through ordinary item sales.
+
+Set the inventory image location used by item listings. This example is for ox_inventory; change both fields to match your inventory:
+
+```json roadpad/public/static/config/config.json
+{
+  "marketplace_inventory_path": "nui://ox_inventory/web/images/",
+  "marketplace_inventory_image_end": ".png"
+}
+```
+
+The startup schema in `sql/roadpad_apps.sql` supplies Business, Marketplace and Vehicle Marketplace tables in both operating modes.
+
+## Apps, language and uploads
+
+- `AppStore` in the tablet's `config.json` defines the app catalogue. Remove entries you do not want to offer; keep route identifiers for built-in apps unchanged. Use `light_icon` and `dark_icon` for custom icons.
+- `AppInfos` holds App Shop descriptions and listing details. Restore entries only for separately sold Custom Apps you have installed and own.
+- Set `Config.Locale` in the active backend configuration for its default language. Players can choose their interface language in Settings. App display names in `config.json` are configured separately.
+- Configure uploads in the active backend; see [Fivemanage setup](/roadpad/fivemanage).
+- Optionally set `Config.RoadPad = true` in RoadPhone to list the tablet under Settings > Bluetooth. This listing does not replace the tablet's device picker.
+
+Restart affected resources after changing Lua settings. Preserve the new defaults and merge your previous configuration when [updating](/roadpad/updates).

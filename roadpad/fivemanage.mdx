@@ -1,9 +1,53 @@
 ---
 title: 'Fivemanage Setup'
-description: 'Connect your Fivemanage API key to RoadPad and verify the integration'
+description: 'Configure media uploads in the backend used by your RoadPad installation'
 icon: 'cloud'
 ---
 
-import Fivemanage from '/snippets/shared/fivemanage.mdx';
+RoadPad can upload photos and videos through Fivemanage when `Config.uploadMethod = 'fivemanage'`. Configure the backend that handles your tablet's data.
 
-<Fivemanage product="RoadPad" />
+## Select the correct files
+
+| Mode | Upload setting | Credential file |
+| --- | --- | --- |
+| Linked to RoadPhone | `roadphone/config.lua` | `roadphone/API.lua` |
+| Standalone | `roadpad/config.lua` | `roadpad/API.lua` |
+
+Changing only RoadPad's API key does not configure the linked RoadPhone backend.
+
+## Configure uploads
+
+<Steps>
+  <Step title="Choose Fivemanage">
+    In the active backend's `config.lua`, select the provider:
+
+    ```lua config.lua
+    Config.uploadMethod = 'fivemanage'
+    ```
+  </Step>
+  <Step title="Add the media key">
+    Obtain a Media API key from your Fivemanage account and put it in the active backend's server-only `API.lua`:
+
+    ```lua API.lua
+    API.uploadMethodKey = 'YOUR_FIVEMANAGE_MEDIA_KEY'
+    ```
+
+    Keep this key in the server-only API file. Customer downloads contain empty credentials; restore your own key after an update.
+  </Step>
+  <Step title="Restart and verify">
+    For linked mode, restart `roadphone` and then `roadpad`. For standalone mode, restart `roadpad`.
+
+    Take a photo, confirm that it appears in Photos, reopen the selected device, and check that the saved media is still available. Check video uploads separately if you use them.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+- Confirm that you edited the backend shown in the table above.
+- Inspect the upload error and verify the key, provider access and available storage.
+- Check that `Config.uploadMethod` still matches the key's provider.
+- Restore your private API settings when replacing the resource. Discord logging webhooks do not replace the media-upload key.
+
+<Card title="Fivemanage Dashboard" href="https://fivemanage.com/dashboard" icon="external-link">
+  Manage the media key and storage used by your installation.
+</Card>

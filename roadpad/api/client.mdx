@@ -1,82 +1,95 @@
 ---
 title: 'Client API'
-description: 'Client-side exports and events for RoadPad integration'
+description: 'Open, close and query RoadPad through its supported tablet exports'
 icon: 'code'
 ---
 
-## Notification System
+Use these exports from a **client script** while the `roadpad` resource is running. Resource names are case-sensitive.
 
-### sendNotification
+## Tablet controls
 
-Send a notification to the tablet interface.
+### openTablet
 
-<ParamField path="apptitle" type="string" required>
-  App name or title
-</ParamField>
+Request the tablet to open. If it is already open, this does nothing.
 
-<ParamField path="title" type="string" required>
-  Notification header
-</ParamField>
-
-<ParamField path="message" type="string" required>
-  Notification message content
-</ParamField>
-
-<ParamField path="img" type="string" required>
-  Path to app icon
-</ParamField>
-
-```lua
-TriggerEvent("roadpad:sendNotification", {
-    apptitle = "APPNAME",
-    title = "TITLE",
-    message = "MESSAGE",
-    img = "/public/img/app/Apps/light_mode/settings.webp"
-})
+```lua client.lua
+if GetResourceState('roadpad') == 'started' then
+    exports['roadpad']:openTablet()
+end
 ```
 
-## Tablet State Functions
-
-### isTabletOpen
-
-Check if the tablet is currently open.
-
-<ResponseField name="return" type="boolean">
-  Returns `true` if tablet is open, `false` if closed
-</ResponseField>
-
-```lua
-istabletopen = exports['roadpad']:isTabletOpen()
-print(istabletopen) -- returns true or false
-```
-
-### isFlashlight
-
-Check if flashlight is enabled.
-
-<ResponseField name="return" type="boolean">
-  Returns `true` if flashlight is enabled, `false` otherwise
-</ResponseField>
-
-```lua
-flashlight = exports['roadpad']:isFlashlight()
-print(flashlight)
-```
-
-## Tablet Control Functions
-
-### toggleTablet
-
-Toggle the tablet open/closed state.
-
-```lua
-exports['roadpad']:toggleTablet()
-```
+Opening is asynchronous: linked mode first checks tablet ownership, prepares the phone handoff, then loads the paired device or device picker. This export does not return a pairing result and does not bypass item checks. The last selected physical tablet is used; players select another tablet by using its inventory item.
 
 ### closeTablet
 
-Close the tablet.
+Close an open tablet. This never opens a closed tablet.
 
-```lua
+```lua client.lua
 exports['roadpad']:closeTablet()
 ```
+
+Pending metadata/settings writes finish before the linked session is released. If saving fails, RoadPad retains the session for a retry and shows a notification.
+
+### toggleTablet
+
+Open a closed tablet or close an open one.
+
+```lua client.lua
+exports['roadpad']:toggleTablet()
+```
+
+This follows the same item, player-state and pairing checks as the normal key binding.
+
+## Tablet state
+
+### isTabletOpen
+
+```lua client.lua
+local isOpen = exports['roadpad']:isTabletOpen()
+print(isOpen)
+```
+
+<ResponseField name="return" type="boolean">
+  Whether RoadPad's interface is open. This can include the device picker; it does not prove that a phone is connected.
+</ResponseField>
+
+### isFlashlight
+
+```lua client.lua
+local enabled = exports['roadpad']:isFlashlight()
+```
+
+<ResponseField name="return" type="boolean">
+  The tablet client's current flashlight state.
+</ResponseField>
+
+## Notifications
+
+Use the notification export for the tablet client:
+
+```lua client.lua
+exports['roadpad']:sendNotification({
+    apptitle = 'Dispatch',
+    title = 'New assignment',
+    message = 'Check the dispatch board.',
+    img = '/public/img/Apps/light_mode/settings.webp',
+})
+```
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `apptitle` | string | App title or localization key. |
+| `title` | string | Notification heading. |
+| `message` | string | Notification body. |
+| `img` | string | Icon path available in the tablet UI. |
+
+This is a local notification request, not a server delivery or persistent-message API. In linked mode, target RoadPhone for phone-owned notifications and services; the tablet mirrors supported updates for its connected session. The old `roadpad:sendNotification` event example is not the public integration provided by the current client.
+
+## Pairing and integration boundaries
+
+- Use the tablet exports for tablet presentation. Opening the phone and tablet uses a handoff so both interfaces do not compete for input.
+- Do not invoke internal `roadpad:tablet:*` session callbacks or copy their tokens into another resource. Ownership and the selected device are resolved by the server.
+- A closed interface is not proof that pending persistence succeeded. Let the normal close/handoff complete before switching devices.
+- For embedded app storage and server RPC, use the [Custom Apps guide](/roadpad/custom-apps).
+
+See [Pairing & Metadata](/roadpad/pairing) for physical-device selection and [Configuration](/roadpad/configuration) for commands and keys.

@@ -1,122 +1,99 @@
 ---
 title: 'Custom Apps'
-description: 'Learn how to configure and create custom applications for the Roadpad'
-icon: 'pickaxe'
+description: 'Register tablet apps, configure their icons and connect supported apps to the shared API'
+icon: 'code'
 ---
 
-## Configuration
+RoadPad v3 uses the RoadPhone Pro custom-app system inside the tablet. Configure the tablet's own catalogue in `roadpad/public/static/config/config.json`. In linked mode, shared backend operations use the connected phone session.
 
-To configure custom apps, navigate to the config file:
-`/public/static/config/config.json`
+## Register an app
 
-Search for the AppStore section to add your custom applications.
+Add one object to the existing `AppStore` array. This is an example fragment; do not replace the rest of your catalogue:
 
-<Warning>
-  Never change the redirect property! This is essential for the pad to know where to forward requests.
-</Warning>
-
-## Configuration Properties
-
-<ParamField path="name" type="string" required>
-  Name of the custom app
-</ParamField>
-
-<ParamField path="icon" type="string" required>
-  Path to the icon for the custom app
-</ParamField>
-
-<ParamField path="url" type="string" required>
-  Web page URL that the pad should display. Only websites with iFrame support work, including custom HTML files for self-developed apps.
-</ParamField>
-
-<ParamField path="custom_app_id" type="string" required>
-  Unique identifier for your app. Set this once and never change it. Ensure no duplicate IDs exist.
-</ParamField>
-
-<ParamField path="darkmode" type="boolean" default="false">
-  Changes the header and home button color scheme (black/white)
-</ParamField>
-
-<ParamField path="custom_event" type="object">
-  Event configuration object with the following properties:
-
-  <Expandable title="Properties">
-    <ParamField path="active" type="boolean" default="false">
-      Set to `true` to send a request to Lua code when opening the app
-    </ParamField>
-
-    <ParamField path="closeWhenOpenApp" type="boolean" default="false">
-      Set to `true` to close the pad when opening the app
-    </ParamField>
-  </Expandable>
-</ParamField>
-
-## Examples
-
-### Website App Configuration
-
-```json
+```json roadpad/public/static/config/config.json
 {
-  "name": "CustomApp",
-  "icon": "/public/img/app/Apps/custom.jpg",
-  "default": true,
-  "category": "apps",
-  "custom_app_id": "SET_YOUR_OWN_ID_DONT_CHANGE_AFTERWARDS_NO_DOUBLE_ID",
-  "redirect": "custom_app",
-  "url": "https://www.test.com",
-  "darkmode": false,
-  "allowJobs": [],
-  "disallowJobs": [],
-  "custom_event": {
-    "active": false,
-    "closeWhenOpenApp": false
-  }
+  "AppStore": [
+    {
+      "name": "Tablet Dashboard",
+      "light_icon": "/public/img/Apps/light_mode/custom.webp",
+      "dark_icon": "/public/img/Apps/dark_mode/custom.webp",
+      "default": true,
+      "category": "apps",
+      "custom_app_id": "TABLET_DASHBOARD",
+      "redirect": "custom_app",
+      "url": "https://cfx-nui-my-tablet-app/html/index.html",
+      "darkmode": false,
+      "allowJobs": [],
+      "disallowJobs": [],
+      "custom_event": {
+        "active": false,
+        "closeWhenOpenApp": false
+      }
+    }
+  ]
 }
 ```
 
-### Self-Developed App Configuration
+| Field | Purpose |
+| --- | --- |
+| `name` | Display name shown on the home screen and in the App Shop. |
+| `light_icon` / `dark_icon` | Icons for the light and dark icon styles. |
+| `default` | `true` preinstalls the app; `false` lets players install it from the App Shop. |
+| `category` | `apps` or `games`. |
+| `custom_app_id` | A unique, stable ID. Use a different value for every custom app. |
+| `redirect` | Keep `custom_app` for this type of app. |
+| `url` | The page loaded in the app frame. Replace the example with your own resource/page. |
+| `darkmode` | App display contrast setting. |
+| `allowJobs` / `disallowJobs` | Job restrictions for opening the app. Server operations must still validate permissions. |
+| `custom_event` | Optional Lua action when the icon is opened. |
 
-```json
-{
-  "name": "Template App",
-  "icon": "/public/img/app/Apps/custom.jpg",
-  "default": true,
-  "category": "apps",
-  "custom_app_id": "TEMPLATE_APP_1",
-  "redirect": "custom_app",
-  "url": "https://cfx-nui-roadpad-app-template/html/static/index.html",
-  "darkmode": true,
-  "allowJobs": [],
-  "disallowJobs": [],
-  "custom_event": {
-    "active": false,
-    "closeWhenOpenApp": false
-  }
+For an App Shop listing, also add an `AppInfos` entry matched by `redirect` and `custom_app_id`. See the [shared registration and AppInfos reference](/roadphonepro/custom-apps).
+
+## Serve a local app
+
+Your app resource must expose its HTML, scripts, styles and assets through its manifest. The URL's resource name must match its installed folder:
+
+```lua my-tablet-app/fxmanifest.lua
+fx_version 'cerulean'
+game 'gta5'
+
+files {
+    'html/index.html',
+    'html/app.js',
+    'html/style.css',
 }
 ```
 
-<Card title="App Template" icon="github" href="https://github.com/roadtosixx/roadpad-app-template">
-  Get started quickly with our self-development app template on GitHub
-</Card>
+Start the app resource before RoadPad. A resource displayed in RoadPad's iframe does not need its own `ui_page`. An external website must allow iframe embedding; opening it in a normal browser does not prove that it can be embedded.
 
-## Custom Events with Lua
+## Shared JavaScript API and server RPC
 
-To connect your app with Lua code, edit the `client/clientAPI.lua` file.
+Supported custom apps use the shared `window.roadphone` API. Follow the [Custom App API](/roadphonepro/custom-apps) and [server RPC guide](/roadphonepro/custom-app-rpc) for initialization, storage, permissions and server calls.
 
-Replace `APPNAME` with your actual app name and add your custom code inside the if statement:
+Use a demo/template compatible with the installed RoadPad build. When using a template that supports both products, let it resolve the active host rather than hard-coding every NUI request to `https://roadphone/`. The tablet's host resource is `roadpad`.
 
-```lua
+Ordinary pages in the Browser and tablet website apps do not gain access to the native UI message dispatcher. Build native integration through the supported custom-app API, and validate ownership, jobs and money actions on the server.
+
+## Optional Lua action on open
+
+Set `custom_event.active` to `true` to invoke the existing `app_custom_event` callback with the app's display name. With `closeWhenOpenApp: true`, the icon closes the tablet instead of opening an iframe.
+
+Edit the **existing** callback in RoadPad's editable `client/clientAPI.lua`; keep a single registration and always answer its NUI callback:
+
+```lua roadpad/client/clientAPI.lua
 RegisterNUICallback('app_custom_event', function(data, cb)
-    local app = data.app
-
-    if app == "APPNAME" then
-        -- Your custom code here
+    if data.app == 'Tablet Dashboard' then
+        TriggerEvent('my-tablet-app:open')
     end
 
     cb('ok')
 end)
 ```
 
-<Info>
-  Custom events allow you to trigger Lua functions when users interact with your custom app, enabling deeper integration with the game environment.
-</Info>
+The target event must be implemented by your own app resource. This action is not authorization for a server operation.
+
+## Update and test
+
+Keep your app resources and restore their catalogue entries when updating RoadPad. Separately sold Custom Apps require their own installation.
+
+Test portrait and landscape, narrow and wide content, scrolling, light/dark display, closing/reopening, job restrictions and switching between two paired devices. Per-device storage and server requests must follow the phone currently connected to that tablet.

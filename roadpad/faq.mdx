@@ -1,145 +1,106 @@
 ---
 title: 'FAQ'
-description: 'All important questions about RoadPad — setup, troubleshooting, and tips'
+description: 'Troubleshoot RoadPad v3 pairing, inventory checks, synchronization, controls and uploads'
 icon: 'badge-info'
 ---
 
 import MusicLibrary from '/snippets/faq/music-library.mdx';
 import MusicVerifyNotes from '/snippets/faq/music-verify-notes.mdx';
 
-<Info>
-  Use this page to quickly find answers to common questions and fixes. If something is missing, reach out on our Discord server.
-</Info>
-
 <AccordionGroup>
+  <Accordion title="Which RoadPhone version do I need?" icon="smartphone">
+    Linked mode needs a RoadPhone Pro build containing the RoadPad companion exports and session/metadata integration. Update both resources together and restart RoadPhone before RoadPad. A matching or similar version number alone does not prove compatibility.
 
-<Accordion title="I found a bug — what should I do?" icon="bug">
-  Please post a detailed bug report in our Discord channel **#errors**. Include steps to reproduce, screenshots, and logs if possible. We'll try to fix it as soon as we can.
-</Accordion>
+    RoadPad and RoadPhone use separate version numbers. An older-version warning comparing RoadPhone 2.x to RoadPad 3.x can therefore be misleading; check the companion integration and the actual pairing error. See [Updating to v3](/roadpad/updates).
+  </Accordion>
 
-    <Accordion title="How do I give myself or others permission to approve music?" icon="shield-check">
-        Songs that players submit through the Music app have to be approved before they land in the library. The approval permission is handed out in-game with **`/music-verify`**:
+  <Accordion title="Can I use RoadPad without RoadPhone?" icon="tablet">
+    Yes. If RoadPhone is not running when RoadPad starts, the tablet uses its own backend and configuration. If you start or stop RoadPhone later, restart RoadPad to choose the appropriate mode. Follow the [standalone installation steps](/roadpad/installation).
+  </Accordion>
 
-        ```bash
-        /music-verify PLAYERID
-        ```
+  <Accordion title="How do I pair multiple phones and tablets?" icon="link">
+    Enable metadata in the active backend and make every tablet non-stackable. Use the specific tablet item, then choose its phone. Each tablet keeps its own pairing. M and `/roadpad` reopen the last selected tablet; use another inventory item to change the physical tablet.
 
-        <MusicVerifyNotes />
-    </Accordion>
+    Tap **Connected** in the status bar to manage or remove a pairing. See [Pairing & Metadata](/roadpad/pairing).
+  </Accordion>
 
-    <Accordion title="My Music Library is empty — what do I do?" icon="music">
-        <MusicLibrary />
-    </Accordion>
+  <Accordion title="The tablet says it is no longer in my inventory" icon="package">
+    Check that you still carry the specific tablet you selected earlier. A hotkey reopens that selection; carrying a different tablet does not silently replace it. Use the other tablet item explicitly.
 
-<Accordion title="I don't hear music in the Music app" icon="music">
-  <Tip>Make sure you're using our **xSound** version and start **xSound before RoadPad**.</Tip>
+    If the correct item is present, check RoadPad's `Config.Items`, the detected inventory adapter and whether its item metadata is being persisted. In linked mode, metadata and inventory settings come from RoadPhone.
 
-  **Checklist**
-  - Clear your client cache.
-  - Check that **GTA music** is turned on.
-  - Verify your **Windows volume mixer** isn't at 0% (this is independent of FiveM).
+    If no tablet is present, the rejection is correct. An older client could still display the pairing screen after the server returned `tablet_missing`. Install the RoadPad inventory-opening fix in both its client and server files: the UI should stay closed and only the missing-item notification should appear. Disabling metadata does not correct that UI bug.
+  </Accordion>
 
-  <Warning>If your loading screen uses **YouTube** and you muted it there, the sound is muted everywhere. Unmute the loading screen.</Warning>
+  <Accordion title="Why does RoadPad ask me to separate a tablet stack?" icon="layers">
+    Metadata mode gives each physical tablet its own identity. Multiple tablets in one stack cannot share that identity. Set `stack = false` for ox_inventory, or the equivalent unique-item option in your inventory, and separate existing stacks into individual slots.
+  </Accordion>
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2Frq0XT7Qriph5lp24JQgJ%2FRod_rtHandy.PNG?alt=media&token=d98cc53a-d68c-4b05-abb3-3834efdd751a" alt="Music troubleshooting screenshot" className="rounded-lg" />
-</Accordion>
+  <Accordion title="No phones appear in the device picker" icon="smartphone">
+    Carry a RoadPhone recognized by RoadPhone's configured item list. Verify that RoadPhone is running, has the current companion integration and detects the correct inventory. If a phone identity cannot be saved to its item, that device cannot be offered for pairing.
 
-<Accordion title="How can I disable apps?" icon="circle-minus">
-  Open **/public/static/config/config.json**, search for **AppStore**, and remove the block for the app(s) you want to disable.
+    Check the server console for inventory/metadata errors. Phones with an unusable state may appear disabled. Keep both the tablet and chosen phone in the inventory.
+  </Accordion>
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FAG0x1YGxObUp0ujtISkD%2Fimage.png?alt=media&token=97c44cae-3598-4dcd-a6de-c90c572273ae" alt="Remove apps from AppStore config" className="rounded-lg" />
-</Accordion>
+  <Accordion title="The paired phone is missing or the connection was lost" icon="unplug">
+    Return the paired phone to the inventory, then reopen the tablet or refresh the device picker. RoadPad keeps the saved binding instead of choosing another phone automatically.
 
-<Accordion title="Images / Videos are not saved in the Gallery" icon="image">
-  Make sure that you have entered your Discord webhooks correctly in the `API.lua`.
-</Accordion>
+    To change the connection deliberately, use **Connected** and choose a different carried phone. Moving items between slots should preserve the link because device IDs, rather than slots or phone numbers, identify them.
+  </Accordion>
 
-<Accordion title="On start it shows ESX nil" icon="circle-alert">
-  Follow the instructions in `config.lua` (ESX init).
+  <Accordion title="Settings or messages do not match the phone" icon="refresh-cw">
+    Confirm that you opened the tablet paired with the expected phone. Close the current device normally so pending changes can finish, then reopen the target device.
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FVZtM4eiwALSIHoJx86ih%2FScreenshot_487.png?alt=media&token=c541f3ea-f5fb-4f59-9f24-62445e1946f7" alt="ESX nil fix" className="rounded-lg" />
-</Accordion>
+    If settings report a save failure, retry closing instead of forcing a device switch. Verify metadata writes and install compatible updates for both resources. Test with a note/setting on two separately paired phones; reconnecting should load the selected device's current data.
+  </Accordion>
 
-<Accordion title="Add my own notifications" icon="bell">
-  In **ClientAPI.lua**, find `sendNotification(text)` and replace `ESX.ShowNotification(text)` with your notification trigger.
-</Accordion>
+  <Accordion title="Changing RoadPad's Lua config seems to do nothing" icon="settings">
+    Linked mode takes shared settings, including metadata, inventory, locale defaults and service options, from RoadPhone. Tablet item names, controls, prop and tablet-specific app settings remain in RoadPad. The frontend catalogue is always RoadPad's own `public/static/config/config.json`.
 
-<Accordion title="Mouse stuck in the center when opening the pad" icon="mouse">
-  Go to **Settings → Keyboard/Mouse → Mouse Input Method → Raw Input**.
+    Use the [configuration ownership table](/roadpad/configuration), then restart the affected resources.
+  </Accordion>
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FzhKjqTJBJpXkICtRXiAE%2FScreenshot_150.png?alt=media&token=8758eec8-2882-4599-97f6-3b954ab158aa" alt="Raw input setting" className="rounded-lg" />
-</Accordion>
+  <Accordion title="How do I change the key, language or available apps?" icon="keyboard">
+    Change tablet key defaults in `roadpad/config.lua`; players with an existing binding can update it in FiveM's key-binding settings. M is the supplied default.
 
-<Accordion title="Pad doesn't open after reviving" icon="tablet">
-  Choose your ESX Version in `config.lua`.
+    Set `Config.Locale` in the active backend for its default language, or choose the interface language in Settings. App display names and the `AppStore` catalogue are configured in RoadPad's `public/static/config/config.json`. See [Configuration](/roadpad/configuration).
+  </Accordion>
 
-  If you use an old ESX Ambulancejob or a custom one, change the ESX Version to 1.1 and try again.
-</Accordion>
+  <Accordion title="Photos or videos are not saved" icon="image">
+    Check the upload method and credentials in the backend that is actually running: RoadPhone in linked mode, RoadPad in standalone mode. Uploads use the configured media provider; Discord log webhooks are not a replacement for its upload key.
 
-<Accordion title="Disable cryptocurrency" icon="coins">
-  Go to `config.lua` and search for `Config.Crypto`, then set the value for the cryptocurrency you want to disable to `false`.
+    Follow [Fivemanage setup](/roadpad/fivemanage), then check the upload response, provider access and storage limits.
+  </Accordion>
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FrGD6VpeH9lomtOnoRc2S%2Fimage322.png?alt=media&token=f9c4e5fc-cc41-4e6d-a901-bfda40d5239b" alt="Cryptocurrency config" className="rounded-lg" />
-</Accordion>
+  <Accordion title="I cannot hear music" icon="music">
+    Start the supplied `xsound` dependency before the active backend. Check GTA music volume and the Windows volume mixer. If another resource, such as a loading screen, muted shared media playback, unmute it there.
 
-<Accordion title="Change the pad language" icon="earth">
-  <Note>App names are excluded from translation. To localize app names, change them in `config.json`.</Note>
+    In linked mode, RoadPhone owns phone world audio and the call/voice connection; verify the phone's audio configuration as well.
+  </Accordion>
 
-  <Tabs>
-    <Tab title="ESX">
-      In `config.lua`, set the `locale` to your preferred language.
-    </Tab>
-    <Tab title="QBCore">
-      In `fxmanifest.lua`, find the `locales/` path and change it to your preferred language.
-    </Tab>
-  </Tabs>
-</Accordion>
+  <Accordion title="My Music Library is empty" icon="library">
+    <MusicLibrary />
+  </Accordion>
 
-<Accordion title="Car is locked after delivery" icon="key">
-  Edit the **GiveCarKeys** function in `clientAPI.lua`.
+  <Accordion title="How do I grant music approval permission?" icon="shield-check">
+    Use the active backend's music approval command:
 
-  <Tabs>
-    <Tab title="ESX">
-      ```lua GiveCarKeys (ESX)
-      function GiveCarKeys(plate)
-        TriggerEvent("vehiclekeys:client:SetOwner", plate)
-      end
-      ```
-    </Tab>
-    <Tab title="QBCore">
-      ```lua GiveCarKeys (QBCore)
-      function GiveCarKeys(plate)
-        TriggerEvent("qb-vehiclekeys:client:AddKeys", plate)
-      end
-      ```
-    </Tab>
-  </Tabs>
-</Accordion>
+    ```text in-game chat
+    /music-verify PLAYERID
+    ```
 
-<Accordion title="GetExtendedPlayers error (es_extended 1.1/1.2)" icon="code">
-  Add this to `es_extended/server/functions.lua`:
+    <MusicVerifyNotes />
+  </Accordion>
 
-  ```lua GetExtendedPlayers helper
-  ESX.GetExtendedPlayers = function(key, val)
-      local xPlayers = {}
-      for _, v in pairs(ESX.Players) do
-          if key then
-              if (key == 'job' and v.job.name == val) or v[key] == val or v.variables[key] == val then
-                  xPlayers[#xPlayers+1] = v
-              end
-          else
-              xPlayers[#xPlayers+1] = v
-          end
-      end
-      return xPlayers
-  end
-  ```
-</Accordion>
+  <Accordion title="The mouse is stuck or the tablet prop remains visible" icon="mouse">
+    For stuck mouse input, try **Settings > Keyboard/Mouse > Mouse Input Method > Raw Input** in GTA/FiveM.
 
-<Accordion title="I forgot my pad PIN" icon="shield-off">
-  Clear your cache once — this will remove the PIN lock.
+    Close RoadPad normally first. `/stoptablet` closes it and `/fixtabletprop` runs the prop cleanup command. If it remains stuck, include the preceding F8/server errors in your report.
+  </Accordion>
 
-  <img src="https://284060423-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F9nk3u2fvDPBGM8TrCd0N%2Fuploads%2FvcFDhPma8ySAazsJjRlB%2Fcache.png?alt=media&token=3dbd995d-a615-4e70-9462-7b34231ff009" alt="Clear cache to reset PIN" className="rounded-lg" />
-</Accordion>
+  <Accordion title="I found a bug — what should I include?" icon="bug">
+    Report it in [RoadShop Discord](https://discord.gg/2nZrmmvM2q) with both resource versions, operating mode, framework/inventory, metadata setting and exact reproduction steps. Include the relevant F8 and server errors with private API keys and personal information removed.
 
+    For pairing issues, say which inventory item was used, which phone was selected, whether either item moved or left the inventory, and whether you opened through the item, M or a command.
+  </Accordion>
 </AccordionGroup>
