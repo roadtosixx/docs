@@ -143,6 +143,17 @@
             ]
           },
           {
+            "group": "Road Pause Menu",
+            "pages": [
+              "roadpausemenu/installation",
+              "roadpausemenu/player-guide",
+              "roadpausemenu/configuration",
+              "roadpausemenu/map-data",
+              "roadpausemenu/commands",
+              "roadpausemenu/faq"
+            ]
+          },
+          {
             "group": "RoadPods",
             "pages": [
               "roadpods/installation"
@@ -226,6 +237,12 @@
             "group": "RoadBanking",
             "pages": [
               "roadbanking/api/exports"
+            ]
+          },
+          {
+            "group": "Road Pause Menu",
+            "pages": [
+              "roadpausemenu/api/exports"
             ]
           }
         ]

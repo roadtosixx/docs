@@ -1,0 +1,27 @@
+---
+title: 'Commands'
+description: 'Chat commands and key bindings of Road Pause Menu'
+icon: 'terminal'
+---
+
+# Commands
+
+<ParamField path="/roadmap" type="client">
+  Opens the map, or closes it when it is open. Bound to **F10** by default.
+  Rename it with `Config.MapCommand` and change the default key with
+  `Config.MapKey`.
+</ParamField>
+
+<ParamField path="/roadmapreset" type="client">
+  Restores the player's interface settings (color, minimap, layers, language)
+  to the defaults. The language falls back to `Config.Locale`.
+</ParamField>
+
+## Key bindings
+
+| Key | Action | Change it |
+|---|---|---|
+| **F10** | Open or close the map | Players: **Key Bindings → FiveM**. Default: `Config.MapKey` |
+| **Esc** or **P** | Open or close the pause menu | Fixed, like the GTA pause menu; `Config.PauseMenu = false` turns the replacement off |
+
+There are no admin commands and no permissions to set up.

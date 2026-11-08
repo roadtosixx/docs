@@ -1,0 +1,132 @@
+---
+title: 'Configuration'
+description: 'config.lua, places, territories, branding and languages of Road Pause Menu'
+icon: 'settings'
+---
+
+# Configuration
+
+These files stay readable after the Asset Escrow upload:
+
+| File | What it holds |
+|---|---|
+| `config.lua` | Menu, minimap, keys, server branding, places, territories, map data |
+| `public/assets/server-logo.svg` | Your server logo |
+| `public/locales/*.json` | Texts of the menu |
+| `integrations/blips.lua` | Blip integration for other resources, see [Exports](/roadpausemenu/api/exports#native-blips) |
+| `bridge/` | RoadShop Bridge: framework detection and player names |
+
+## General
+
+```lua config.lua
+Config.Debug = false
+Config.Locale = 'en' -- 'en' or 'de': the language for new players
+```
+
+## Menu and minimap
+
+```lua config.lua
+Config.PauseMenu = true -- false keeps the GTA pause menu; F10 and the command still open the map
+Config.Minimap = true -- false keeps the GTA minimap
+Config.CayoPerico = true -- false hides the island, its places and waypoints on it
+Config.MapKey = 'F10' -- default key, players can rebind it in Key Bindings → FiveM
+Config.MapCommand = 'roadmap' -- chat command that opens and closes the map
+Config.MinimapOnFoot = true -- false shows the minimap only in vehicles
+Config.HideWhenDead = true -- hides the minimap and closes the menu while the player is dead
+```
+
+<Note>
+  FiveM stores the key for each player when they first join. Changing
+  `Config.MapKey` later only applies to players who join for the first time;
+  everyone else changes it in **Key Bindings → FiveM**.
+</Note>
+
+## Server branding
+
+```lua config.lua
+Config.Server = {
+    Name = 'Road Roleplay',
+    Subtitle = 'Los Santos & Blaine County',
+    Logo = 'assets/server-logo.svg'
+}
+```
+
+`Logo` is a path inside `public/`: letters, numbers, `/`, `_` and `-`, ending
+in `.svg`, `.png`, `.webp` or `.jpg`. Put the file into `public/assets/`.
+Without a valid logo the menu shows a compass icon.
+
+## Places
+
+```lua config.lua
+Config.Locations = {
+    { id = 'legion-square', name = 'Legion Square', category = 'Landmark', x = 195.2, y = -933.7, z = 30.7, sprite = 590 },
+    { id = 'pillbox', name = 'Pillbox Hill Medical Center', category = 'Public service', x = 307.1, y = -595.2, z = 43.3, sprite = 61 },
+    -- ...
+}
+```
+
+Places show in the sidebar under **Places to explore**, sorted by distance,
+and in the search. `category` is the grey line under the name. `sprite` is a
+GTA blip sprite id and picks the icon.
+
+## Territories
+
+Static territories are drawn on the map and minimap and can be searched:
+
+```lua config.lua
+Config.Zones = {
+    {
+        id = 'davis',
+        name = 'Davis',
+        description = 'South Los Santos',
+        color = '#b58aff',
+        opacity = 0.22,
+        points = {
+            { x = 30.0, y = -1740.0 },
+            { x = 470.0, y = -1740.0 },
+            { x = 510.0, y = -2090.0 },
+            { x = 160.0, y = -2140.0 },
+            { x = -20.0, y = -1940.0 }
+        }
+    }
+}
+```
+
+| Field | Rule |
+|---|---|
+| `id` | Letters, numbers, `_` and `-`, up to 80 characters, unique |
+| `points` | 3 to 256 world points (`x`, `y`) in drawing order; the edges must not cross |
+| `color` | Hex color like `#b58aff`. Default `#5da9ff` |
+| `opacity` | 0 to 1. Default 0.25 |
+
+A territory that breaks a rule is skipped. To add or remove territories at
+runtime, for example for gang turfs, use the
+[`AddZone` export](/roadpausemenu/api/exports#territories).
+
+## Map data
+
+```lua config.lua
+Config.AssetBaseUrl = '' -- empty uses RoadShop's hosted map data
+Config.MapRelay = true -- players load map data through your server
+```
+
+See [Map data](/roadpausemenu/map-data) for what both settings do.
+
+## Advanced
+
+```lua config.lua
+Config.UpdateInterval = 100 -- milliseconds between player position updates to the map, minimum 50
+Config.BlipScanInterval = 2000 -- milliseconds between scans for new GTA blips, minimum 1000
+Config.MaxBlipSprite = 1100 -- highest blip sprite id the scan checks
+Config.NativeHudColors = { 9, 142 } -- GTA HUD color slots that take the player's theme color
+```
+
+The defaults fit most servers. Lower `UpdateInterval` makes the player arrow
+smoother at a small cost on the client.
+
+## Language
+
+English (`en`) and German (`de`) are built in. Players pick their language in
+**Interface**; `Config.Locale` only sets it for new players. To change texts,
+edit `public/locales/en.json` or `public/locales/de.json` and restart the
+resource.

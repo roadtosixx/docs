@@ -1,0 +1,71 @@
+---
+title: 'FAQ'
+description: 'Common questions and problems with Road Pause Menu'
+icon: 'badge-info'
+---
+
+# FAQ
+
+<AccordionGroup>
+  <Accordion title="The map stays empty or keeps loading">
+    The map data streams from RoadShop's map service. Check that your server
+    has outbound HTTPS access. The server console prints
+    `Map relay is unavailable, players load map data directly` when your
+    server cannot hand out map files; players then load them directly. Leave
+    `Config.AssetBaseUrl` empty unless you use another map host. See
+    [Map data](/roadpausemenu/map-data).
+  </Accordion>
+
+  <Accordion title="Why are there no 3D buildings in the mountains?">
+    On purpose. 3D buildings load in built-up areas only, simple blocks from
+    4 km away and textured buildings from 900 m. Mountains and countryside
+    look better and load faster as terrain with the satellite image.
+  </Accordion>
+
+  <Accordion title="The first map view takes a moment, later ones are instant">
+    Map files load the first time a player looks at an area and then stay in
+    their browser cache (up to 1 GB). Your server also keeps each file after
+    its first download, so the next players get it faster.
+  </Accordion>
+
+  <Accordion title="How much disk space does the server cache use?">
+    Up to about 1.3 GB per map version in `road_pausemenu/cache/map/`. The
+    current and the previous version are kept; older ones are deleted
+    automatically.
+  </Accordion>
+
+  <Accordion title="I want to keep the GTA pause menu">
+    Set `Config.PauseMenu = false`. **Esc** then opens the GTA pause menu, and
+    **F10** or `/roadmap` still open the map.
+  </Accordion>
+
+  <Accordion title="I want to keep the GTA minimap">
+    Set `Config.Minimap = false`.
+  </Accordion>
+
+  <Accordion title="F10 does not open the map for some players">
+    Players who changed the key, or who joined before you changed
+    `Config.MapKey`, keep their own binding. They set it in the GTA settings
+    under **Key Bindings → FiveM**. `/roadmap` always works.
+  </Accordion>
+
+  <Accordion title="My logo does not show">
+    The file must be inside `public/` and the path in `Config.Server.Logo`
+    may only use letters, numbers, `/`, `_` and `-`, ending in `.svg`,
+    `.png`, `.webp` or `.jpg`. Web addresses do not work. Without a valid
+    logo the menu shows a compass icon.
+  </Accordion>
+
+  <Accordion title="Blips from my other scripts have no name on the map">
+    GTA blips show up automatically. To carry their names, descriptions and
+    radius areas across, add the blip integration line to that script's
+    `fxmanifest.lua` and restart it once. See
+    [Exports](/roadpausemenu/api/exports#native-blips).
+  </Accordion>
+
+  <Accordion title="A territory from config.lua does not appear">
+    It breaks a rule and is skipped: the `id` may only use letters, numbers,
+    `_` and `-`, and the polygon needs 3 to 256 points with no crossing
+    edges. See [Territories](/roadpausemenu/configuration#territories).
+  </Accordion>
+</AccordionGroup>

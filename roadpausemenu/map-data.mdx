@@ -1,0 +1,86 @@
+---
+title: 'Map Data'
+description: 'How Road Pause Menu streams the 3D map and what your server stores'
+icon: 'cloud-download'
+---
+
+# Map Data
+
+3D buildings, textures and map images are **not** part of the resource. They
+stream on demand from RoadShop's hosted map service, so the download when
+players join stays small.
+
+## How players load the map
+
+<Steps>
+  <Step title="Through your server (default)">
+    With `Config.MapRelay = true`, players load map files from your FiveM
+    server. Your server downloads each file once from the map service and
+    keeps it in `road_pausemenu/cache/map/`.
+  </Step>
+  <Step title="Directly, as a fallback">
+    If your server cannot be reached for map files, players load them directly
+    from the map service. With `Config.MapRelay = false` they always do.
+  </Step>
+  <Step title="From the player's cache">
+    Loaded files stay in the player's FiveM browser cache, up to 1 GB.
+    Reopening the map or restarting the game loads them from there.
+  </Step>
+</Steps>
+
+```lua config.lua
+Config.MapRelay = true
+```
+
+<Info>
+  Only connected players can use your server for map files. Each player gets
+  their own access token when they join, and it ends when they leave.
+</Info>
+
+## Disk space
+
+The server cache holds up to about **1.3 GB per map version**. It keeps the
+current and the previous version and deletes older ones on its own. It fills
+as players use the map; you never need to edit it.
+
+When you update the resource, keep or delete `cache/` as you like: a missing
+cache is downloaded again as players use the map.
+
+## Detail levels
+
+The map loads only what the view needs:
+
+- 3D buildings appear in built-up areas only: simple blocks from 4 km away,
+  textured buildings from 900 m.
+- Mountains and countryside stay terrain with the satellite image.
+- Distant views use lighter buildings and textures. Full detail loads when
+  you zoom in close.
+- At most six files load at once, nearest first. While a player drags or
+  zooms, no new files start.
+
+## When the map service is unreachable
+
+- The map keeps showing everything that is already cached and loads the rest
+  once the service answers again. Players see no error message.
+- Your server remembers the last map version, so a restart while the map
+  service is unreachable still serves the cached files.
+
+## Firewall
+
+- Your server needs outbound HTTPS to download map files.
+- Players reach the map files through your server's normal FiveM address. No
+  extra port is needed.
+
+## Another map host
+
+```lua config.lua
+Config.AssetBaseUrl = '' -- empty uses RoadShop's hosted map data
+```
+
+Leave this empty. It only needs a value, a public HTTPS address ending in
+`/api/maps/`, if you use a different map host. The replicated convar does the
+same and wins over the config:
+
+```cfg server.cfg
+setr road_pausemenu_asset_url "https://example.com/api/maps/"
+```

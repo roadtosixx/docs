@@ -1,0 +1,145 @@
+---
+title: 'Exports'
+description: 'Blips, territories, menu and minimap exports of Road Pause Menu'
+icon: 'server'
+---
+
+# Exports
+
+Call the exports on `exports.road_pausemenu`.
+
+## Native blips
+
+GTA icon blips from every resource appear on the map and minimap
+automatically. To also carry their names, descriptions, radius areas and
+route flags across, add this line to the other resource's `fxmanifest.lua`,
+**before** its other client scripts:
+
+```lua fxmanifest.lua
+client_script '@road_pausemenu/integrations/blips.lua'
+```
+
+Restart that resource once after adding the line. The integration keeps the
+return values of the GTA blip natives, so the resource works as before.
+
+### RegisterBlip
+
+Client-side. Registers name, description and area of a blip you created.
+
+<ParamField path="data" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="handle" type="number" required>Blip handle</ParamField>
+    <ParamField path="owner" type="string" required>Owning resource, `GetCurrentResourceName()`. The registration is removed when it stops</ParamField>
+    <ParamField path="name" type="string">Name shown on the map and in the search, up to 100 characters</ParamField>
+    <ParamField path="description" type="string">Text shown when the blip is selected, up to 400 characters</ParamField>
+    <ParamField path="scale" type="number">Icon scale</ParamField>
+    <ParamField path="route" type="boolean">The blip has a GPS route, like `SetBlipRoute`</ParamField>
+    <ParamField path="radius" type="number">Radius of a circle area in metres</ParamField>
+    <ParamField path="width" type="number">Width of a rectangle area</ParamField>
+    <ParamField path="height" type="number">Height of a rectangle area</ParamField>
+    <ParamField path="rotation" type="number">Rotation of a rectangle area in degrees</ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `false` if the blip does not exist.
+</ResponseField>
+
+```lua
+local blip = AddBlipForCoord(-340.0, -1000.0, 30.0)
+SetBlipSprite(blip, 267)
+
+exports.road_pausemenu:RegisterBlip({
+    handle = blip,
+    owner = GetCurrentResourceName(),
+    name = 'Public parking',
+    description = 'Open to all drivers',
+    scale = 0.8,
+    route = false
+})
+```
+
+Sprite, color, alpha, display mode, coordinates and deletion keep using the
+normal GTA natives.
+
+### DescribeBlip
+
+Client-side. Sets only name and description.
+
+<ParamField path="handle" type="number" required>Blip handle</ParamField>
+<ParamField path="name" type="string" required>Name</ParamField>
+<ParamField path="description" type="string">Description</ParamField>
+
+```lua
+exports.road_pausemenu:DescribeBlip(blip, 'Public parking', 'Open to all drivers')
+```
+
+## Territories
+
+`AddZone` and `RemoveZone` exist on the server and on the client with the
+same arguments. Server territories are sent to all players; client
+territories stay on that one client.
+
+### AddZone
+
+<ParamField path="id" type="string" required>
+  Letters, numbers, `_` and `-`, up to 80 characters. Unique across all
+  resources.
+</ParamField>
+<ParamField path="zone" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="name" type="string">Name, up to 80 characters</ParamField>
+    <ParamField path="description" type="string">Description, up to 400 characters</ParamField>
+    <ParamField path="color" type="string">Hex color like `#5da9ff` (default)</ParamField>
+    <ParamField path="opacity" type="number">0 to 1, default 0.25</ParamField>
+    <ParamField path="points" type="table" required>3 to 256 world points `{ x, y }` in drawing order, no crossing edges</ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `false` if the id or polygon is invalid.
+</ResponseField>
+
+```lua
+exports.road_pausemenu:AddZone('business_district', {
+    name = 'Business district',
+    description = 'Downtown commercial area',
+    color = '#5da9ff',
+    opacity = 0.25,
+    points = {
+        { x = 100.0, y = -1100.0 },
+        { x = 400.0, y = -1100.0 },
+        { x = 350.0, y = -800.0 },
+        { x = 120.0, y = -850.0 }
+    }
+})
+```
+
+### RemoveZone
+
+<ParamField path="id" type="string" required>Territory id</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `false` if the territory does not exist or belongs to another resource.
+</ResponseField>
+
+```lua
+exports.road_pausemenu:RemoveZone('business_district')
+```
+
+Only the resource that added a territory can remove it. Its territories are
+removed when it stops.
+
+## Menu and minimap
+
+Client-side.
+
+```lua
+exports.road_pausemenu:OpenMap() -- returns whether opening started
+exports.road_pausemenu:CloseMenu()
+exports.road_pausemenu:SetMinimapVisible(false) -- hide, e.g. during a cutscene
+exports.road_pausemenu:SetMinimapVisible(true)
+```
+
+`SetMinimapVisible(false)` hides the minimap until you call it with `true`.
+It does not change the player's own **Show minimap** setting.
