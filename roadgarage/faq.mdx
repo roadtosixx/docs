@@ -1,0 +1,87 @@
+---
+title: 'FAQ'
+description: 'Frequently asked questions about RoadGarage'
+icon: 'badge-info'
+---
+
+# FAQ
+
+<AccordionGroup>
+  <Accordion title="My vehicles do not show up in the garage">
+    - RoadGarage reads the vehicles from your framework's table
+      (`owned_vehicles` on ESX, `player_vehicles` on QBCore and Qbox). A
+      vehicle must be owned by the character you play.
+    - A garage only lists vehicles of its kind: boats in boat garages,
+      aircraft in hangars and helipads.
+    - Vehicles that are out or impounded appear under **Away** or
+      **Impounded**, not under **In this garage**.
+  </Accordion>
+
+  <Accordion title="&quot;All parking spots are blocked.&quot;">
+    Every parking slot of the garage has another vehicle within
+    `Config.SpawnClearance` metres. Move the vehicles away, or add more slots
+    to the garage's `spawns`.
+  </Accordion>
+
+  <Accordion title="Players get no keys">
+    RoadGarage detects the common key scripts on its own (qb-vehiclekeys,
+    qbx_vehiclekeys, qs-vehiclekeys, wasabi_carlock and others). For any other
+    script, give the keys in `ClientHooks.GiveKeys` in `client/hooks.lua` and
+    return `true`. See [Hooks](/roadgarage/configuration#hooks).
+  </Accordion>
+
+  <Accordion title="Fuel is not saved">
+    The fuel scripts listed under [Hooks](/roadgarage/configuration#hooks) are
+    detected on their own. For another script, read and set the level in
+    `ClientHooks.GetFuel` and `ClientHooks.SetFuel`.
+  </Accordion>
+
+  <Accordion title="E opens another script, or vehicles appear twice">
+    Another garage script is still running. Two garage systems compete for the
+    same vehicles and the same key. Stop the old one and keep only RoadGarage.
+  </Accordion>
+
+  <Accordion title="Database errors about missing columns">
+    Your database user may not change tables. Run `sql/install.sql` (and
+    `sql/esx_columns.sql` on ESX) yourself, or `sql/migrations/1.1.0.sql` when
+    you update from 1.0.0. See [Installation](/roadgarage/installation).
+  </Accordion>
+
+  <Accordion title="A vehicle shows as Missing">
+    It is out, but no longer exists in the world, for example after a server
+    restart. The owner recovers it at any garage or impound lot for
+    `Config.RecoveryFee`. With `Config.ReturnLostOnStart = true`, missing
+    vehicles return to their last garage when RoadGarage starts.
+  </Accordion>
+
+  <Accordion title="Does it work with RoadPhone's Garage app?">
+    Yes. RoadGarage keeps vehicle state in the framework's own columns, so the
+    app and the valet keep working. With `Config.roadGarage = true` in
+    RoadPhone 3.0, the app also shows garage names, nicknames, mileage,
+    impound details and shared vehicles. See
+    [Installation](/roadgarage/installation#roadphone).
+  </Accordion>
+
+  <Accordion title="Can I use it without a framework?">
+    Yes. RoadGarage runs on ESX Legacy, QBCore, Qbox and standalone. OneSync,
+    oxmysql (or mysql-async) and ox_lib are always required.
+  </Accordion>
+
+  <Accordion title="The Discord logs stay empty">
+    Webhook URLs go into `API.lua`, not `config.lua`. A channel without a URL
+    uses `default`; when `default` is empty too, nothing is posted. See
+    [Discord logs](/roadgarage/configuration#discord-logs).
+  </Accordion>
+
+  <Accordion title="How do I add my own garage?">
+    Add an entry to `Config.Garages` with coordinates for the attendant and at
+    least one parking slot. See
+    [Adding a garage](/roadgarage/configuration#adding-a-garage). Housing and
+    other scripts can add garages at runtime with
+    [`RegisterGarage`](/roadgarage/api/exports#registergarage).
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  Still stuck? Open a ticket on our [Discord](https://discord.gg/2nZrmmvM2q).
+</Info>

@@ -1,0 +1,59 @@
+---
+title: 'Commands'
+description: 'Commands and key binding of RoadGarage'
+icon: 'terminal'
+---
+
+# Commands
+
+| Command | Who | What it does |
+|---|---|---|
+| **E** (key binding) | Everyone | Opens the garage or impound lot, or parks the vehicle you drive |
+| `/impound` | Officers | Opens the impound form for the nearest vehicle |
+| `/service` | Mechanics | Services the nearest vehicle |
+| `/garageadmin` | Admins | Opens the admin tool |
+
+Rename `/impound`, `/service` and `/garageadmin` with `Config.Impound.Command`,
+`Config.Service.Command` and `Config.Admin.Command`.
+
+## Key binding
+
+The garage key is a FiveM key binding with **E** as default
+(`Config.InteractKey`). Players change it under **Settings → Key Bindings →
+FiveM → Garage: open or park**. With ox_target or qb-target, the garages,
+lots and vehicles also get target options.
+
+## /impound
+
+For players with a job in `Config.Impound.Jobs` at or above its grade. Stand
+next to the vehicle and run the command, or use the **Impound Vehicle** target
+option. See [Impound](/roadgarage/impound).
+
+## /service
+
+For players with a job in `Config.Service.Jobs` at or above its grade. Stand
+next to the vehicle and run the command, or use the **Service Vehicle** target
+option. The odometer is kept and the next service is due one
+`Config.Mileage.ServiceInterval` later.
+
+## /garageadmin
+
+Look up anybody's vehicles, return them to a garage or impound them. Needs the
+`road_garage.admin` permission (`Config.Admin.Ace`):
+
+```cfg server.cfg
+add_ace group.admin road_garage.admin allow
+```
+
+<ParamField path="server id or plate" type="number | string">
+  A player's server id shows all their vehicles, a plate shows that vehicle.
+  Without an argument you see your own vehicles.
+</ParamField>
+
+```
+/garageadmin 12
+/garageadmin RG 2041
+```
+
+Admin actions are posted to the `admin` channel of the
+[Discord logs](/roadgarage/configuration#discord-logs) when one is set.

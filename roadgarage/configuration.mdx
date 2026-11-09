@@ -1,0 +1,268 @@
+---
+title: 'Configuration'
+description: 'config.lua, API.lua, hooks and languages of RoadGarage'
+icon: 'settings'
+---
+
+# Configuration
+
+These files stay readable after the Asset Escrow upload:
+
+| File | Sent to players | What it holds |
+|---|---|---|
+| `config.lua` | Yes | Garages, impound lots, fees, parking spaces, mileage, staff, blips |
+| `API.lua` | **No** | Discord webhooks for the logs |
+| `server/hooks.lua` | No | Server hooks: extra access rules, events after every action |
+| `client/hooks.lua` | Yes | Client hooks: your own keys, fuel and HUD |
+| `locales/*.lua` | Yes | In-game texts (help text, target labels, notifications) |
+| `public/locales/*.json` | Yes | Texts of the garage screen |
+
+<Info>
+  Every key has a built-in default. A key missing from your `config.lua`, for
+  example after an update added a new one, uses that default, so an older
+  config keeps working.
+</Info>
+
+<Warning>
+  `config.lua` is sent to every player. Never put webhook URLs or other
+  secrets into it: they belong in `API.lua`.
+</Warning>
+
+## General
+
+```lua config.lua
+Config.Locale = 'en' -- 'en' or 'de', also sets the screen language
+Config.Debug = false
+Config.Theme = 'dark' -- 'dark' or 'light'
+Config.Currency = '$'
+Config.Interaction = 'auto' -- 'auto' (target when ox_target or qb-target runs), 'target' or 'marker'
+Config.InteractKey = 'E' -- default of the "Garage: open or park" key binding
+Config.DrawMarkers = true
+
+Config.Preview = true -- the selected vehicle stands on the slot with a camera
+Config.WarpIntoVehicle = true
+Config.AccessDistance = 10.0 -- metres between player and garage point, checked on the server
+Config.StoreRadius = 8.0 -- metres around the garage point and its slots where a vehicle can be parked
+Config.SpawnClearance = 3.0 -- metres a slot must be free of other vehicles
+```
+
+<Note>
+  `InteractKey` is only the default of a FiveM key binding. Players who have
+  already changed the binding keep their own key.
+</Note>
+
+## Vehicles, fees and sharing
+
+```lua config.lua
+Config.ShowOtherGarages = true -- list vehicles parked elsewhere so they can be moved here
+Config.TransferFee = 250
+Config.RecoveryFee = 500 -- vehicles that are out but no longer exist in the world
+Config.ReturnLostOnStart = true -- on resource start, missing vehicles return to their last garage
+Config.PayFrom = { 'bank', 'cash' } -- accounts tried in this order
+
+Config.ShareLimit = 5 -- players one vehicle can be shared with
+Config.FleetLimit = 1 -- job fleet vehicles per player, 0 = no limit
+Config.HistoryDays = 30 -- days the activity log keeps
+Config.SellMaxPrice = 10000000
+Config.SaveDamage = true -- broken doors, windows, burst tyres and dents survive parking
+```
+
+## Parking spaces
+
+```lua config.lua
+Config.SlotLimit = 0 -- own vehicles one player can park per garage, 0 = no limit
+Config.SlotPrice = 5000 -- one extra space in one garage
+Config.MaxExtraSlots = 10 -- extra spaces one player can buy per garage
+```
+
+`slots` on a single garage overrides `Config.SlotLimit` for that garage.
+
+## Mileage and service
+
+```lua config.lua
+Config.Mileage = {
+    Unit = 'km', -- 'km' or 'mi'
+    ServiceInterval = 5000, -- in Unit, 0 = no service reminders
+}
+
+Config.Service = {
+    Jobs = { mechanic = 0 }, -- job = minimum grade that may service vehicles
+    Command = 'service',
+    GarageFee = 0, -- players service at any garage for this fee, 0 = only mechanics
+    Society = false, -- society that receives the garage service fee
+}
+```
+
+## Impound
+
+```lua config.lua
+Config.Impound = {
+    Jobs = { police = 0, sheriff = 0 }, -- job = minimum grade
+    Command = 'impound',
+    DefaultFee = 750,
+    MaxFee = 25000,
+    MaxHours = 72,
+    Society = 'police', -- society that receives release fees, false = nobody
+}
+```
+
+The lots are `Config.ImpoundLots`, see [Impound](/roadgarage/impound#impound-lots).
+
+## Fees and societies
+
+| Fee | Goes to |
+|---|---|
+| Impound release | `Config.Impound.Society` |
+| Moving, recovery, extra parking spaces | `Config.FeeSociety` |
+| Service at a garage | `Config.Service.Society` |
+
+`false` means the money goes to nobody. The society account is the job's
+account in esx_addonaccount (ESX), qb-management or qb-banking (QBCore) or
+qbx_management (Qbox).
+
+## Admin
+
+```lua config.lua
+Config.Admin = {
+    Ace = 'road_garage.admin', -- add_ace group.admin road_garage.admin allow
+    Command = 'garageadmin',
+}
+```
+
+## Staff and blips
+
+```lua config.lua
+-- Staff standing at garages and impound lots; Config.Peds = false removes them all.
+Config.Peds = {
+    Distance = 60.0, -- metres from which they appear
+    Scenario = 'WORLD_HUMAN_CLIPBOARD', -- false = just stand
+    Models = { car = 's_m_y_valet_01', boat = 's_m_y_dockwork_01', air = 's_m_y_airworker', impound = 's_m_m_security_01' },
+}
+
+Config.Blips = {
+    car = { sprite = 357, color = 3, scale = 0.7 },
+    boat = { sprite = 410, color = 3, scale = 0.7 },
+    air = { sprite = 359, color = 3, scale = 0.7 },
+    impound = { sprite = 68, color = 47, scale = 0.7 },
+}
+```
+
+## Adding a garage
+
+```lua config.lua
+Config.Garages = {
+    pillbox = {
+        label = 'Pillbox Garage', kind = 'car', blip = true,
+        coords = vector4(218.66, -804.08, 30.75, 65.69),
+        spawns = { vector4(229.33, -805.01, 30.54, 156.79) },
+    },
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `label` | Name on the screen and the blip |
+| `kind` | `'car'`, `'boat'` or `'air'` |
+| `blip` | `false` hides the blip |
+| `coords` | Where the player opens the garage; the staff member stands here |
+| `spawns` | Parking slots, used in order while they are free |
+| `job`, `gang`, `shared`, `fleet` | See [Job, gang and house garages](/roadgarage/job-garages) |
+| `slots` | Own vehicles one player can park here, overrides `Config.SlotLimit` |
+| `ped` | `false` for no staff, or `{ model = 'name', coords = vector4(...) }` |
+
+The table key (`pillbox`) is the garage id. Keep it once players have parked
+there: their vehicles are stored under it.
+
+To add a garage, stand where players should open it, copy your coordinates and
+heading, then drive a vehicle onto each parking slot and copy those too.
+
+## Discord logs
+
+`API.lua` is loaded on the server only. Paste Discord webhook URLs per
+channel; empty channels use `default`, and an empty `default` turns logging
+off.
+
+```lua API.lua
+ServerConfig = {
+    Webhooks = {
+        default = '',
+        garage = '', -- take out, park, move, recover, share, service, parking spaces
+        impound = '', -- impound and release
+        sale = '', -- give and sell
+        admin = '', -- admin actions
+    },
+    WebhookName = 'RoadGarage',
+}
+```
+
+## Hooks
+
+Keys and fuel are detected automatically. RoadGarage works with these
+scripts:
+
+- **Keys:** qb-vehiclekeys, qbx_vehiclekeys, qs-vehiclekeys, wasabi_carlock,
+  MrNewbVehicleKeys, Renewed-Vehiclekeys and more.
+- **Fuel:** ox_fuel, LegacyFuel, cdn-fuel, ps-fuel, lj-fuel, qb-fuel,
+  okokGasStation, ti_fuel, qs-fuelstations, BigDaddy-Fuel, rcore_fuel,
+  lc_fuel, x-fuel and ND_Fuel.
+
+Use the hooks for anything else.
+
+<Tabs>
+  <Tab title="client/hooks.lua">
+    ```lua client/hooks.lua
+    -- Return true when you gave or removed the keys yourself.
+    function ClientHooks.GiveKeys(vehicle, plate, model) return false end
+    function ClientHooks.RemoveKeys(vehicle, plate) return false end
+
+    -- Return the fuel level (0-100) to override the detected fuel script.
+    function ClientHooks.GetFuel(vehicle) return nil end
+    -- Return true when you set the fuel yourself.
+    function ClientHooks.SetFuel(vehicle, fuel) return false end
+
+    -- Called when the garage screen opens or closes, e.g. to hide your HUD.
+    function ClientHooks.OnOpen(garageId) end
+    function ClientHooks.OnClose() end
+    ```
+  </Tab>
+  <Tab title="server/hooks.lua">
+    ```lua server/hooks.lua
+    -- Extra access rule on top of job, gang and house checks. Return false to deny.
+    function ServerHooks.CanAccessGarage(source, garage) return true end
+
+    -- Run after RoadGarage has checked and saved the action.
+    function ServerHooks.OnVehicleOut(source, plate, garageId, netId) end
+    function ServerHooks.OnVehicleStored(source, plate, garageId) end
+    function ServerHooks.OnVehicleImpounded(source, plate, lotId, fee) end
+    function ServerHooks.OnVehicleReleased(source, plate, lotId) end
+    function ServerHooks.OnVehicleGiven(source, target, plate) end
+    function ServerHooks.OnVehicleSold(seller, buyer, plate, price) end
+    ```
+  </Tab>
+</Tabs>
+
+## Language
+
+`Config.Locale` sets the language of the in-game texts and of the garage
+screen. English (`en`) and German (`de`) are built in.
+
+To add a language, for example French:
+
+<Steps>
+  <Step title="Copy the English files">
+    Copy `locales/en.lua` to `locales/fr.lua` and
+    `public/locales/en.json` to `public/locales/fr.json`.
+  </Step>
+  <Step title="Translate them">
+    In `locales/fr.lua`, change `Locales['en']` to `Locales['fr']`. Keep the
+    keys and placeholders (`%s` in Lua, `{name}` in JSON) as they are.
+  </Step>
+  <Step title="Switch the language">
+    ```lua config.lua
+    Config.Locale = 'fr'
+    ```
+  </Step>
+</Steps>
+
+`fxmanifest.lua` already loads every file in `locales/`. A text you leave out
+of either file falls back to English.

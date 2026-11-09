@@ -154,6 +154,19 @@
             ]
           },
           {
+            "group": "RoadGarage",
+            "pages": [
+              "roadgarage/installation",
+              "roadgarage/garages",
+              "roadgarage/vehicles",
+              "roadgarage/impound",
+              "roadgarage/job-garages",
+              "roadgarage/configuration",
+              "roadgarage/commands",
+              "roadgarage/faq"
+            ]
+          },
+          {
             "group": "RoadPods",
             "pages": [
               "roadpods/installation"
@@ -243,6 +256,12 @@
             "group": "Road Pause Menu",
             "pages": [
               "roadpausemenu/api/exports"
+            ]
+          },
+          {
+            "group": "RoadGarage",
+            "pages": [
+              "roadgarage/api/exports"
             ]
           }
         ]

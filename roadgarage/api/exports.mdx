@@ -1,0 +1,229 @@
+---
+title: 'Exports'
+description: 'Server and client exports for integrating RoadGarage with other scripts'
+icon: 'server'
+---
+
+# Exports
+
+Call the exports on `exports.road_garage`. Plates are matched without regard
+to case or leading and trailing spaces. For events after every action, see the
+[hooks](/roadgarage/configuration#hooks).
+
+## Garages
+
+### RegisterGarage
+
+Adds or replaces a garage at runtime, for example a house garage from your
+housing script. Server.
+
+<ParamField path="id" type="string" required>
+  Unique garage id, up to 64 characters. Vehicles parked here are stored
+  under it.
+</ParamField>
+<ParamField path="def" type="table" required>
+  <Expandable title="properties">
+    <ParamField path="label" type="string">Name on the screen</ParamField>
+    <ParamField path="kind" type="string" default="car">`car`, `boat` or `air`</ParamField>
+    <ParamField path="coords" type="vector4" required>Where the player opens the garage</ParamField>
+    <ParamField path="spawns" type="vector4[]">Parking slots; without them the garage point is used</ParamField>
+    <ParamField path="owners" type="string[]">Framework identifiers that may use the garage (private garage)</ParamField>
+    <ParamField path="job" type="table">`{ name = minimum grade }`</ParamField>
+    <ParamField path="gang" type="table">`{ name = minimum grade }`</ParamField>
+    <ParamField path="shared" type="boolean">Members see every vehicle parked here</ParamField>
+    <ParamField path="slots" type="number">Own vehicles one player can park here</ParamField>
+    <ParamField path="blip" type="boolean" default="true">Show a blip</ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` when the garage was added.
+</ResponseField>
+
+```lua
+exports.road_garage:RegisterGarage('house_12', {
+    label = 'Vinewood Villa', kind = 'car',
+    coords = vector4(x, y, z, h), spawns = { vector4(x, y, z, h) },
+    owners = { 'char1:abc' },
+})
+```
+
+### RemoveGarage
+
+Removes a garage added with `RegisterGarage`. Garages from `config.lua` cannot
+be removed. Server.
+
+<ParamField path="id" type="string" required />
+<ResponseField name="return" type="boolean" />
+
+## Vehicles
+
+### GetVehicle
+
+<ParamField path="plate" type="string" required />
+
+<ResponseField name="return" type="table | nil">
+  <Expandable title="properties">
+    <ResponseField name="plate" type="string">Plate</ResponseField>
+    <ResponseField name="owner" type="string">Framework identifier of the owner</ResponseField>
+    <ResponseField name="state" type="string">`stored`, `out` or `impounded`</ResponseField>
+    <ResponseField name="garage" type="string">Garage id</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### StoreVehicle
+
+Parks a vehicle that is out but no longer exists in the world, or that is
+impounded, in a garage. Server.
+
+<ParamField path="plate" type="string" required />
+<ParamField path="garageId" type="string" required />
+
+<ResponseField name="return" type="boolean">
+  `false` when the vehicle is already parked, still drives around, or the
+  garage does not exist.
+</ResponseField>
+
+### IsVehicleOut
+
+<ParamField path="plate" type="string" required />
+
+<ResponseField name="return" type="boolean">
+  `true` while the vehicle is out and exists in the world.
+</ResponseField>
+
+### ImpoundVehicle
+
+Impounds a vehicle, for parking tickets or police scripts. A vehicle in the
+world is removed. Server.
+
+<ParamField path="plate" type="string" required />
+<ParamField path="data" type="table">
+  <Expandable title="properties">
+    <ParamField path="lot" type="string" required>Impound lot id from `Config.ImpoundLots`</ParamField>
+    <ParamField path="reason" type="string">Up to 120 characters</ParamField>
+    <ParamField path="fee" type="number">Release fee, default `Config.Impound.DefaultFee`, capped at `MaxFee`</ParamField>
+    <ParamField path="hours" type="number">Hold time, capped at `Config.Impound.MaxHours`</ParamField>
+    <ParamField path="officer" type="string">Shown to the owner, default the calling resource</ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `false` when the vehicle does not exist, is already impounded or the lot
+  does not exist.
+</ResponseField>
+
+```lua
+exports.road_garage:ImpoundVehicle(plate, { lot = 'city', reason = 'Parking ticket', fee = 500, hours = 1 })
+```
+
+## Keys
+
+### AddKeyHolder
+
+Gives a player access to a vehicle as if the owner had shared it. Server.
+
+<ParamField path="plate" type="string" required />
+<ParamField path="identifier" type="string" required>Framework identifier of the player</ParamField>
+<ParamField path="name" type="string">Shown in the owner's key list</ParamField>
+
+<ResponseField name="return" type="boolean" />
+
+### RemoveKeyHolder
+
+<ParamField path="plate" type="string" required />
+<ParamField path="identifier" type="string" required />
+<ResponseField name="return" type="boolean" />
+
+## Mileage
+
+### GetMileage
+
+<ParamField path="plate" type="string" required />
+
+<ResponseField name="return" type="table | nil">
+  `{ mileage, serviceIn }` in `Config.Mileage.Unit`.
+</ResponseField>
+
+### ServiceVehicle
+
+Marks a vehicle as serviced at its current mileage, for mechanic scripts.
+Server.
+
+<ParamField path="plate" type="string" required />
+<ResponseField name="return" type="boolean" />
+
+## Phone apps
+
+RoadPhone's Garage app uses these exports. Server.
+
+### GetPlayerVehicles
+
+<ParamField path="source" type="number" required>Player server id</ParamField>
+
+<ResponseField name="return" type="table | nil">
+  `{ vehicles, unit }`, or `nil` while RoadGarage starts. Each vehicle has
+  `plate`, `model`, `modelName`, `nickname`, `status` (`stored`, `out`,
+  `lost`, `impounded`), `garage`, `garageLabel`, `access` (`owner` or
+  `shared`), `fuel`, `engine`, `body`, `odometer`, `coords` (while out) and
+  `impound` (while impounded).
+</ResponseField>
+
+### GetAccess
+
+<ParamField path="source" type="number" required />
+<ParamField path="plate" type="string" required />
+
+<ResponseField name="return" type="string | nil">
+  `owner` or `shared` when the player may use the vehicle, otherwise `nil`.
+</ResponseField>
+
+### DeliverVehicle
+
+Takes a parked land vehicle of the player (owner or key holder) out of its
+garage and spawns it at a point, for a valet service. Distance and payment
+are the caller's job.
+
+<ParamField path="source" type="number" required />
+<ParamField path="plate" type="string" required />
+<ParamField path="coords" type="vector4" required>Where the vehicle spawns</ParamField>
+<ParamField path="vehicleType" type="string">Spawn type hint, for example `automobile` or `bike`; the type saved with the vehicle wins</ParamField>
+
+<ResponseField name="return" type="table">
+  `{ ok = true, netId }`, or `{ ok = false, error }` with an error such as
+  `impounded`, `already_out`, `lost` or `bad_coords`.
+</ResponseField>
+
+```lua
+local result = exports.road_garage:DeliverVehicle(source, 'RG 2041', vector4(x, y, z, h), 'automobile')
+if result.ok then
+    -- the vehicle is out, result.netId is its network id
+end
+```
+
+## Client
+
+### OpenGarage
+
+Opens a garage's screen for the local player, for example from your own
+interaction. The server still checks access and distance.
+
+<ParamField path="garageId" type="string" required />
+
+### OpenImpound
+
+<ParamField path="lotId" type="string" required />
+
+### StoreVehicle
+
+Parks the vehicle the local player is driving in the given garage.
+
+<ParamField path="garageId" type="string" required />
+
+### CloseGarage
+
+Closes the garage screen.
+
+```lua
+exports.road_garage:OpenGarage('pillbox')
+```
