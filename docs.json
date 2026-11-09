@@ -130,6 +130,12 @@
             ]
           },
           {
+            "group": "Road Unicorn",
+            "pages": [
+              "roadunicorn/custom-music"
+            ]
+          },
+          {
             "group": "RoadBanking",
             "pages": [
               "roadbanking/installation",

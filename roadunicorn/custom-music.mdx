@@ -1,0 +1,148 @@
+---
+title: 'Your own music'
+description: 'Add your own songs to the Road Unicorn DJ show, with a light show measured from each song'
+icon: 'music'
+---
+
+# Your own music
+
+Road Unicorn plays the included track and every song you add. Each song you add needs three things in the resource:
+
+| What | Where | Made with |
+|---|---|---|
+| The song as `.ogg` (Ogg Vorbis) | `music/night-drive.ogg` | Your audio editor, for example Audacity |
+| Its analysis file | `music/night-drive.json`, the same name as the song with `.json` | The track meter, **Save analysis** |
+| One line in `tracks` | `config.lua` | The track meter, **Copy lines** |
+
+The analysis file holds the parts of the song, its drops and its kick, snare and hi-hat pulses. With it, the lights, effects and dancers follow the real song, measured the same way as the included track. Without it, the song still plays, but its light show follows a generic pattern.
+
+<Note>
+The track meter ships with the resource: `road-unicorn/tools/track-meter.html`. It runs in Chrome, Edge or Firefox, works offline, and no file leaves your computer.
+</Note>
+
+## Add a song
+
+<Steps>
+  <Step title="Convert the song to .ogg">
+    Export the song as **Ogg Vorbis** (`.ogg`), for example with the Ogg Vorbis export of Audacity. MP3, WAV and other formats are not played.
+
+    Give the file a simple name: letters, digits, `-` and `_`, ending in `.ogg`, at most 64 characters, without spaces. For example `night-drive.ogg`.
+  </Step>
+  <Step title="Measure it with the track meter">
+    Open `tools/track-meter.html` from the `road-unicorn` folder in your browser and drop your `.ogg` files on it. You can measure several songs at once.
+
+    For each song the track meter shows the tempo, the first downbeat and the length, and a line such as *Light show measured: 12 parts, 4 drops, a kick on every beat*.
+
+    - Check the badge: **Steady beat** is fine, **Check by ear** means you should listen once, **No steady beat** means the lights may not match this song.
+    - Press **Play with click**: the click must land on the kick drum, with a higher click on the first beat of every bar. **Skip 30 s** jumps ahead.
+    - If the click runs at half or double the speed of the song, press **½** or **×2**. The track meter measures the song again at the new tempo.
+    - Check **Title**, **Artist**, **Id** and **File name in the music folder**. The title and artist are shown in the DJ console, the queue and the guest song list.
+  </Step>
+  <Step title="Save the analysis files">
+    Press **Save analysis** on a song, or **Save all analyses** at the bottom to save the files of every song at once. Your browser saves one `.json` file per song, named like the song: `night-drive.json` for `night-drive.ogg`.
+
+    <Warning>
+    Save the analysis **after** your last change on the track meter (file name, ½ or ×2). The analysis belongs to exactly this file, tempo and length.
+    </Warning>
+  </Step>
+  <Step title="Copy the song and its analysis into the music folder">
+    Copy both files into the `music` folder of the resource, next to `fxmanifest.lua`:
+
+    ```text Folder structure
+    resources/
+    └── road-unicorn/
+        ├── fxmanifest.lua
+        ├── config.lua
+        ├── tools/
+        │   └── track-meter.html
+        └── music/
+            ├── README.md
+            ├── night-drive.ogg
+            └── night-drive.json
+    ```
+
+    Put the files straight into `music`, not into a sub folder. If the song file was renamed on the track meter, rename it on disk the same way before you copy it.
+  </Step>
+  <Step title="Add the lines to config.lua">
+    Press **Copy lines** at the bottom of the track meter and paste the lines into `tracks` in `config.lua`:
+
+    ```lua config.lua
+    tracks = {
+        { id = 'night_drive', title = 'Night Drive', artist = 'Example Artist', file = 'night-drive.ogg', bpm = 124, durationMs = 215040, firstBeatMs = 350 },
+    },
+    ```
+
+    Always use the line and the analysis file from the same measurement. If you measure a song again, replace both.
+  </Step>
+  <Step title="Load the new songs">
+    Restart the server, or run these two commands in the server console:
+
+    ```bash Server console
+    refresh
+    restart road-unicorn
+    ```
+
+    The server checks every song at start. Problems are reported once in the server console, see [Server console messages](#server-console-messages).
+  </Step>
+</Steps>
+
+Your songs now appear in the DJ console, can be queued, crossfade like the included track and can be requested by guests with `/unicornrequest`.
+
+## The config line
+
+| Field | Meaning |
+|---|---|
+| `id` | Unique name: 1–40 lowercase letters, digits or `_`, starting with a letter. It must not repeat the id of the included track or of another song. |
+| `title`, `artist` | Shown in the DJ console, the queue and the guest song list (1–80 characters). |
+| `file` | File name in the `music` folder. The analysis file has the same name with `.json`. |
+| `bpm` | Tempo from 40 to 250 beats per minute. |
+| `durationMs` | Length in milliseconds. The server compares it with the file and skips the song if they differ by more than half a second. |
+| `firstBeatMs` | Optional: time of the first downbeat in milliseconds. Default `0`. |
+
+Copy these values from the track meter instead of typing them: the analysis file must match `file`, `bpm` and `durationMs` of its line.
+
+## Server console messages
+
+Each problem is printed once when the resource starts, with the position of the line in `tracks`:
+
+```text Server console
+[road-unicorn] Config.tracks[2] night_drive skipped: music/night-drive.ogg not found
+[road-unicorn] Config.tracks[1] night_drive: no music/night-drive.json, so the light show follows a generated arrangement; measure the song with tools/track-meter.html and save its analysis beside it
+```
+
+| Message | What to do |
+|---|---|
+| `skipped: music/<file> not found` | Copy the `.ogg` into `music` with exactly the name in `file`. |
+| `skipped: music/<file> is not an Ogg file` | Export the song as Ogg Vorbis again. Renaming an MP3 to `.ogg` does not work. |
+| `skipped: durationMs ... does not match the file length` | The line belongs to another version of the file. Measure the song again and copy the new line. |
+| `skipped: id ...`, `title ...`, `bpm ...` and similar | Fix the value in the line, or copy the line from the track meter again. |
+| `no music/<name>.json, so the light show follows a generated arrangement` | The song plays with a generic light show. Save its analysis with **Save analysis** and copy it into `music`. |
+| `music/<name>.json cannot be used because it belongs to <other file>` | The analysis was saved for another song or file name. Save the analysis for this song again. |
+| `... because its bpm differs` or `its durationMs differs from the config entry` | The line and the analysis come from different measurements, for example after **½** or **×2**. Copy the line and save the analysis again from the same measurement. |
+| `music/<name>.json is not valid JSON` or another `cannot be used because` | The file is damaged or was edited by hand. Save it again from the track meter. |
+
+A song that is skipped does not load at all. A song with an unusable analysis file still plays, with the generic light show.
+
+## Update Road Unicorn
+
+When you install a new version, keep your `config.lua` and your `music` folder. Replace everything else.
+
+## Good to know
+
+<AccordionGroup>
+  <Accordion title="How many songs can I add?">
+    Up to 100 songs. Each song is downloaded by the players' game like the other files of the resource, so very long playlists make the first join after a restart take longer.
+  </Accordion>
+  <Accordion title="The click on the track meter misses the kick">
+    Press **½** or **×2** and listen again. If no tempo fits, the song has no steady beat (live recordings, tempo changes); it still plays, but the lights may not match it.
+  </Accordion>
+  <Accordion title="I edited or re-exported a song">
+    Measure it again and replace both the line in `config.lua` and the `.json` file. The old analysis does not match the new file.
+  </Accordion>
+  <Accordion title="Can I edit the analysis file by hand?">
+    No. The server checks it against the song and refuses a changed file. Measure the song again instead.
+  </Accordion>
+  <Accordion title="Do I need the rights to the songs?">
+    Yes. As the server owner you are responsible for holding the rights to play every song you add on your server. Road Unicorn does not license any music for you.
+  </Accordion>
+</AccordionGroup>
