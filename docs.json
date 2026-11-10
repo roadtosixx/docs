@@ -173,6 +173,18 @@
             ]
           },
           {
+            "group": "RoadCasino",
+            "pages": [
+              "roadcasino/overview",
+              "roadcasino/installation",
+              "roadcasino/games",
+              "roadcasino/staff",
+              "roadcasino/configuration",
+              "roadcasino/commands",
+              "roadcasino/faq"
+            ]
+          },
+          {
             "group": "RoadPods",
             "pages": [
               "roadpods/installation"

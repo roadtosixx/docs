@@ -1,0 +1,80 @@
+---
+title: 'Overview'
+description: 'What is inside RoadCasino, the luxury casino with seven server-side games'
+icon: 'dices'
+---
+
+# RoadCasino
+
+RoadCasino is a complete luxury casino for FiveM. It stands on the former
+construction site at about **(-480, -975, 24)**: a two-wing building with a
+double-height lobby, a gaming floor, eight private salons on the VIP floor, a
+restaurant, bars and two roof terraces, connected by a guest lift.
+
+Inside are 36 slot machines with six slot games, 23 gaming tables and a lucky
+wheel. Every result and payout is decided on the server. Wallets and running
+rounds are stored in the database and survive a restart, and a disconnect
+never forfeits an accepted bet.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/roadcasino/installation">
+    Requirements, resources, start order and permissions
+  </Card>
+  <Card title="Games" icon="spade" href="/roadcasino/games">
+    Chips, slots, tables, the lucky wheel, salons and the lift
+  </Card>
+  <Card title="Staff & ranks" icon="briefcase" href="/roadcasino/staff">
+    Staff menu, ranks, cashback and the house dashboard
+  </Card>
+  <Card title="Configuration" icon="settings" href="/roadcasino/configuration">
+    Every option in config.lua
+  </Card>
+  <Card title="Commands" icon="terminal" href="/roadcasino/commands">
+    Key bindings and commands
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadcasino/faq">
+    Startup messages and common questions
+  </Card>
+</CardGroup>
+
+## 📦 Resources
+
+The download holds three resources. Keep their folder names unchanged.
+
+| Resource | Content |
+|---|---|
+| `road_casino` | The script: games, cashier, lift, staff menu |
+| `road_casino_map` | The building, its grounds and the road connection |
+| `road_casino_props` | Furniture, game tables, slot cabinets and lift parts |
+
+`road_world_map`, a separate download, holds the original GTA map files that
+several RoadShop maps change. See [Installation](/roadcasino/installation).
+
+## 🎰 Games
+
+| Game | Places | Stakes on the gaming floor |
+|---|---:|---|
+| Slot machines | 36 | 1–500 chips per spin |
+| Blackjack | 8 tables | 10–500 |
+| Roulette | 6 tables | 10–500 |
+| Texas hold'em | 5 tables | Buy-in 200–500 |
+| Baccarat | 2 tables | Salons only |
+| Three card poker | 2 tables | 10–5,000 |
+| Lucky wheel | 1 | One free spin per character every 24 hours |
+
+Eight of the tables stand in the private salons with higher stakes. See
+[Games](/roadcasino/games) for every game and the salon limits.
+
+## 👑 VIP floor
+
+Eight private salons with one table each: Emerald, Onyx, Bordeaux, Panorama,
+Havana, Saphir, Jade and Royal. A screen beside every door shows the game, the
+minimum stake and the free seats. Players in a salon order drinks to the table
+and pay in chips.
+
+## 📊 Running the house
+
+Players with your casino job open the staff menu: they search players, read
+their statistics and assign ranks. Management also sees the house dashboard,
+sets cashback rates and can pause all games. See
+[Staff & ranks](/roadcasino/staff).

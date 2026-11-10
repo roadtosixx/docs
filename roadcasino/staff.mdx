@@ -1,0 +1,92 @@
+---
+title: 'Staff & ranks'
+description: 'Staff menu, player ranks, cashback and the house dashboard of RoadCasino'
+icon: 'briefcase'
+---
+
+# Staff & ranks
+
+`/casinostaff` opens the staff menu for players with the job in
+`Config.Staff.Job` (default `casino`). Create that job in your framework.
+Leave the table before you open it. The command name is
+`Config.StaffCommand`.
+
+```lua config.lua
+Config.Staff = { Job = 'casino', MinimumGrade = 0, BossGrade = 3 }
+Config.StaffCommand = 'casinostaff'
+```
+
+| Role | Who | Pages |
+|---|---|---|
+| **Staff** | Job grade `MinimumGrade` and above | Players |
+| **Management** | Job grade `BossGrade` and above, the framework's boss flag, or the ACE below | Players, House, Management |
+
+The ACE in `Config.OperatorAce` gives management access without the job and
+unlocks the cashier's exchange recovery:
+
+```cfg server.cfg
+add_ace group.admin road_casino.operator allow
+```
+
+## 👤 Players
+
+Search players by name and open their statistics over 7, 30 or 90 days or all
+time: wagered, paid out, rounds, biggest payout, chips bought and cashed out,
+drinks, hold'em result and cashback, with their latest entries. Staff assign
+a player's rank here.
+
+## 📈 House
+
+For management: the house result, wagered, paid out, margin and active players
+per day over 7, 30 or 90 days, wagered by game and by hour of day, the busiest
+tables and machines, the biggest wins and losses and the players per rank.
+
+Single ledger lines are kept for `Config.Stats.LedgerDays` (default 180).
+Daily totals stay.
+
+## 🏅 Ranks and cashback
+
+Players start with the standard rank. The ranks in `Config.Ranks` sit above
+it, in rising order:
+
+```lua config.lua
+Config.Ranks = {
+    { id = 'silver', cashback = 3.0, vip = false },
+    { id = 'gold', cashback = 6.0, vip = true },
+    { id = 'platinum', cashback = 10.0, vip = true }
+}
+```
+
+- `cashback` is the percentage of new losses a player gets back. Players
+  collect it at the cashier.
+- `vip` opens stations marked VIP. The casino as delivered has none: the eight
+  salons are open to every player who holds the salon minimum in chips.
+
+### Cashback limits
+
+```lua config.lua
+Config.Cashback = {
+    HouseShare = 50.0,
+    MaximumRate = 20.0,
+    HouseEdge = { slots = 2.0, roulette = 2.7, blackjack = 0.3, baccarat = 1.0, three_card_poker = 1.5 }
+}
+```
+
+| Key | Meaning |
+|---|---|
+| `HouseShare` | Percent of the expected house profit on what a player wagered that may flow back as cashback, at most 50 |
+| `MaximumRate` | Highest cashback percent management can set for a rank |
+| `HouseEdge` | Expected house edge in percent per game; a lower value is safer |
+
+The cap keeps the house ahead whatever the betting pattern: one large lost bet
+returns at most the house share of its expected profit.
+
+## ⚙️ Management
+
+- **Cashback per rank**: set the rate of every rank, up to `MaximumRate`, and
+  its VIP access.
+- **Pause all games**: while paused nobody can start a round. Running rounds
+  finish normally.
+
+Every rank change, collected cashback and rate change appears in the activity
+log.

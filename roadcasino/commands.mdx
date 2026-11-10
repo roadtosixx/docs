@@ -1,0 +1,45 @@
+---
+title: 'Commands'
+description: 'Key bindings and commands of RoadCasino'
+icon: 'terminal'
+---
+
+# Commands
+
+| Command | Who | What it does |
+|---|---|---|
+| **E** (key binding, `/roadcasino`) | Everyone | Sits down at a slot machine, a table or the lucky wheel, or opens a cashier |
+| `/roadcasino_status` | Everyone | Prints the state of the stations near you to the F8 console |
+| `/casinostaff` | Casino job | Opens the [staff menu](/roadcasino/staff) |
+| `casino_lift_recover` | Server console, admins | Sends the faulted lift to its nearest landing |
+
+## Key bindings
+
+The casino key is a FiveM key binding with **E** as default. Players change it
+under **Settings → Key Bindings → FiveM → Interact with RoadCasino**. The
+table keys are bindings too, listed there as **Casino table: …**. See
+[Keyboard](/roadcasino/games#keyboard).
+
+## /roadcasino_status
+
+Prints the state of the stations near you to your F8 console. Send its output
+with a report about a missing table or machine.
+
+## /casinostaff
+
+For players with the job in `Config.Staff.Job` at or above
+`Config.Staff.MinimumGrade`, and for players with the operator ACE. Rename it
+with `Config.StaffCommand`.
+
+```cfg server.cfg
+add_ace group.admin road_casino.operator allow
+```
+
+## casino_lift_recover
+
+Run it in the server console when the lift reports a fault: the cabin drives
+to its nearest landing. In game, players need this ACE:
+
+```cfg server.cfg
+add_ace group.admin command.casino_lift_recover allow
+```

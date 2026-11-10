@@ -1,0 +1,159 @@
+---
+title: 'Games'
+description: 'Chips, slot machines, table games, the lucky wheel, the salons and the lift'
+icon: 'spade'
+---
+
+# Games
+
+Press **E** at a slot machine, a table, the lucky wheel or a cashier. The
+server gives you a free seat. **E** is a FiveM key binding (command
+`/roadcasino`), so players can change it under **Settings → Key Bindings →
+FiveM → Interact with RoadCasino**.
+
+## 💵 Chips and cashiers
+
+Chips are bought and sold at the cashier against the framework account set in
+`Config.Account` (default `bank`).
+
+| Cashier | Position |
+|---|---|
+| Main cashier, ground floor | (-459.1, -1012.9, 24.0) |
+| VIP cashier, VIP floor | (-459.1, -1009.5, 30.0) |
+
+- One exchange moves at most `Config.ExchangeMaximum` (default 1,000,000).
+- Buying chips stops at `Config.MaximumBalance` (default 1,000,000,000).
+  Winnings are not capped.
+- [Cashback](/roadcasino/staff) is collected at the cashier.
+
+Chips are stored per character in the database and survive a restart.
+
+## 🎰 Slot machines
+
+36 machines with six slot games, played on the machine's own screen:
+
+- Candy Cascade
+- Harbour Catch
+- Classic Sevens
+- Thunder Crown
+- Tome of Fortune
+- Dino Raiders
+
+Stakes run from 1 to 500 chips per spin. Every machine has a **turbo mode**
+and **autoplay** for 10, 25 or 50 spins. Free-spin features are landed in
+play; on every game except Classic Sevens they can also be bought for 100
+times the stake.
+
+Up to `Config.ScreenPoolSize` machine screens (default 8) are drawn at once,
+within `Config.ScreenDistance` metres.
+
+## 🃏 Table games
+
+| Game | Tables on the floor | Stakes on the floor | Rules |
+|---|---:|---|---|
+| Blackjack | 6 | 10–500 | Splits, doubles, insurance and side bets |
+| Roulette | 4 | 10–500 | European single zero |
+| Texas hold'em | 4 | Buy-in 200–500 | Multiplayer, side pots, no rake |
+| Three card poker | 1 | 10–5,000 | Ante, Play and Pair Plus |
+
+Baccarat (punto banco) is played in two of the VIP salons below.
+
+### Roulette
+
+Chips are laid on the 3D table. Players call the announced bets Voisins du
+Zéro, Tiers du Cylindre, Orphelins and Jeu Zéro, bet on a number and its
+neighbours, and double or repeat their last bets. The ball camera follows
+every spin (`Config.RouletteBallCamera`).
+
+Sitting down starts in the top view or at the seat
+(`Config.RouletteDefaultView`).
+
+### Texas hold'em
+
+Players play against each other with real stacks. The buy-in is at least 20
+times the table minimum and at most the table maximum. A stack that leaves
+the table, also on a disconnect or a character switch, returns to the
+player's chips.
+
+### Decision time
+
+A player has `Config.ActionSeconds` (default 30) for each decision at a table.
+
+### Keyboard
+
+Every table game can be played with the keyboard. While the table menu is
+hidden, these keys act on the table:
+
+| Key | Action |
+|---|---|
+| Arrow keys | Move, choose a bet or a stake |
+| **Enter** | Confirm |
+| **Space** | Main action |
+| **Backspace** | Back |
+| **H** / **S** / **D** / **X** | Hit / stand / double / split |
+| **F** / **C** / **R** / **A** | Fold / call / raise / all in |
+
+Every key can be rebound under **Settings → Key Bindings → FiveM → Casino
+table: …**.
+
+## 🎡 Lucky wheel
+
+The lucky wheel stands in the lobby. Every character gets one free spin every
+24 hours (`Config.LuckyWheelCooldownSeconds`).
+
+## 👑 VIP salons
+
+Eight private salons on the VIP floor, one table each:
+
+| Salon | Game | Stakes |
+|---|---|---|
+| Emerald | Blackjack | 500–25,000 |
+| Onyx | Baccarat | 1,000–50,000 |
+| Bordeaux | Roulette | 250–25,000 |
+| Panorama | Baccarat | 5,000–250,000 |
+| Havana | Texas hold'em | Buy-in 2,000–100,000 |
+| Saphir | Roulette | 1,000–50,000 |
+| Jade | Three card poker | 500–25,000 |
+| Royal | Blackjack | 2,500–100,000 |
+
+To sit down, a player needs at least the table minimum in chips (at hold'em,
+the minimum buy-in). The screen beside each salon door shows the game, the
+minimum stake and the free seats. It reads **locked** while the player's chips
+are below the minimum and **full** when every seat is taken.
+
+### Drinks
+
+Players in a salon order drinks from `Config.Drinks` and pay in chips:
+
+| Drink | Price |
+|---|---:|
+| Champagne | 500 |
+| Whisky | 300 |
+| Martini | 350 |
+| Red wine | 250 |
+| Mojito | 300 |
+| Espresso | 50 |
+
+One order every `Config.DrinkCooldownSeconds` (default 20) per player. A
+served glass stays for `Config.DrinkSeconds` (default 180).
+
+## 🛗 Lift
+
+The guest lift connects the lobby, the VIP floor and the roof terrace.
+
+| Where | Key | Action |
+|---|---|---|
+| Call panel | **E** | Call the lift |
+| Call panel on the VIP floor | **E** / **G** | Call it upwards / downwards |
+| Inside | **Arrow up / down** | Choose the floor |
+| Inside | **E** | Confirm the floor |
+| Inside | **X** | Open the doors |
+
+If the lift reports a fault, run
+[`casino_lift_recover`](/roadcasino/commands) in the server console: the cabin
+drives to its nearest landing.
+
+## 🔎 Status
+
+`/roadcasino_status` prints the state of the stations near you to your F8
+console. It helps with a report about a missing table or machine.

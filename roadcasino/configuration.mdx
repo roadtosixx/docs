@@ -1,0 +1,105 @@
+---
+title: 'Configuration'
+description: 'Every option in config.lua of RoadCasino'
+icon: 'settings'
+---
+
+# Configuration
+
+These files stay readable after the Asset Escrow upload:
+
+| File | What it holds |
+|---|---|
+| `road_casino/config.lua` | Every option on this page |
+| `road_casino/public/locales/*.json` | Texts of the casino menus (`en`, `de`) |
+| `road_casino/lift/locales/*.lua` | Texts of the lift |
+| `road_casino/install/schema.sql` | The database tables, if you create them yourself |
+
+<Info>
+  Every key has a built-in default. A key missing from your `config.lua`, for
+  example after an update added a new one, uses that default.
+</Info>
+
+## General
+
+```lua config.lua
+Config.Debug = false -- true prints diagnostics to the F8 console
+Config.Locale = 'en' -- 'en' or 'de'
+Config.Account = 'bank' -- framework account chips are bought from and paid out to
+Config.ActionSeconds = 30 -- time a player has for a decision at a table
+Config.InteractionDistance = 3.0 -- metres within which E reaches a station
+Config.SpawnDistance = 85.0 -- metres within which tables, machines and their props are created
+Config.OperatorAce = 'road_casino.operator' -- ACE for management access and exchange recovery
+```
+
+## Chips
+
+```lua config.lua
+Config.MaximumBalance = 1000000000 -- highest chip balance a player can reach by buying chips; winnings are not capped
+Config.ExchangeMaximum = 1000000 -- highest amount of one cashier exchange
+Config.LuckyWheelCooldownSeconds = 86400 -- time between two free wheel spins of a character
+```
+
+## Slot screens
+
+```lua config.lua
+Config.ScreenPoolSize = 8 -- slot screens drawn at once, at most 12
+Config.ScreenDistance = 18.0 -- metres within which slot screens are drawn
+```
+
+## Table cameras
+
+```lua config.lua
+Config.TableTopViewFov = 55.0 -- field of view of the top camera at tables, in degrees
+Config.TableTopViewFreeWidth = 0.72 -- share of the screen width the top view fills beside the table menu
+Config.RouletteDefaultView = 'top' -- 'top' or 'seat' when sitting down at roulette
+Config.RouletteBallCamera = true -- follow the ball during a spin
+Config.BallCameraHoldSeconds = 2.5 -- time the ball camera stays on the result
+```
+
+## Salons and drinks
+
+```lua config.lua
+Config.Drinks = { -- salon drinks menu; price in casino chips
+    { id = 'champagne', price = 500 },
+    { id = 'whisky', price = 300 },
+    { id = 'martini', price = 350 },
+    { id = 'red_wine', price = 250 },
+    { id = 'mojito', price = 300 },
+    { id = 'espresso', price = 50 }
+}
+Config.DrinkCooldownSeconds = 20 -- time between two drink orders of a player
+Config.DrinkSeconds = 180 -- time a served glass stays
+Config.SalonBoardDistance = 40.0 -- metres within which the salon screens receive their data
+Config.SalonScreenDistance = 20.0 -- metres within which the salon screens are drawn
+```
+
+## Staff, ranks and cashback
+
+```lua config.lua
+Config.Staff = { Job = 'casino', MinimumGrade = 0, BossGrade = 3 }
+Config.StaffCommand = 'casinostaff'
+Config.Ranks = {
+    { id = 'silver', cashback = 3.0, vip = false },
+    { id = 'gold', cashback = 6.0, vip = true },
+    { id = 'platinum', cashback = 10.0, vip = true }
+}
+Config.Cashback = {
+    HouseShare = 50.0,
+    MaximumRate = 20.0,
+    HouseEdge = { slots = 2.0, roulette = 2.7, blackjack = 0.3, baccarat = 1.0, three_card_poker = 1.5 }
+}
+Config.Stats = { LedgerDays = 180 } -- days single ledger lines are kept; daily totals stay
+```
+
+What these keys do: [Staff & ranks](/roadcasino/staff).
+
+## Lift
+
+```lua config.lua
+Config.LiftDistance = 1.95 -- metres from a call panel at which the lift hints show
+Config.DwellMs = 5000 -- milliseconds the doors stay open after the last press
+Config.SyncDistance = 120.0 -- metres from the shaft within which players receive the lift
+Config.UnloadDistance = 150.0 -- metres from the shaft beyond which the lift parts are removed
+Config.ActiveDistance = 14.0 -- metres from the shaft within which the lift updates every frame
+```

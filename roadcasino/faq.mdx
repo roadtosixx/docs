@@ -1,0 +1,92 @@
+---
+title: 'FAQ'
+description: 'Startup messages and frequently asked questions about RoadCasino'
+icon: 'badge-info'
+---
+
+# FAQ
+
+<AccordionGroup>
+  <Accordion title="&quot;[RoadCasino] Startup gated: secure_random_unavailable&quot;">
+    Your database is older than **MariaDB 10.10**. RoadCasino seeds its random
+    number generator with the database function `RANDOM_BYTES`, which older
+    versions do not have, and it never opens with a weaker random source.
+
+    1. Check the version: run `SELECT VERSION();` in your database tool, or
+       read the version oxmysql prints when the server starts.
+    2. Update MariaDB to 10.11 LTS or newer. XAMPP and many older Linux
+       packages ship 10.4 to 10.6.
+    3. Restart the server. The console then shows
+       `[RoadCasino] Persistent Lua engine loaded` instead of the message.
+
+    Your casino tables and data stay as they are; nothing was written while
+    startup was gated.
+  </Accordion>
+
+  <Accordion title="The casino building is missing, or I still see the construction site">
+    - Start the resources in this order: `road_world_map`,
+      `road_casino_props`, `road_casino_map`, `road_casino`. Start
+      `road_world_map` by name, not the whole `[road_world_map]` folder.
+    - Set `sv_enforceGameBuild 3889`.
+    - Restart the server fully and reconnect. Map files load only at server
+      start.
+  </Accordion>
+
+  <Accordion title="Another RoadShop map also brings road_world_map">
+    Keep only one `[road_world_map]` folder, the newer one. Its version is in
+    `[road_world_map]/road_world_map/fxmanifest.lua`. It holds the original
+    GTA map files for every combination of RoadShop maps and starts the set
+    that matches your server.
+  </Accordion>
+
+  <Accordion title="A table or slot machine is missing">
+    Stand near it and run `/roadcasino_status`. It prints the state of the
+    stations near you to the F8 console. Send that output with your report.
+    Tables and machines are created within `Config.SpawnDistance` metres
+    (default 85).
+  </Accordion>
+
+  <Accordion title="A player cannot sit down in a salon">
+    A salon table needs at least its minimum stake in chips (at hold'em, the
+    minimum buy-in). The screen beside the salon door shows **locked** while
+    the player's chips are below it, and **full** when every seat is taken.
+    See [Games](/roadcasino/games).
+  </Accordion>
+
+  <Accordion title="The staff menu does not open">
+    - The player needs the job in `Config.Staff.Job` (default `casino`) at or
+      above `Config.Staff.MinimumGrade`. Create the job in your framework.
+    - The player must leave the table first.
+    - House and Management pages need `Config.Staff.BossGrade`, the
+      framework's boss flag or the operator ACE.
+  </Accordion>
+
+  <Accordion title="The lift reports a fault">
+    Run `casino_lift_recover` in the server console. The cabin drives to its
+    nearest landing.
+  </Accordion>
+
+  <Accordion title="Which money do players pay with?">
+    Chips are bought and sold at the cashier against the framework account in
+    `Config.Account` (default `bank`). Inside the casino, every stake, payout,
+    drink and cashback is in chips.
+  </Accordion>
+
+  <Accordion title="What happens to bets on a restart or a disconnect?">
+    Wallets and running rounds are stored in the database and survive a
+    restart. A disconnect never forfeits an accepted bet, and a hold'em stack
+    returns to the player's chips.
+  </Accordion>
+
+  <Accordion title="Can I change the table limits or move tables?">
+    No. Stations, seats and limits are part of the casino layout that comes
+    with the map. The options you can change are listed under
+    [Configuration](/roadcasino/configuration).
+  </Accordion>
+
+  <Accordion title="How do I update?">
+    Delete the old `road_casino`, `road_casino_map` and `road_casino_props`
+    folders, copy the new ones and keep your `road_casino/config.lua`. See
+    [Installation](/roadcasino/installation).
+  </Accordion>
+</AccordionGroup>

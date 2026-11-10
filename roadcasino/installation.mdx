@@ -1,0 +1,166 @@
+---
+title: 'Installation'
+description: 'Complete setup guide for RoadCasino'
+icon: 'download'
+---
+
+# Installation
+
+<Danger>
+  **Do not use FileZilla**. It can corrupt or skip hidden files during upload.
+  We recommend **WinSCP**.
+</Danger>
+
+<Note>
+  The download comes from the [cfx.re Portal](/license-system). The database
+  tables are created automatically on the first start.
+</Note>
+
+## 📋 Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="OneSync" icon="radio-tower">
+    Required: `set onesync on`.
+  </Card>
+  <Card title="oxmysql and MariaDB 10.10+" icon="database">
+    oxmysql must start before RoadCasino. The database must be **MariaDB 10.10
+    or newer**: RoadCasino seeds its random number generator with the database
+    function `RANDOM_BYTES`, which older versions lack.
+  </Card>
+  <Card title="Framework" icon="layers">
+    ESX, QBCore or Qbox, found automatically.
+  </Card>
+  <Card title="road_world_map" icon="map">
+    A separate download on the cfx.re Portal. It holds the original GTA map
+    files that several RoadShop maps change.
+  </Card>
+  <Card title="Game build 3889" icon="gamepad-2">
+    `sv_enforceGameBuild 3889`. The casino is built and tested on this build.
+  </Card>
+</CardGroup>
+
+<Warning>
+  Check your database version before you install: run `SELECT VERSION();` in
+  your database tool. XAMPP and many older Linux packages ship MariaDB 10.4 to
+  10.6. With those, the console shows
+  [`Startup gated: secure_random_unavailable`](/roadcasino/faq) and the
+  casino does not open.
+</Warning>
+
+## 🚀 Setup Instructions
+
+<Steps>
+  <Step title="Add road_world_map">
+    Download `road_world_map` on the cfx.re Portal and copy its
+    `[road_world_map]` folder into your resources. If the folder is already
+    there from another RoadShop map, keep the newer one; its version is in
+    `[road_world_map]/road_world_map/fxmanifest.lua`.
+  </Step>
+
+  <Step title="Extract the resources">
+    Copy the three casino resources into your resources. We recommend a
+    `[road]` folder alongside our other scripts:
+
+    ```bash
+    resources/
+    ├── [road_world_map]/
+    └── [road]/
+        ├── road_casino/
+        ├── road_casino_map/
+        └── road_casino_props/
+    ```
+
+    <Warning>
+      The folder names must stay `road_casino`, `road_casino_map` and
+      `road_casino_props`.
+    </Warning>
+  </Step>
+
+  <Step title="Start them after your framework and oxmysql">
+    ```cfg server.cfg
+    sv_enforceGameBuild 3889
+    set onesync on
+
+    ensure oxmysql
+    # your framework
+    ensure road_world_map
+    ensure road_casino_props
+    ensure road_casino_map
+    ensure road_casino
+    ```
+
+    Start `road_world_map` as shown, not the whole `[road_world_map]` folder.
+    Some RoadShop maps change the same original GTA map files and FiveM keeps
+    only one copy of each file, so `road_casino_map` does not ship them:
+    `road_world_map` holds them for every combination of RoadShop maps and
+    starts the set that matches your server.
+  </Step>
+
+  <Step title="Database">
+    On the first start, RoadCasino creates its tables (`roadshop_casino_*`).
+    If your database user may not create tables, run
+    `road_casino/install/schema.sql` yourself.
+  </Step>
+
+  <Step title="Create the casino job">
+    The [staff menu](/roadcasino/staff) opens for players with the job in
+    `Config.Staff.Job` (default `casino`). Create that job in your framework.
+  </Step>
+
+  <Step title="Give your admins management access (optional)">
+    ```cfg server.cfg
+    add_ace group.admin road_casino.operator allow
+    ```
+
+    This opens the management pages without the job and unlocks the cashier's
+    exchange recovery.
+  </Step>
+
+  <Step title="Restart and reconnect">
+    Restart the server and reconnect. New map files load only after a full
+    restart.
+  </Step>
+</Steps>
+
+## 🌐 Language
+
+```lua config.lua
+Config.Locale = 'en'
+```
+
+English (`en`) and German (`de`) are built in. Menu texts are in
+`road_casino/public/locales/`, the lift texts in `road_casino/lift/locales/`.
+
+## ✅ Verification
+
+1. The server console shows a line starting with
+   `[RoadCasino] Persistent Lua engine loaded` with `layout ready=true`, and
+   no `Startup gated` line.
+2. The casino building stands at about (-480, -975, 24).
+3. At the main cashier on the ground floor (-459.1, -1012.9, 24.0), **E**
+   opens the cashier.
+4. At a slot machine or a table, **E** gives you a free seat.
+
+## 🔄 Updating
+
+Delete the old `road_casino`, `road_casino_map` and `road_casino_props`
+folders before you copy the new ones, and keep your `road_casino/config.lua`.
+Copying over the old folders leaves old files behind. New options work without
+a config change: their defaults live in the script.
+
+## 📚 Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Games" icon="spade" href="/roadcasino/games">
+    Chips, slots, tables and salons
+  </Card>
+  <Card title="Staff & ranks" icon="briefcase" href="/roadcasino/staff">
+    Staff menu, ranks and cashback
+  </Card>
+  <Card title="Configuration" icon="settings" href="/roadcasino/configuration">
+    Every option in config.lua
+  </Card>
+  <Card title="FAQ" icon="badge-info" href="/roadcasino/faq">
+    Any problems or questions?
+  </Card>
+</CardGroup>
